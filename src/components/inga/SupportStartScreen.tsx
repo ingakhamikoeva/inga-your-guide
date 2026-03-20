@@ -1,7 +1,22 @@
 import { useApp } from '@/context/AppContext';
+import { saveBehaviorProfile, saveAssessmentAnswers, logUserEvent, startTrial } from '@/lib/db';
 
 export function SupportStartScreen() {
-  const { profile, setStep, calculations } = useApp();
+  const { profile, setStep, calculations, syncToDb } = useApp();
+
+  const handleStart = async () => {
+    // Sync everything to DB when starting support
+    await syncToDb().catch(() => {});
+    if (profile.foodProfile) {
+      await saveBehaviorProfile(profile.foodProfile).catch(() => {});
+    }
+    if (profile.foodTestAnswers) {
+      await saveAssessmentAnswers(profile.foodTestAnswers).catch(() => {});
+    }
+    await startTrial().catch(() => {});
+    await logUserEvent('first_day', { step: 'support-start' }).catch(() => {});
+    setStep('daily');
+  };
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
@@ -44,7 +59,7 @@ export function SupportStartScreen() {
         <p className="text-muted-foreground">Без идеальности и без давления. Я рядом.</p>
       </div>
 
-      <button onClick={() => setStep('daily')} className="inga-btn-primary w-full max-w-sm">
+      <button onClick={handleStart} className="inga-btn-primary w-full max-w-sm">
         Начать сопровождение ✨
       </button>
     </div>
