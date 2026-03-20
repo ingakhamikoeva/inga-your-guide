@@ -60,7 +60,7 @@ function saveLocalState(state: AppState) {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const saved = loadState();
-  const [step, setStep] = useState<AppStep>(saved.step || 'welcome');
+  const [step, setStep] = useState<AppStep>(saved.step || 'auth');
   const [profile, setProfile] = useState<Partial<UserProfile>>(saved.profile || {});
   const [calculations, setCalculations] = useState<Calculations | null>(saved.calculations || null);
   const [dailyReports, setDailyReports] = useState<DailyReport[]>(saved.dailyReports || []);

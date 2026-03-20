@@ -54,6 +54,7 @@ export interface MealReport {
 }
 
 export type AppStep =
+  | 'auth'
   | 'welcome'
   | 'survey-data'
   | 'survey-reasons'
