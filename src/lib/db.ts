@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import type { UserProfile, Calculations, DailyReport, FoodProfile } from './types';
 
 // Helper to get the internal user_id from auth
@@ -266,7 +267,7 @@ export async function saveEveningReflection(date: string, emotion?: string, hung
 
 // ============ USER EVENTS ============
 
-export async function logUserEvent(type: string, payload?: Record<string, unknown>) {
+export async function logUserEvent(type: string, payload?: Json) {
   const userId = await getUserId();
   if (!userId) return;
 
