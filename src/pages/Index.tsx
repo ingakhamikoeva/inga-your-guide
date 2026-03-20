@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { AuthScreen } from '@/components/inga/AuthScreen';
 import { WelcomeScreen } from '@/components/inga/WelcomeScreen';
 import { SurveyDataScreen } from '@/components/inga/SurveyDataScreen';
 import { SurveyReasonsScreen } from '@/components/inga/SurveyReasonsScreen';
@@ -15,7 +18,29 @@ import { DailyScreen } from '@/components/inga/DailyScreen';
 import { MenuScreen } from '@/components/inga/MenuScreen';
 
 function AppFlow() {
-  const { step } = useApp();
+  const { step, setStep } = useApp();
+  const [authReady, setAuthReady] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session?.user);
+      setAuthReady(true);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthed(!!session?.user);
+      setAuthReady(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (!authReady) return null;
+
+  if (!isAuthed || step === 'auth') {
+    return <AuthScreen />;
+  }
 
   switch (step) {
     case 'welcome': return <WelcomeScreen />;

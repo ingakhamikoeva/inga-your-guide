@@ -99,7 +99,7 @@ export function AuthScreen() {
         </div>
 
         {error && (
-          <div className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-2">
+          <div className="text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-2">
             {error}
           </div>
         )}
