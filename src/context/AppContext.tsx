@@ -1,6 +1,21 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport } from '@/lib/types';
 import { calculateAll, getCorridorForPace } from '@/lib/calculations';
+import {
+  isAuthenticated,
+  saveUserProfile,
+  saveUserPlan,
+  saveAssessmentAnswers,
+  saveBehaviorProfile,
+  saveDailyCheckin,
+  saveEveningReflection,
+  saveFoodLog,
+  loadUserProfile,
+  loadCheckins,
+  logUserEvent,
+  startTrial,
+  requestConsultation,
+} from '@/lib/db';
 
 interface AppState {
   step: AppStep;
@@ -16,6 +31,7 @@ interface AppContextValue extends AppState {
   runCalculations: () => Calculations;
   addDailyReport: (report: DailyReport) => void;
   addWeightEntry: (date: string, weight: number) => void;
+  syncToDb: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -36,7 +52,7 @@ function loadState(): Partial<AppState> {
   return {};
 }
 
-function saveState(state: AppState) {
+function saveLocalState(state: AppState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
@@ -52,12 +68,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const state: AppState = { step, profile, calculations, dailyReports, weeklyData };
 
+  // Save to localStorage on every change
   useEffect(() => {
-    saveState(state);
+    saveLocalState(state);
   }, [step, profile, calculations, dailyReports, weeklyData]);
 
   const updateProfile = useCallback((data: Partial<UserProfile>) => {
-    setProfile(prev => ({ ...prev, ...data }));
+    setProfile(prev => {
+      const updated = { ...prev, ...data };
+      // Async DB sync — fire and forget
+      saveUserProfile(updated).catch(() => {});
+      return updated;
+    });
   }, []);
 
   const runCalculations = useCallback(() => {
@@ -68,16 +90,49 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       calc.corridorMax = corridor.corridorMax;
     }
     setCalculations(calc);
+    // Sync plan to DB
+    saveUserPlan(profile, calc).catch(() => {});
     return calc;
   }, [profile]);
 
   const addDailyReport = useCallback((report: DailyReport) => {
     setDailyReports(prev => [...prev, report]);
+
+    // Sync to DB
+    if (report.weight || report.sleepHours || report.stepsYesterday) {
+      saveDailyCheckin(report.date, report.weight, report.sleepHours, report.stepsYesterday).catch(() => {});
+    }
+    if (report.meals.length > 0) {
+      report.meals.forEach(m => {
+        saveFoodLog(m.description, m.type).catch(() => {});
+      });
+    }
+    if (report.eveningEmotion || report.hungerLevel || report.hardestPart) {
+      saveEveningReflection(report.date, report.eveningEmotion, report.hungerLevel, report.hardestPart).catch(() => {});
+    }
   }, []);
 
   const addWeightEntry = useCallback((date: string, weight: number) => {
     setWeeklyData(prev => [...prev, { date, weight }]);
+    saveDailyCheckin(date, weight).catch(() => {});
   }, []);
+
+  // Full sync to DB (called manually or on key events)
+  const syncToDb = useCallback(async () => {
+    const authed = await isAuthenticated();
+    if (!authed) return;
+
+    await saveUserProfile(profile);
+    if (calculations) {
+      await saveUserPlan(profile, calculations);
+    }
+    if (profile.foodTestAnswers) {
+      await saveAssessmentAnswers(profile.foodTestAnswers);
+    }
+    if (profile.foodProfile) {
+      await saveBehaviorProfile(profile.foodProfile);
+    }
+  }, [profile, calculations]);
 
   return (
     <AppContext.Provider
@@ -87,6 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         calculations, runCalculations,
         dailyReports, addDailyReport,
         weeklyData, addWeightEntry,
+        syncToDb,
       }}
     >
       {children}
