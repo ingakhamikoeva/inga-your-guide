@@ -561,7 +561,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      consultations_user_view: {
+        Row: {
+          consultation_id: string | null
+          created_at: string | null
+          scheduled_at: string | null
+          status: Database["public"]["Enums"]["consultation_status"] | null
+          user_id: string | null
+        }
+        Insert: {
+          consultation_id?: string | null
+          created_at?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["consultation_status"] | null
+          user_id?: string | null
+        }
+        Update: {
+          consultation_id?: string | null
+          created_at?: string | null
+          scheduled_at?: string | null
+          status?: Database["public"]["Enums"]["consultation_status"] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never

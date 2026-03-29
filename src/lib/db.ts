@@ -281,17 +281,11 @@ export async function logUserEvent(type: string, payload?: Json) {
 // ============ SUBSCRIPTIONS ============
 
 export async function startTrial() {
-  const userId = await getUserId();
-  if (!userId) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
 
-  const now = new Date();
-  const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-  await supabase.from('subscriptions').insert({
-    user_id: userId,
-    trial_started_at: now.toISOString(),
-    trial_ends_at: trialEnd.toISOString(),
-    subscription_status: 'active' as const,
+  await supabase.functions.invoke('start-trial', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
   });
 }
 
