@@ -179,6 +179,7 @@ export function AuthScreen() {
         {appleLoading ? '...' : 'Войти через Apple'}
       </button>
 
+      <button
         onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}
         className="mt-4 text-sm text-muted-foreground underline"
       >
