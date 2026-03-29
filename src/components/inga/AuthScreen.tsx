@@ -20,12 +20,17 @@ export function AuthScreen() {
 
     try {
       if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (signUpError) throw signUpError;
+        // If auto-confirm is on, session is returned immediately
+        if (data.session) {
+          setStep('welcome');
+          return;
+        }
         setConfirmSent(true);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
