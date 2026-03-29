@@ -33,6 +33,23 @@ export function AuthScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    setError('');
+    setAppleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth('apple', {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        setError(result.error.message || 'Ошибка входа через Apple');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ошибка входа через Apple');
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
