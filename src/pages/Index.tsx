@@ -24,13 +24,21 @@ function AppFlow() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthed(!!session?.user);
+      const authed = !!session?.user;
+      setIsAuthed(authed);
       setAuthReady(true);
+      if (authed && step === 'auth') {
+        setStep('welcome');
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthed(!!session?.user);
+      const authed = !!session?.user;
+      setIsAuthed(authed);
       setAuthReady(true);
+      if (authed && step === 'auth') {
+        setStep('welcome');
+      }
     });
 
     return () => subscription.unsubscribe();
