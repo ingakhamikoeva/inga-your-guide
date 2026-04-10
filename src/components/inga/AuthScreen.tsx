@@ -12,7 +12,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [confirmSent, setConfirmSent] = useState(false);
+  
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
 
@@ -57,18 +57,9 @@ export function AuthScreen() {
 
     try {
       if (mode === 'signup') {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
+        const { error: signUpError } = await supabase.auth.signUp({ email, password });
         if (signUpError) throw signUpError;
-        // If auto-confirm is on, session is returned immediately
-        if (data.session) {
-          setStep('welcome');
-          return;
-        }
-        setConfirmSent(true);
+        setStep('welcome');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -84,25 +75,6 @@ export function AuthScreen() {
     }
   };
 
-  if (confirmSent) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6 py-10 animate-fade-in-up">
-        <div className="inga-bubble text-center max-w-sm">
-          <p className="text-lg font-semibold mb-2">📬 Проверь почту!</p>
-          <p className="text-muted-foreground">
-            Мы отправили ссылку для подтверждения на <strong>{email}</strong>.
-            После подтверждения вернись сюда и войди.
-          </p>
-        </div>
-        <button
-          onClick={() => { setConfirmSent(false); setMode('login'); }}
-          className="inga-btn-primary mt-6 w-full max-w-sm"
-        >
-          Войти
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-10 animate-fade-in-up">
