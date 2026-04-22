@@ -1,6 +1,5 @@
 import { useApp } from '@/context/AppContext';
 import { interpretFoodTest } from '@/lib/food-test';
-import { getText } from '@/lib/gender-text';
 
 export function FoodTestResultScreen() {
   const { profile, setStep } = useApp();
