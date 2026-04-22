@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { getText } from '@/lib/gender-text';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
@@ -88,7 +89,7 @@ export function DailyScreen() {
               <input type="number" value={weight} onChange={e => setWeight(e.target.value)} className="inga-input" placeholder="70.5" step="0.1" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Сколько часов спала?</label>
+              <label className="block text-sm font-medium mb-1">{getText('Сколько часов спала?', 'Сколько часов спал?', profile.gender)}</label>
               <input type="number" value={sleep} onChange={e => setSleep(e.target.value)} className="inga-input" placeholder="7" step="0.5" />
             </div>
             <div>
@@ -106,7 +107,7 @@ export function DailyScreen() {
 
         {tab === 'meals' && (
           <div className="space-y-4 animate-fade-in-up">
-            <h3 className="text-xl font-bold">Что ты ела сегодня?</h3>
+            <h3 className="text-xl font-bold">{getText('Что ты ела сегодня?', 'Что ты ел сегодня?', profile.gender)}</h3>
             <p className="text-sm text-muted-foreground">Запиши каждый приём пищи</p>
 
             {meals.map((m, i) => (
