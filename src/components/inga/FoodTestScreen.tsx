@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { foodTestQuestions, interpretFoodTest } from '@/lib/food-test';
+import { getText } from '@/lib/gender-text';
 
 export function FoodTestIntroScreen() {
   const { setStep } = useApp();
@@ -27,12 +28,15 @@ export function FoodTestIntroScreen() {
 }
 
 export function FoodTestScreen() {
-  const { updateProfile, setStep } = useApp();
+  const { updateProfile, setStep, profile } = useApp();
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
 
   const question = foodTestQuestions[currentQ];
   const total = foodTestQuestions.length;
+  const questionText = typeof question.text === 'string'
+    ? question.text
+    : getText(question.text.female, question.text.male, profile.gender);
 
   const handleAnswer = (optionIndex: number) => {
     const newAnswers = [...answers, optionIndex];
@@ -65,7 +69,7 @@ export function FoodTestScreen() {
         </div>
       </div>
 
-      <h3 className="text-xl font-bold mb-6 text-center">{question.text}</h3>
+      <h3 className="text-xl font-bold mb-6 text-center">{questionText}</h3>
 
       <div className="w-full max-w-sm space-y-3">
         {question.options.map((opt, i) => (
