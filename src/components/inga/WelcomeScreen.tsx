@@ -12,9 +12,9 @@ export function WelcomeScreen() {
         className="w-40 h-40 rounded-full object-cover shadow-lg mb-8 border-4 border-card"
       />
       <div className="inga-bubble text-center max-w-sm mb-8">
-        <p className="text-lg font-semibold mb-2">Привет! Я — твой личный диетолог.</p>
-        <p className="text-muted-foreground mb-2">Я помогу тебе мягко прийти к желаемому весу.</p>
-        <p className="text-muted-foreground">Мы идём к стройности вкусно и в твоём ритме.</p>
+        <p className="text-lg font-semibold mb-2">Привет! Я — твой помощник на пути к желаемому весу.</p>
+        <p className="text-muted-foreground mb-2">Я помогу тебе прийти к нему мягко, без срывов и откатов.</p>
+        <p className="text-muted-foreground">Тебя ждут вкусная еда, понятная система и поддержка на каждом этапе.</p>
       </div>
       <button onClick={() => setStep('survey-data')} className="inga-btn-primary text-lg px-10 py-4">
         Поехали 🚀
