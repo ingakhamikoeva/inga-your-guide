@@ -1,4 +1,4 @@
-import ingaAvatar from '@/assets/inga-avatar.png';
+import ingaPhoto from '@/assets/inga-photo.jpg';
 import { useApp } from '@/context/AppContext';
 
 export function WelcomeScreen() {
@@ -7,7 +7,7 @@ export function WelcomeScreen() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 animate-fade-in-up">
       <img
-        src={ingaAvatar}
+        src={ingaPhoto}
         alt="Инга — твой личный диетолог"
         className="w-40 h-40 rounded-full object-cover shadow-lg mb-8 border-4 border-card"
       />
