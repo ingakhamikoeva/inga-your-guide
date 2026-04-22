@@ -28,7 +28,7 @@ export function SupportStartScreen() {
           <ul className="text-sm space-y-1 text-muted-foreground">
             <li>• делать упор на сытые приёмы пищи днём</li>
             <li>• помогать снижать усталость к вечеру</li>
-            <li>• возвращаться в режим без чувства вины</li>
+            <li>• возвращаться в режим спокойно</li>
           </ul>
         )}
         {profile.foodProfile?.vulnerableTime !== 'вечер' && (
