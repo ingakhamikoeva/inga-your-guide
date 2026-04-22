@@ -13,10 +13,14 @@ const emotions = [
 
 export function SurveyEmotionsScreen() {
   const { updateProfile, setStep } = useApp();
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const toggle = (id: string) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
   const handleNext = () => {
-    updateProfile({ emotionalTrigger: selected });
+    updateProfile({ emotionalTrigger: selected.join(',') });
     setStep('calculations');
   };
 
@@ -31,8 +35,8 @@ export function SurveyEmotionsScreen() {
         {emotions.map(e => (
           <button
             key={e.id}
-            onClick={() => setSelected(e.id)}
-            className={selected === e.id ? 'inga-chip-active' : 'inga-chip-inactive'}
+            onClick={() => toggle(e.id)}
+            className={selected.includes(e.id) ? 'inga-chip-active' : 'inga-chip-inactive'}
           >
             {e.label}
           </button>
@@ -41,7 +45,7 @@ export function SurveyEmotionsScreen() {
 
       <button
         onClick={handleNext}
-        disabled={!selected}
+        disabled={selected.length === 0}
         className="inga-btn-primary w-full max-w-sm disabled:opacity-40"
       >
         Далее →
