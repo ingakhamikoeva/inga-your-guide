@@ -13,7 +13,7 @@ export function FoodTestResultScreen() {
       <h2 className="text-2xl font-bold mb-6">Результаты тестирования</h2>
 
       <div className="inga-bubble mb-4">
-        <p className="text-muted-foreground mb-2">{getText('Я посмотрела твои ответы и хочу рассказать, как я вижу твою ситуацию.', 'Я посмотрел твои ответы и хочу рассказать, как я вижу твою ситуацию.', profile.gender)}</p>
+        <p className="text-muted-foreground mb-2">Я посмотрела твои ответы и хочу рассказать, как я вижу твою ситуацию.</p>
       </div>
 
       <div className="w-full max-w-sm space-y-4">
