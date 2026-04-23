@@ -75,7 +75,7 @@ export function GoalWeightScreen() {
         <input
           type="number"
           value={goalWeight}
-          onChange={e => { setGoalWeight(e.target.value); setMessage(''); }}
+          onChange={e => { setGoalWeight(e.target.value); resetCheck(); }}
           className="inga-input text-center text-2xl"
           placeholder="60"
         />
@@ -96,7 +96,29 @@ export function GoalWeightScreen() {
           </div>
         )}
 
-        {message && (
+        {status === 'unsafe' && (
+          <div className="space-y-3">
+            <button onClick={chooseSafeGoal} className="inga-btn-primary w-full">
+              Поставить безопасную цель
+            </button>
+            <button onClick={resetCheck} className="inga-btn-secondary w-full">
+              Изменить цель
+            </button>
+          </div>
+        )}
+
+        {status === 'borderline' && (
+          <div className="space-y-3">
+            <button onClick={keepBorderlineGoal} className="inga-btn-primary w-full">
+              Оставить эту цель
+            </button>
+            <button onClick={chooseComfortableGoal} className="inga-btn-secondary w-full">
+              Выбрать более комфортную
+            </button>
+          </div>
+        )}
+
+        {status === 'ready' && (
           <button onClick={() => setStep('measurements')} className="inga-btn-primary w-full">
             Далее →
           </button>
