@@ -20,7 +20,7 @@ const fattyWords = ['жарен', 'фри', 'майонез', 'масло', 'с�
 const alcoholWords = ['пиво', 'вино', 'шампан', 'алког', 'коктейл', 'водк', 'виски', 'ром', 'сидр'];
 const overeatingWords = ['много', 'переел', 'переела', 'объел', 'объелась', 'доел', 'доела', 'ещё', 'еще', 'ночью'];
 const redZoneSnackWords = ['сыр', 'орех', 'авокад', 'сало', 'свинин', 'жирн', 'сливоч', 'масло', 'майонез', 'соус', 'выпеч', 'булоч', 'печень', 'конфет', 'шоколад', 'сухофрукт', 'бутерброд', 'сэндвич', 'арахисов'];
-const greenSnackSuggestion = 'для перекуса выбери зелёную зону: творог 0%, йогурт без сахара низкой жирности, кефир 1%, овощи, ягоды или яичный белок';
+const lightSnackSuggestion = 'для перекуса лучше выбрать что-то лёгкое по калориям и сытное: творог 0%, йогурт без сахара низкой жирности, кефир 1%, овощи, ягоды или яичный белок. Такие варианты помогают не перегружать день по калориям и легче держать снижение веса';
 
 export function analyzeDailyNutrition(meals: string[], sex: UserSex): DailyNutritionAnalysis {
   const normalizedMeals = meals.map(meal => meal.toLowerCase());
@@ -62,7 +62,7 @@ export function analyzeDailyNutrition(meals: string[], sex: UserSex): DailyNutri
 
   const steps: string[] = [];
   if (!hasProtein || weakFirstHalf) steps.push('завтра начни с белкового завтрака: яйца, творог, йогурт, рыба или курица');
-  if (hasSweet || hasFastCarbs || hasRedZoneSnack) steps.push(greenSnackSuggestion);
+  if (hasSweet || hasFastCarbs || hasRedZoneSnack) steps.push(lightSnackSuggestion);
   if (hasFatty || eveningHeavy) steps.push('самую жирную еду уменьши или замени на куриную грудку, нежирную рыбу и овощи');
   if (hasAlcohol) steps.push('алкоголь лучше не оставлять на обычный будний день, особенно если цель — снижение веса');
   if (!hasVegetables) steps.push('добавь овощи хотя бы в один приём пищи');
