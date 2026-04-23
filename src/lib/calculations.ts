@@ -44,10 +44,17 @@ export function getCorridorForPace(totalCalories: number, pace: 'fast' | 'slow')
 export function checkGoalBmi(goalWeight: number, height: number) {
   const heightM = height / 100;
   const goalBmi = goalWeight / (heightM * heightM);
+  const minHealthyWeight = Math.round(18.5 * heightM * heightM * 10) / 10;
+  const comfortableWeight = Math.round((minHealthyWeight + 2) * 10) / 10;
+
   return {
     goalBmi: Math.round(goalBmi * 10) / 10,
-    isHealthy: goalBmi >= 18.5 && goalBmi <= 24.9,
+    isUnsafe: goalBmi < 18.5,
+    isBorderlineLow: goalBmi >= 18.5 && goalBmi < 19.5,
+    isHealthy: goalBmi >= 19.5 && goalBmi <= 24.99,
+    isAboveNormal: goalBmi >= 25,
     isTooLow: goalBmi < 18.5,
-    minHealthyWeight: Math.round(18.5 * heightM * heightM),
+    minHealthyWeight,
+    comfortableWeight,
   };
 }
