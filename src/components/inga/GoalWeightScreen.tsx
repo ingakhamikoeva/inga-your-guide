@@ -6,6 +6,16 @@ export function GoalWeightScreen() {
   const { profile, updateProfile, setStep } = useApp();
   const [goalWeight, setGoalWeight] = useState('');
   const [message, setMessage] = useState('');
+  const [safeWeight, setSafeWeight] = useState<number | null>(null);
+  const [comfortableWeight, setComfortableWeight] = useState<number | null>(null);
+  const [status, setStatus] = useState<'unsafe' | 'borderline' | 'ready' | null>(null);
+
+  const resetCheck = () => {
+    setMessage('');
+    setSafeWeight(null);
+    setComfortableWeight(null);
+    setStatus(null);
+  };
 
   const handleCheck = () => {
     const gw = parseFloat(goalWeight);
@@ -13,16 +23,47 @@ export function GoalWeightScreen() {
 
     const check = checkGoalBmi(gw, profile.height);
 
-    if (check.isTooLow) {
-      setMessage(`Нижняя граница здорового веса для тебя — ${check.minHealthyWeight} кг. Давай пока зафиксируем это число как цель.`);
-      updateProfile({ goalWeight: check.minHealthyWeight });
+    if (check.isUnsafe) {
+      setSafeWeight(check.minHealthyWeight);
+      setMessage(`Такой вес будет ниже безопасной нормы для твоего роста. Нижняя граница здорового веса для тебя — ${check.minHealthyWeight} кг. Давай выберем цель, с которой ты будешь чувствовать себя хорошо и устойчиво.`);
+      setStatus('unsafe');
+    } else if (check.isBorderlineLow) {
+      setComfortableWeight(check.comfortableWeight);
+      setMessage(`Это очень низкий вес для твоего роста. Он находится на нижней границе нормы, и удерживать его может быть сложно. Обычно комфортнее чувствуется диапазон немного выше. Если хочешь, можно начать с более устойчивой цели — например, ${check.comfortableWeight} кг, а дальше двигаться постепенно.`);
+      setStatus('borderline');
     } else if (check.isHealthy) {
-      setMessage('Отличная цель! Всё получится, я рядом 💪');
+      setMessage('Отличная цель. Всё получится, я рядом 💛');
       updateProfile({ goalWeight: gw });
+      setStatus('ready');
     } else {
-      setMessage('Эта цель в пределах нормы. Давай двигаться к ней вместе!');
+      setMessage('Это хорошая промежуточная цель. Можно двигаться поэтапно — так спокойнее и устойчивее.');
       updateProfile({ goalWeight: gw });
+      setStatus('ready');
     }
+  };
+
+  const chooseSafeGoal = () => {
+    if (!safeWeight) return;
+    updateProfile({ goalWeight: safeWeight });
+    setGoalWeight(String(safeWeight));
+    setStatus('ready');
+    setMessage('Хорошо, берём эту цель как более устойчивую отправную точку.');
+  };
+
+  const chooseComfortableGoal = () => {
+    if (!comfortableWeight) return;
+    updateProfile({ goalWeight: comfortableWeight });
+    setGoalWeight(String(comfortableWeight));
+    setStatus('ready');
+    setMessage('Отлично, начнём с более комфортной цели и дальше будем двигаться постепенно.');
+  };
+
+  const keepBorderlineGoal = () => {
+    const gw = parseFloat(goalWeight);
+    if (!gw) return;
+    updateProfile({ goalWeight: gw });
+    setStatus('ready');
+    setMessage('Хорошо, оставляем эту цель и будем следить, чтобы путь к ней был устойчивым.');
   };
 
   return (
