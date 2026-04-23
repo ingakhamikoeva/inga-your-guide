@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
+import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
@@ -16,6 +17,7 @@ export function DailyScreen() {
   const [hunger, setHunger] = useState(3);
   const [hardest, setHardest] = useState('');
   const [saved, setSaved] = useState(false);
+  const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -48,10 +50,36 @@ export function DailyScreen() {
   if (saved) {
     return (
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
-        <div className="inga-bubble text-center mb-6">
-          <p className="text-lg font-semibold mb-2">Ты молодец! 🌟</p>
-          <p className="text-muted-foreground">Каждый день, когда ты наблюдаешь за собой — это шаг вперёд.</p>
-          <p className="text-muted-foreground mt-2">Не стремись к идеальности. Стремись к стабильности.</p>
+        <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
+          <p className="text-lg font-semibold">Я посмотрела твой день.</p>
+
+          {analysis.good.length > 0 && (
+            <div>
+              <p className="font-semibold mb-1">Что было хорошо</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {analysis.good.map(item => <li key={item}>• {item}</li>)}
+              </ul>
+            </div>
+          )}
+
+          <div>
+            <p className="font-semibold mb-1">Что мешает снижению веса</p>
+            {analysis.obstacles.length > 0 ? (
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {analysis.obstacles.map(item => <li key={item}>• {item}</li>)}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Я не вижу явных моментов, которые сильно мешали бы цели сегодня.</p>
+            )}
+            <p className="text-sm text-muted-foreground mt-2">{analysis.conclusion}</p>
+          </div>
+
+          <div>
+            <p className="font-semibold mb-1">Что сделать завтра</p>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              {analysis.steps.map(item => <li key={item}>• {item}</li>)}
+            </ul>
+          </div>
         </div>
         <div className="flex gap-3 w-full max-w-sm">
           <button onClick={() => { setSaved(false); setTab('morning'); setMeals([]); }} className="inga-btn-secondary flex-1">
