@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
+import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
-  const { setStep, addDailyReport, addWeightEntry, profile, calculations } = useApp();
+  const { setStep, addDailyReport, addWeightEntry, profile, calculations, weeklyData, dailyReports } = useApp();
   const [tab, setTab] = useState<DailyTab>('morning');
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
@@ -17,13 +18,39 @@ export function DailyScreen() {
   const [hunger, setHunger] = useState(3);
   const [hardest, setHardest] = useState('');
   const [saved, setSaved] = useState(false);
+  const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
 
   const handleSaveMorning = () => {
-    if (weight) addWeightEntry(today, parseFloat(weight));
-    setTab('meals');
+    if (weight) {
+      const w = parseFloat(weight);
+      addWeightEntry(today, w);
+      // Build history excluding today's just-added entry to avoid self-comparison
+      const history = weeklyData.filter(e => e.date !== today);
+      const yesterdayDateStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const yesterdayReport = dailyReports.find(r => r.date === yesterdayDateStr);
+      const result = analyzeMorningWeight(
+        today,
+        w,
+        history,
+        yesterdayReport,
+        sleep ? parseFloat(sleep) : undefined,
+        steps ? parseInt(steps) : undefined,
+        profile.gender,
+      );
+      setMorningAnalysis(result);
+    } else {
+      setMorningAnalysis(null);
+      setTab('meals');
+    }
+  };
+
+  const formatDelta = (d: number | null) => {
+    if (d === null) return '—';
+    if (d === 0) return '0 кг';
+    return d > 0 ? `+${d} кг` : `${d} кг`;
   };
 
   const handleAddMeal = () => {
