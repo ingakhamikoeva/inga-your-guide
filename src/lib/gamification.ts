@@ -12,8 +12,8 @@ export interface GamificationSummary {
 
 const medalStyles: Record<MedalType, { icon: string; tone: string }> = {
   movement: { icon: '🟢', tone: 'text-success' },
-  stable: { icon: '🟡', tone: 'text-primary' },
-  strong: { icon: '🔥', tone: 'text-accent' },
+  stable: { icon: '🟡', tone: 'text-warning' },
+  strong: { icon: '🔥', tone: 'text-primary' },
   consistency: { icon: '🔵', tone: 'text-info' },
 };
 
@@ -48,7 +48,7 @@ const medalCopy: Record<MedalType, { titles: string[]; descriptions: string[] }>
   consistency: {
     titles: ['Стабильность', 'Возвращение в ритм', 'Опора недели', 'Ритм важнее идеала'],
     descriptions: [
-      'Ты держала ритм всю неделю. Это база для результата',
+      'Ты держишь ритм всю неделю. Это база для результата',
       'Ты была в процессе — и это важнее идеального дня',
       'Регулярность уже работает как фундамент для изменений',
       'Ты возвращалась к дневнику, а значит сохраняла курс',
