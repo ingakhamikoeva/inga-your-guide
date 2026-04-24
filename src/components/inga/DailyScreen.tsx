@@ -3,11 +3,13 @@ import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
+import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
+import { Medal } from '@/lib/types';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
-  const { setStep, addDailyReport, addWeightEntry, profile, calculations, weeklyData, dailyReports } = useApp();
+  const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals } = useApp();
   const [tab, setTab] = useState<DailyTab>('morning');
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
@@ -19,6 +21,7 @@ export function DailyScreen() {
   const [hardest, setHardest] = useState('');
   const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
+  const [awardedMedal, setAwardedMedal] = useState<Medal | null>(null);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -61,7 +64,7 @@ export function DailyScreen() {
   };
 
   const handleSaveEvening = () => {
-    addDailyReport({
+    const report = {
       date: today,
       weight: weight ? parseFloat(weight) : undefined,
       sleepHours: sleep ? parseFloat(sleep) : undefined,
@@ -70,7 +73,18 @@ export function DailyScreen() {
       eveningEmotion: emotion,
       hungerLevel: hunger,
       hardestPart: hardest,
-    });
+    };
+    addDailyReport(report);
+    const summary = buildGamificationSummary(
+      today,
+      weight ? [...weeklyData.filter(w => w.date !== today), { date: today, weight: parseFloat(weight) }] : weeklyData,
+      [...dailyReports.filter(r => r.date !== today), report],
+      medals,
+    );
+    if (summary.nextMedal) {
+      addAwardedMedal(summary.nextMedal);
+      setAwardedMedal(summary.nextMedal);
+    }
     setSaved(true);
   };
 
@@ -79,6 +93,19 @@ export function DailyScreen() {
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
         <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
           <p className="text-lg font-semibold">Я посмотрела твой день.</p>
+
+          {awardedMedal && (
+            <div className="inga-card border-primary/40 bg-primary/5">
+              <p className="text-sm font-semibold mb-1">Новая медаль</p>
+              <div className="flex items-start gap-3">
+                <span className={`text-3xl ${getMedalStyle(awardedMedal.type).tone}`}>{getMedalStyle(awardedMedal.type).icon}</span>
+                <div>
+                  <p className="font-semibold">{awardedMedal.title}</p>
+                  <p className="text-sm text-muted-foreground">{awardedMedal.description}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {analysis.good.length > 0 && (
             <div>
@@ -122,6 +149,7 @@ export function DailyScreen() {
               setHunger(3);
               setHardest('');
               setMorningAnalysis(null);
+              setAwardedMedal(null);
             }}
             className="inga-btn-secondary flex-1"
           >
