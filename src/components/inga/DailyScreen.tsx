@@ -82,7 +82,21 @@ export function DailyScreen() {
           </div>
         </div>
         <div className="flex gap-3 w-full max-w-sm">
-          <button onClick={() => { setSaved(false); setTab('morning'); setMeals([]); }} className="inga-btn-secondary flex-1">
+          <button
+            onClick={() => {
+              setSaved(false);
+              setTab('morning');
+              setMeals([]);
+              setMealText('');
+              setWeight('');
+              setSleep('');
+              setSteps('');
+              setEmotion('');
+              setHunger(3);
+              setHardest('');
+            }}
+            className="inga-btn-secondary flex-1"
+          >
             Новый день
           </button>
           <button onClick={() => setStep('menu')} className="inga-btn-primary flex-1">
