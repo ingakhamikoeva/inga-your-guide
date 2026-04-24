@@ -47,6 +47,7 @@
 
     --warning: 40 95% 55%;
     --success: 145 45% 45%;
+    --info: 205 70% 45%;
   }
 
   .dark {
@@ -86,6 +87,8 @@
     --sidebar-accent-foreground: 33 30% 90%;
     --sidebar-border: 20 15% 22%;
     --sidebar-ring: 23 100% 55%;
+
+    --info: 205 65% 55%;
   }
 }
 
