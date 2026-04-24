@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { AppStep, UserProfile, Calculations, DailyReport } from '@/lib/types';
+import { AppStep, UserProfile, Calculations, DailyReport, Medal } from '@/lib/types';
 import { calculateAll, getCorridorForPace } from '@/lib/calculations';
 import {
   isAuthenticated,
@@ -23,6 +23,7 @@ interface AppState {
   calculations: Calculations | null;
   dailyReports: DailyReport[];
   weeklyData: { date: string; weight: number }[];
+  medals: Medal[];
 }
 
 interface AppContextValue extends AppState {
@@ -31,6 +32,7 @@ interface AppContextValue extends AppState {
   runCalculations: () => Calculations;
   addDailyReport: (report: DailyReport) => void;
   addWeightEntry: (date: string, weight: number) => void;
+  addAwardedMedal: (medal: Medal) => void;
   syncToDb: () => Promise<void>;
 }
 
@@ -65,13 +67,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [calculations, setCalculations] = useState<Calculations | null>(saved.calculations || null);
   const [dailyReports, setDailyReports] = useState<DailyReport[]>(saved.dailyReports || []);
   const [weeklyData, setWeeklyData] = useState<{ date: string; weight: number }[]>(saved.weeklyData || []);
+  const [medals, setMedals] = useState<Medal[]>(saved.medals || []);
 
-  const state: AppState = { step, profile, calculations, dailyReports, weeklyData };
+  const state: AppState = { step, profile, calculations, dailyReports, weeklyData, medals };
 
   // Save to localStorage on every change
   useEffect(() => {
     saveLocalState(state);
-  }, [step, profile, calculations, dailyReports, weeklyData]);
+  }, [step, profile, calculations, dailyReports, weeklyData, medals]);
 
   const updateProfile = useCallback((data: Partial<UserProfile>) => {
     setProfile(prev => {
@@ -117,6 +120,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveDailyCheckin(date, weight).catch(() => {});
   }, []);
 
+  const addAwardedMedal = useCallback((medal: Medal) => {
+    setMedals(prev => prev.some(m => m.weekKey === medal.weekKey) ? prev : [...prev, medal]);
+  }, []);
+
   // Full sync to DB (called manually or on key events)
   const syncToDb = useCallback(async () => {
     const authed = await isAuthenticated();
@@ -142,6 +149,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         calculations, runCalculations,
         dailyReports, addDailyReport,
         weeklyData, addWeightEntry,
+        medals, addAwardedMedal,
         syncToDb,
       }}
     >
