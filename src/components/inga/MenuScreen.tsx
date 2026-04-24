@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getText, UserSex } from '@/lib/gender-text';
+import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 
 type MenuSection = 'main' | 'food' | 'recipes' | 'sos' | 'audio' | 'education' | 'progress' | 'consultation';
 
@@ -22,10 +23,13 @@ const educationTopics = [
 ];
 
 export function MenuScreen() {
-  const { setStep, weeklyData, profile, calculations, dailyReports } = useApp();
+  const { setStep, weeklyData, profile, calculations, dailyReports, medals } = useApp();
   const [section, setSection] = useState<MenuSection>('main');
   const [selectedSos, setSelectedSos] = useState<string | null>(null);
   const sosOptions = getSosOptions(profile.gender);
+  const today = new Date().toISOString().slice(0, 10);
+  const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals);
+  const formatDelta = (value: number | null) => value === null ? 'пока мало данных' : value > 0 ? `+${value} кг` : `${value} кг`;
 
   if (section === 'main') {
     return (
@@ -221,6 +225,43 @@ export function MenuScreen() {
           <div className="inga-card">
             <div className="font-bold mb-2">Отчётов отправлено</div>
             <div className="text-3xl font-bold text-primary">{dailyReports.length}</div>
+          </div>
+
+          <div className="inga-card space-y-3">
+            <div className="font-bold">Серия</div>
+            <div className="flex items-end gap-2">
+              <span className="text-3xl font-bold text-primary">{gamification.streakDays}</span>
+              <span className="text-sm text-muted-foreground pb-1">дней в ритме</span>
+            </div>
+            <div className="inga-progress">
+              <div className="inga-progress-bar" style={{ width: `${Math.min(100, (gamification.streakDays / 14) * 100)}%` }} />
+            </div>
+            <p className="text-sm text-muted-foreground">{gamification.streakMessage}</p>
+          </div>
+
+          <div className="inga-card space-y-2">
+            <div className="font-bold">Недельный прогресс</div>
+            <p className="text-sm text-muted-foreground">Изменение веса: <span className="font-semibold text-foreground">{formatDelta(gamification.weekChange)}</span></p>
+            <p className="text-sm text-muted-foreground">{gamification.weeklyInsight}</p>
+          </div>
+
+          <div className="inga-card">
+            <div className="font-bold mb-3">Медали</div>
+            {medals.length > 0 ? (
+              <div className="space-y-3">
+                {[...medals].reverse().slice(0, 6).map(medal => (
+                  <div key={medal.id} className="flex items-start gap-3 rounded-xl bg-background/60 p-3">
+                    <span className={`text-2xl ${getMedalStyle(medal.type).tone}`}>{getMedalStyle(medal.type).icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold">{medal.title}</p>
+                      <p className="text-xs text-muted-foreground">{medal.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Медали появятся здесь, когда накопится недельный ритм.</p>
+            )}
           </div>
         </div>
       </div>
