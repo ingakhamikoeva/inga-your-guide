@@ -1,4 +1,5 @@
 import { UserSex, getText } from './gender-text';
+import { findSwapsInMeal, SoftSwap } from './soft-swap';
 
 type AnalysisMode = 'normal' | 'problematic';
 
@@ -8,6 +9,7 @@ export interface DailyNutritionAnalysis {
   obstacles: string[];
   conclusion: string;
   steps: string[];
+  swaps: SoftSwap[];
 }
 
 const hasAny = (text: string, words: string[]) => words.some(word => text.includes(word));
