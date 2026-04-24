@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
+import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
-  const { setStep, addDailyReport, addWeightEntry, profile, calculations } = useApp();
+  const { setStep, addDailyReport, addWeightEntry, profile, calculations, weeklyData, dailyReports } = useApp();
   const [tab, setTab] = useState<DailyTab>('morning');
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
@@ -17,13 +18,39 @@ export function DailyScreen() {
   const [hunger, setHunger] = useState(3);
   const [hardest, setHardest] = useState('');
   const [saved, setSaved] = useState(false);
+  const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
 
   const handleSaveMorning = () => {
-    if (weight) addWeightEntry(today, parseFloat(weight));
-    setTab('meals');
+    if (weight) {
+      const w = parseFloat(weight);
+      addWeightEntry(today, w);
+      // Build history excluding today's just-added entry to avoid self-comparison
+      const history = weeklyData.filter(e => e.date !== today);
+      const yesterdayDateStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const yesterdayReport = dailyReports.find(r => r.date === yesterdayDateStr);
+      const result = analyzeMorningWeight(
+        today,
+        w,
+        history,
+        yesterdayReport,
+        sleep ? parseFloat(sleep) : undefined,
+        steps ? parseInt(steps) : undefined,
+        profile.gender,
+      );
+      setMorningAnalysis(result);
+    } else {
+      setMorningAnalysis(null);
+      setTab('meals');
+    }
+  };
+
+  const formatDelta = (d: number | null) => {
+    if (d === null) return '—';
+    if (d === 0) return '0 кг';
+    return d > 0 ? `+${d} кг` : `${d} кг`;
   };
 
   const handleAddMeal = () => {
@@ -94,6 +121,7 @@ export function DailyScreen() {
               setEmotion('');
               setHunger(3);
               setHardest('');
+              setMorningAnalysis(null);
             }}
             className="inga-btn-secondary flex-1"
           >
@@ -138,12 +166,42 @@ export function DailyScreen() {
               <label className="block text-sm font-medium mb-1">Шаги вчера</label>
               <input type="number" value={steps} onChange={e => setSteps(e.target.value)} className="inga-input" placeholder="6000" />
             </div>
-            <div className="inga-bubble">
-              <p className="text-sm text-muted-foreground">Вес может колебаться по разным причинам. Мы смотрим не на день, а на тенденцию.</p>
-            </div>
-            <button onClick={handleSaveMorning} className="inga-btn-primary w-full">
-              Сохранить →
-            </button>
+            {!morningAnalysis && (
+              <div className="inga-bubble">
+                <p className="text-sm text-muted-foreground">Вес может колебаться по разным причинам. Мы смотрим не на день, а на тенденцию.</p>
+              </div>
+            )}
+
+            {morningAnalysis && (
+              <div className="inga-bubble space-y-3 animate-fade-in-up">
+                <p className="font-semibold">Динамика веса</p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• за 1 день: {formatDelta(morningAnalysis.dayDelta)}</li>
+                  <li>• за 7 дней: {morningAnalysis.weekDataAvailable ? formatDelta(morningAnalysis.weekDelta) : 'пока мало данных'}</li>
+                </ul>
+
+                <div>
+                  <p className="font-semibold mb-1">Что это может значить</p>
+                  <p className="text-sm text-muted-foreground">{morningAnalysis.meaning}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{morningAnalysis.weeklyComment}</p>
+                </div>
+
+                <div>
+                  <p className="font-semibold mb-1">Фокус на сегодня</p>
+                  <p className="text-sm text-muted-foreground">{morningAnalysis.focus}</p>
+                </div>
+              </div>
+            )}
+
+            {!morningAnalysis ? (
+              <button onClick={handleSaveMorning} className="inga-btn-primary w-full">
+                Сохранить →
+              </button>
+            ) : (
+              <button onClick={() => setTab('meals')} className="inga-btn-primary w-full">
+                Перейти к питанию →
+              </button>
+            )}
           </div>
         )}
 
