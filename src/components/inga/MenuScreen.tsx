@@ -81,21 +81,38 @@ export function MenuScreen() {
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
         <BackButton />
         <h2 className="text-2xl font-bold mb-4">🍽 Питание</h2>
-        <div className="inga-bubble mb-6">
-          <p>Не знаешь, что съесть? Я подскажу!</p>
-          <p className="text-muted-foreground text-sm mt-1">Учитываю твой профиль, время суток и цели.</p>
+        <div className="inga-bubble mb-4">
+          <p className="font-semibold mb-1">Метод "Мягкая замена"</p>
+          <p className="text-sm text-muted-foreground">Не убираем любимое — заменяем более калорийный вариант на более лёгкий. Так снижаем вес без жёстких ограничений и срывов.</p>
+          <p className="text-xs text-muted-foreground mt-2 italic">{describeStage(stage)}</p>
         </div>
-        <div className="w-full max-w-sm space-y-3">
-          {['Не знаю, что съесть', 'Хочу сладкое', 'Нет сил готовить'].map(q => (
+
+        <div className="w-full max-w-sm space-y-3 mb-4">
+          {['Не знаю, что съесть', 'Хочу сладкое', 'Что съесть на перекус', 'Нет сил готовить', 'Хочется есть вечером'].map(q => (
             <div key={q} className="inga-card">
               <p className="font-medium mb-2">{q}</p>
               <p className="text-sm text-muted-foreground">
-                {q === 'Не знаю, что съесть' && 'Попробуй: куриная грудка с овощами, нежирная рыба с салатом или творог 0% с ягодами.'}
-                {q === 'Хочу сладкое' && 'Легче по калориям: ягоды, яблоко, йогурт без сахара низкой жирности или творог 0% с ягодами.'}
-                {q === 'Нет сил готовить' && 'Быстро: кефир 1%, йогурт без сахара низкой жирности, творог 0% или овощи с куриной грудкой.'}
+                {q === 'Не знаю, что съесть' && `${METABOLIC_PLATE_TEXT} Например: куриная грудка + гречка + овощи или нежирная рыба + картофель + салат.`}
+                {q === 'Хочу сладкое' && SWEET_SPOT_TEXT + ' Подойдут ягоды, яблоко с творогом 0% или 1–2 квадратика тёмного шоколада после обеда.'}
+                {q === 'Что съесть на перекус' && `Для перекуса лучше выбрать что-то лёгкое и сытное: ${LIGHT_SNACKS.slice(0, 6).join(', ')}. Так не перегрузишь день по калориям.`}
+                {q === 'Нет сил готовить' && 'Быстро и без готовки: кефир 1%, йогурт без сахара, творог 0% с ягодами или нарезанные овощи с куриной грудкой из магазина.'}
+                {q === 'Хочется есть вечером' && METABOLIC_NIGHT_TEXT}
               </p>
             </div>
           ))}
+        </div>
+
+        <div className="w-full max-w-sm">
+          <h3 className="font-bold mb-2">Примеры мягких замен</h3>
+          <div className="inga-card space-y-2">
+            {SOFT_SWAPS.slice(0, 8).map(s => (
+              <div key={s.from} className="text-sm border-b border-border last:border-0 pb-2 last:pb-0">
+                <div><span className="font-medium">{s.from}</span> → <span className="text-primary">{s.to}</span></div>
+                <div className="text-xs text-muted-foreground">{s.why}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3 italic">{FAT_LEVER_TEXT}</p>
         </div>
       </div>
     );
@@ -106,12 +123,14 @@ export function MenuScreen() {
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
         <BackButton />
         <h2 className="text-2xl font-bold mb-4">🍰 Рецепты</h2>
+        <p className="text-sm text-muted-foreground mb-3 max-w-sm text-center">Рецепты собраны по принципу мягкой замены: меньше жира, больше белка и сытости.</p>
         <div className="w-full max-w-sm space-y-3">
           {[
-            { cat: '🌅 Быстрые завтраки', items: ['Овсянка с бананом и орехами', 'Омлет с помидорами', 'Творог с ягодами и мёдом'] },
-            { cat: '🥗 Сытные обеды', items: ['Куриная грудка с гречкой и салатом', 'Рыба с овощами на пару', 'Суп-пюре из брокколи с сухариками'] },
-            { cat: '🌙 Лёгкие ужины', items: ['Салат с тунцом и яйцом', 'Запечённые овощи с сыром', 'Творожная запеканка'] },
-            { cat: '🍫 Десерты без срывов', items: ['Запечённое яблоко с корицей', 'Банановое мороженое', 'Шоколадный мусс из авокадо'] },
+            { cat: '🌅 Быстрые завтраки', items: ['Овсянка на воде с ягодами и яичным белком', 'Омлет из белков с помидорами и зеленью', 'Творог 0% с ягодами и корицей'] },
+            { cat: '🥗 Сытные обеды', items: ['Куриная грудка с гречкой и салатом', 'Треска или хек на пару с овощами', 'Суп-пюре из брокколи с куриной грудкой'] },
+            { cat: '🌙 Лёгкие ужины', items: ['Салат с тунцом в собственном соку и яичным белком', 'Запечённые овощи с куриной грудкой', 'Творожная запеканка без масла и сахара'] },
+            { cat: '🍫 Сладкая точка (после еды)', items: ['Запечённое яблоко с корицей', 'Творог 0% с ягодами и каплей мёда', 'Йогурт без сахара с ягодами'] },
+            { cat: '🌃 Метаболическая точка перед сном', items: ['Куриная грудка с болгарским перцем', 'Белковый омлет с шампиньонами', 'Нежирная рыба с овощами'] },
           ].map(cat => (
             <div key={cat.cat} className="inga-card">
               <div className="font-bold mb-2">{cat.cat}</div>
