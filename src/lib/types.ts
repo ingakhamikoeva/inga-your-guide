@@ -47,6 +47,17 @@ export interface DailyReport {
   hardestPart?: string;
 }
 
+export type MedalType = 'movement' | 'stable' | 'strong' | 'consistency';
+
+export interface Medal {
+  id: string;
+  type: MedalType;
+  title: string;
+  description: string;
+  date: string;
+  weekKey: string;
+}
+
 export interface MealReport {
   time: string;
   description: string;
