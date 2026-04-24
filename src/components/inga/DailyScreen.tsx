@@ -128,6 +128,18 @@ export function DailyScreen() {
             <p className="text-sm text-muted-foreground mt-2">{analysis.conclusion}</p>
           </div>
 
+          {analysis.swaps.length > 0 && (
+            <div>
+              <p className="font-semibold mb-1">Мягкие замены на завтра</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                {analysis.swaps.map(s => (
+                  <li key={s.from}>• <span className="font-medium text-foreground">{s.from}</span> → {s.to} <span className="opacity-70">({s.why})</span></li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2 italic">Не убираем любимое — просто заменяем на вариант, который лучше подходит цели.</p>
+            </div>
+          )}
+
           <div>
             <p className="font-semibold mb-1">Что сделать завтра</p>
             <ul className="text-sm text-muted-foreground space-y-1">

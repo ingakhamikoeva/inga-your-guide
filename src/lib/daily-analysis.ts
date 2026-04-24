@@ -1,4 +1,5 @@
 import { UserSex, getText } from './gender-text';
+import { findSwapsInMeal, SoftSwap } from './soft-swap';
 
 type AnalysisMode = 'normal' | 'problematic';
 
@@ -8,6 +9,7 @@ export interface DailyNutritionAnalysis {
   obstacles: string[];
   conclusion: string;
   steps: string[];
+  swaps: SoftSwap[];
 }
 
 const hasAny = (text: string, words: string[]) => words.some(word => text.includes(word));
@@ -73,11 +75,21 @@ export function analyzeDailyNutrition(meals: string[], sex: UserSex): DailyNutri
     ? 'При таком наборе еды снижать вес будет сложно: калорийность легко набирается, а сытость держится недолго.'
     : getText('День в целом выглядит рабочим для снижения веса, но один небольшой шаг сделает его устойчивее.', 'День в целом выглядит рабочим для снижения веса, но один небольшой шаг сделает его устойчивее.', sex);
 
+  // Подобрать конкретные мягкие замены по приёмам пищи
+  const swapMap = new Map<string, SoftSwap>();
+  for (const meal of normalizedMeals) {
+    for (const s of findSwapsInMeal(meal)) {
+      swapMap.set(s.from, s);
+    }
+  }
+  const swaps = Array.from(swapMap.values()).slice(0, 3);
+
   return {
     mode,
     good: mode === 'problematic' ? good.slice(0, 1) : good.slice(0, 3),
     obstacles: obstacles.slice(0, mode === 'problematic' ? 4 : 2),
     conclusion,
     steps: (steps.length ? steps : [fallbackStep]).slice(0, mode === 'problematic' ? 1 : 2),
+    swaps,
   };
 }
