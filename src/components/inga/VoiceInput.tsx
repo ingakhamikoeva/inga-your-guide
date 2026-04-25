@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 interface VoiceInputProps {
   onConfirm: (text: string) => void;
+  /** Called when user picks "Изменить" — text goes back into main input */
+  onEdit?: (text: string) => void;
   /** ru-RU by default */
   lang?: string;
   /** Disable button (e.g. during loading) */
@@ -16,7 +18,7 @@ function getSpeechRecognition(): SR | null {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-export function VoiceInput({ onConfirm, lang = 'ru-RU', disabled }: VoiceInputProps) {
+export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: VoiceInputProps) {
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
