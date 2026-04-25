@@ -46,6 +46,7 @@ export function MenuScreen() {
         <h2 className="text-2xl font-bold mb-6">Меню</h2>
         <div className="w-full max-w-sm space-y-3">
           {[
+            { id: 'chat' as const, icon: '💬', label: 'Чат с Ингой', isStep: true as const },
             { id: 'food' as const, icon: '🍽', label: 'Питание' },
             { id: 'recipes' as const, icon: '🍰', label: 'Рецепты' },
             { id: 'sos' as const, icon: '🚨', label: 'SOS' },
@@ -174,10 +175,18 @@ export function MenuScreen() {
                 </>
               )}
             </div>
+            <button onClick={() => setStep('chat')} className="inga-btn-primary w-full">
+              💬 Поговорить с Ингой
+            </button>
             <button onClick={() => setSelectedSos(null)} className="inga-btn-secondary w-full">
               ← Назад
             </button>
           </div>
+        )}
+        {!selected && (
+          <button onClick={() => setStep('chat')} className="mt-4 inga-btn-secondary w-full max-w-sm">
+            💬 Просто написать Инге
+          </button>
         )}
       </div>
     );
