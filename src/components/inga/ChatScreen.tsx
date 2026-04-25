@@ -3,6 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { saveFoodLog, saveChatEvent } from '@/lib/db';
 import { detectStage } from '@/lib/soft-swap';
 import { withName, hasName } from '@/lib/user-name';
+import { VoiceInput } from './VoiceInput';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -267,6 +268,7 @@ export function ChatScreen() {
             className="inga-input flex-1 resize-none max-h-32"
             disabled={loading}
           />
+          <VoiceInput onConfirm={(text) => send(text)} disabled={loading} />
           <button
             type="submit"
             disabled={loading || !input.trim()}
