@@ -17,6 +17,7 @@ import { FoodTestResultScreen } from '@/components/inga/FoodTestResultScreen';
 import { SupportStartScreen } from '@/components/inga/SupportStartScreen';
 import { DailyScreen } from '@/components/inga/DailyScreen';
 import { MenuScreen } from '@/components/inga/MenuScreen';
+import { ChatScreen } from '@/components/inga/ChatScreen';
 
 function AppFlow() {
   const { step, setStep } = useApp();
@@ -68,6 +69,7 @@ function AppFlow() {
     case 'support-start': return <SupportStartScreen />;
     case 'daily': return <DailyScreen />;
     case 'menu': return <MenuScreen />;
+    case 'chat': return <ChatScreen />;
     default: return <WelcomeScreen />;
   }
 }
