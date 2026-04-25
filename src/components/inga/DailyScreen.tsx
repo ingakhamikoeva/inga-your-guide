@@ -5,6 +5,7 @@ import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
+import { withName, hasName } from '@/lib/user-name';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
@@ -92,7 +93,11 @@ export function DailyScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
         <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
-          <p className="text-lg font-semibold">Я посмотрела твой день.</p>
+          <p className="text-lg font-semibold">
+            {analysis.obstacles.length >= 2 && hasName(profile.name)
+              ? withName(profile.name, 'день был непростой. Давай не усложнять — завтра вернёмся в ритм с одного простого шага.')
+              : 'Я посмотрела твой день.'}
+          </p>
 
           {awardedMedal && (
             <div className="inga-card border-primary/40 bg-primary/5">

@@ -4,6 +4,7 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthScreen } from '@/components/inga/AuthScreen';
 import { WelcomeScreen } from '@/components/inga/WelcomeScreen';
 import { SurveyDataScreen } from '@/components/inga/SurveyDataScreen';
+import { SurveyNameScreen } from '@/components/inga/SurveyNameScreen';
 import { SurveyReasonsScreen } from '@/components/inga/SurveyReasonsScreen';
 import { SurveyEmotionsScreen } from '@/components/inga/SurveyEmotionsScreen';
 import { CalculationsScreen } from '@/components/inga/CalculationsScreen';
@@ -52,6 +53,7 @@ function AppFlow() {
 
   switch (step) {
     case 'welcome': return <WelcomeScreen />;
+    case 'survey-name': return <SurveyNameScreen />;
     case 'survey-data': return <SurveyDataScreen />;
     case 'survey-reasons': return <SurveyReasonsScreen />;
     case 'survey-emotions': return <SurveyEmotionsScreen />;

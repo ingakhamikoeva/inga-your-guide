@@ -7,8 +7,9 @@ import {
   SOFT_SWAPS, LIGHT_SNACKS, METABOLIC_PLATE_TEXT, SWEET_SPOT_TEXT,
   METABOLIC_NIGHT_TEXT, DRINKS_TEXT, FAT_LEVER_TEXT, describeStage, detectStage,
 } from '@/lib/soft-swap';
+import { withName, hasName, cleanName } from '@/lib/user-name';
 
-type MenuSection = 'main' | 'food' | 'recipes' | 'sos' | 'audio' | 'education' | 'progress' | 'consultation';
+type MenuSection = 'main' | 'food' | 'recipes' | 'sos' | 'audio' | 'education' | 'progress' | 'consultation' | 'profile';
 
 const getSosOptions = (sex: UserSex) => [
   { id: 'overate', label: getText('🍽 Съела лишнее', '🍽 Съел лишнее', sex), response: { support: 'Это нормально. Один приём пищи не определяет весь путь.', explain: 'Чаще всего переедание — результат недоедания ранее в течение дня или накопленной усталости.', action: 'Выпей стакан воды и просто продолжи день. Без наказаний.', food: getText('Если голодна — выбери что-то лёгкое и сытное: творог 0%, йогурт без сахара, кефир 1% или овощи. Это поможет не перегрузить день по калориям.', 'Если голоден — выбери что-то лёгкое и сытное: творог 0%, йогурт без сахара, кефир 1% или овощи. Это поможет не перегрузить день по калориям.', sex) } },
@@ -30,7 +31,7 @@ const educationTopics = [
 ];
 
 export function MenuScreen() {
-  const { setStep, weeklyData, profile, calculations, dailyReports, medals } = useApp();
+  const { setStep, weeklyData, profile, calculations, dailyReports, medals, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>('main');
   const [selectedSos, setSelectedSos] = useState<string | null>(null);
   const sosOptions = getSosOptions(profile.gender);
@@ -52,6 +53,7 @@ export function MenuScreen() {
             { id: 'education' as const, icon: '📚', label: 'Обучение' },
             { id: 'progress' as const, icon: '📊', label: 'Мой прогресс' },
             { id: 'consultation' as const, icon: '👩‍⚕️', label: 'Консультация с Ингой' },
+            { id: 'profile' as const, icon: '👤', label: 'Профиль' },
           ].map(item => (
             <button
               key={item.id}
@@ -266,10 +268,34 @@ export function MenuScreen() {
             <p className="text-sm text-muted-foreground">{gamification.streakMessage}</p>
           </div>
 
+          {(() => {
+            const goalReached =
+              profile.goalWeight !== undefined &&
+              weeklyData.length > 0 &&
+              weeklyData[weeklyData.length - 1].weight <= profile.goalWeight;
+            if (goalReached) {
+              return (
+                <div className="inga-card border-primary/40 bg-primary/5">
+                  <div className="font-bold mb-1">🎉 Цель достигнута</div>
+                  <p className="text-sm text-muted-foreground">
+                    {hasName(profile.name)
+                      ? `${cleanName(profile.name)}, ты это сделала 💛 Ты достигла своей цели. Теперь переходим к фиксации результата.`
+                      : 'Ты это сделала 💛 Цель достигнута. Теперь переходим к фиксации результата.'}
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <div className="inga-card space-y-2">
             <div className="font-bold">Недельный прогресс</div>
             <p className="text-sm text-muted-foreground">Изменение веса: <span className="font-semibold text-foreground">{formatDelta(gamification.weekChange)}</span></p>
-            <p className="text-sm text-muted-foreground">{gamification.weeklyInsight}</p>
+            <p className="text-sm text-muted-foreground">
+              {hasName(profile.name)
+                ? `${cleanName(profile.name)}, ${gamification.weeklyInsight.charAt(0).toLowerCase()}${gamification.weeklyInsight.slice(1)}`
+                : gamification.weeklyInsight}
+            </p>
           </div>
 
           <div className="inga-card">
@@ -312,5 +338,58 @@ export function MenuScreen() {
     );
   }
 
+  if (section === 'profile') {
+    return <ProfileSection onBack={() => setSection('main')} initialName={profile.name ?? ''} onSave={(n) => updateProfile({ name: n })} />;
+  }
+
   return null;
+}
+
+function ProfileSection({ onBack, initialName, onSave }: { onBack: () => void; initialName: string; onSave: (name: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(initialName);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const handleSave = () => {
+    onSave(cleanName(name));
+    setEditing(false);
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1500);
+  };
+
+  return (
+    <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+      <button onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
+      <h2 className="text-2xl font-bold mb-4">👤 Профиль</h2>
+
+      <div className="w-full max-w-sm inga-card space-y-3">
+        <div className="text-sm text-muted-foreground">Имя</div>
+        {!editing ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xl font-semibold">{cleanName(initialName) || 'Не указано'}</div>
+            <button onClick={() => { setName(initialName); setEditing(true); }} className="inga-btn-secondary">
+              Изменить имя
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              maxLength={40}
+              autoFocus
+              className="inga-input"
+              placeholder="Твоё имя"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleSave} className="inga-btn-primary flex-1">Сохранить</button>
+              <button onClick={() => setEditing(false)} className="inga-btn-secondary flex-1">Отмена</button>
+            </div>
+          </div>
+        )}
+        {savedFlash && <p className="text-xs text-primary">Сохранено</p>}
+      </div>
+    </div>
+  );
 }
