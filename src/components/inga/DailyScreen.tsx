@@ -6,6 +6,7 @@ import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analy
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
+import { VoiceInput } from './VoiceInput';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
@@ -273,6 +274,7 @@ export function DailyScreen() {
                 placeholder="Овсянка с ягодами..."
                 onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
               />
+              <VoiceInput onConfirm={(text) => setMeals(prev => [...prev, text])} />
               <button onClick={handleAddMeal} className="inga-btn-primary px-4">+</button>
             </div>
 
