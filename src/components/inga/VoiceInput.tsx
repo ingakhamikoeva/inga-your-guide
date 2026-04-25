@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 interface VoiceInputProps {
   onConfirm: (text: string) => void;
+  /** Called when user picks "Изменить" — text goes back into main input */
+  onEdit?: (text: string) => void;
   /** ru-RU by default */
   lang?: string;
   /** Disable button (e.g. during loading) */
@@ -16,7 +18,7 @@ function getSpeechRecognition(): SR | null {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
-export function VoiceInput({ onConfirm, lang = 'ru-RU', disabled }: VoiceInputProps) {
+export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: VoiceInputProps) {
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -115,16 +117,8 @@ export function VoiceInput({ onConfirm, lang = 'ru-RU', disabled }: VoiceInputPr
   };
 
   if (!supported) {
-    return (
-      <button
-        type="button"
-        title="Голосовой ввод не поддерживается этим браузером"
-        disabled
-        className="px-3 py-2 rounded-xl bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
-      >
-        🎤
-      </button>
-    );
+    // Hide entirely — text input remains available
+    return null;
   }
 
   return (
@@ -183,10 +177,17 @@ export function VoiceInput({ onConfirm, lang = 'ru-RU', disabled }: VoiceInputPr
                     Да, сохранить
                   </button>
                   <button
-                    onClick={() => setEditing(v => !v)}
+                    onClick={() => {
+                      if (onEdit) {
+                        onEdit(transcript);
+                        reset();
+                      } else {
+                        setEditing(v => !v);
+                      }
+                    }}
                     className="inga-btn-secondary text-sm py-2"
                   >
-                    {editing ? 'Готово' : 'Изменить текст'}
+                    {editing ? 'Готово' : 'Изменить'}
                   </button>
                   <button
                     onClick={reset}
