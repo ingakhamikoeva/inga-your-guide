@@ -103,6 +103,36 @@ export type Database = {
           },
         ]
       }
+      chat_events: {
+        Row: {
+          created_at: string
+          date_time: string
+          event_id: string
+          event_type: string
+          message_summary: string
+          related_food_log_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_time?: string
+          event_id?: string
+          event_type: string
+          message_summary: string
+          related_food_log_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_time?: string
+          event_id?: string
+          event_type?: string
+          message_summary?: string
+          related_food_log_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       consultations: {
         Row: {
           consultation_id: string
