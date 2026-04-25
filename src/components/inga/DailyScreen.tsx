@@ -5,6 +5,7 @@ import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
+import { withName, hasName } from '@/lib/user-name';
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
