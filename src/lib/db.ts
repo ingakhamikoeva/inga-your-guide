@@ -27,6 +27,12 @@ export async function saveUserProfile(profile: Partial<UserProfile>) {
   const userId = await getUserId();
   if (!userId) return;
 
+  // Save name to public.users (separate row keyed by auth_id)
+  if (profile.name !== undefined) {
+    const trimmed = (profile.name ?? '').trim();
+    await supabase.from('users').update({ name: trimmed || null }).eq('user_id', userId);
+  }
+
   const row = {
     user_id: userId,
     sex: profile.gender ?? null,
@@ -59,25 +65,25 @@ export async function loadUserProfile(): Promise<Partial<UserProfile> | null> {
   const userId = await getUserId();
   if (!userId) return null;
 
-  const { data } = await supabase
-    .from('user_profile')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  const [{ data }, { data: userRow }] = await Promise.all([
+    supabase.from('user_profile').select('*').eq('user_id', userId).single(),
+    supabase.from('users').select('name').eq('user_id', userId).single(),
+  ]);
 
-  if (!data) return null;
+  if (!data && !userRow) return null;
 
   return {
-    gender: data.sex === 'male' ? 'male' : 'female',
-    age: data.age ?? undefined,
-    height: data.height_cm ?? undefined,
-    weight: data.current_weight_kg ? Number(data.current_weight_kg) : undefined,
-    goalWeight: data.goal_weight_kg ? Number(data.goal_weight_kg) : undefined,
-    waist: data.waist_cm ? Number(data.waist_cm) : undefined,
-    hips: data.hips_cm ? Number(data.hips_cm) : undefined,
-    stepsPerDay: data.steps_baseline ?? undefined,
-    weightGainReasons: data.weight_gain_reasons ?? undefined,
-    emotionalTrigger: data.emotional_trigger ?? undefined,
+    name: userRow?.name ?? undefined,
+    gender: data?.sex === 'male' ? 'male' : 'female',
+    age: data?.age ?? undefined,
+    height: data?.height_cm ?? undefined,
+    weight: data?.current_weight_kg ? Number(data.current_weight_kg) : undefined,
+    goalWeight: data?.goal_weight_kg ? Number(data.goal_weight_kg) : undefined,
+    waist: data?.waist_cm ? Number(data.waist_cm) : undefined,
+    hips: data?.hips_cm ? Number(data.hips_cm) : undefined,
+    stepsPerDay: data?.steps_baseline ?? undefined,
+    weightGainReasons: data?.weight_gain_reasons ?? undefined,
+    emotionalTrigger: data?.emotional_trigger ?? undefined,
   };
 }
 
