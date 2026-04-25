@@ -7,8 +7,9 @@ import {
   SOFT_SWAPS, LIGHT_SNACKS, METABOLIC_PLATE_TEXT, SWEET_SPOT_TEXT,
   METABOLIC_NIGHT_TEXT, DRINKS_TEXT, FAT_LEVER_TEXT, describeStage, detectStage,
 } from '@/lib/soft-swap';
+import { withName, hasName, cleanName } from '@/lib/user-name';
 
-type MenuSection = 'main' | 'food' | 'recipes' | 'sos' | 'audio' | 'education' | 'progress' | 'consultation';
+type MenuSection = 'main' | 'food' | 'recipes' | 'sos' | 'audio' | 'education' | 'progress' | 'consultation' | 'profile';
 
 const getSosOptions = (sex: UserSex) => [
   { id: 'overate', label: getText('🍽 Съела лишнее', '🍽 Съел лишнее', sex), response: { support: 'Это нормально. Один приём пищи не определяет весь путь.', explain: 'Чаще всего переедание — результат недоедания ранее в течение дня или накопленной усталости.', action: 'Выпей стакан воды и просто продолжи день. Без наказаний.', food: getText('Если голодна — выбери что-то лёгкое и сытное: творог 0%, йогурт без сахара, кефир 1% или овощи. Это поможет не перегрузить день по калориям.', 'Если голоден — выбери что-то лёгкое и сытное: творог 0%, йогурт без сахара, кефир 1% или овощи. Это поможет не перегрузить день по калориям.', sex) } },
@@ -30,7 +31,7 @@ const educationTopics = [
 ];
 
 export function MenuScreen() {
-  const { setStep, weeklyData, profile, calculations, dailyReports, medals } = useApp();
+  const { setStep, weeklyData, profile, calculations, dailyReports, medals, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>('main');
   const [selectedSos, setSelectedSos] = useState<string | null>(null);
   const sosOptions = getSosOptions(profile.gender);
