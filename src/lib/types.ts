@@ -82,4 +82,5 @@ export type AppStep =
   | 'food-test-result'
   | 'support-start'
   | 'daily'
-  | 'menu';
+  | 'menu'
+  | 'chat';
