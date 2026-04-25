@@ -58,7 +58,10 @@ export function MenuScreen() {
           ].map(item => (
             <button
               key={item.id}
-              onClick={() => setSection(item.id)}
+              onClick={() => {
+                if ((item as any).isStep) setStep(item.id as any);
+                else setSection(item.id as MenuSection);
+              }}
               className="inga-card w-full text-left hover:border-primary transition-colors cursor-pointer flex items-center gap-3"
             >
               <span className="text-2xl">{item.icon}</span>
