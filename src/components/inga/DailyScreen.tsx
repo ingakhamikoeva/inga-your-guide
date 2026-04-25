@@ -176,6 +176,12 @@ export function DailyScreen() {
             Меню
           </button>
         </div>
+        <button
+          onClick={() => setStep('chat')}
+          className="mt-3 w-full max-w-sm inga-btn-secondary"
+        >
+          💬 Обсудить с Ингой
+        </button>
       </div>
     );
   }
