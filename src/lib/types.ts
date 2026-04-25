@@ -1,4 +1,5 @@
 export interface UserProfile {
+  name: string;
   gender: 'female' | 'male';
   age: number;
   height: number;
@@ -67,6 +68,7 @@ export interface MealReport {
 export type AppStep =
   | 'auth'
   | 'welcome'
+  | 'survey-name'
   | 'survey-data'
   | 'survey-reasons'
   | 'survey-emotions'
