@@ -243,6 +243,20 @@ export async function saveFoodLog(description: string, mealTag: 'breakfast' | 'l
   });
 }
 
+// ============ CHAT EVENTS ============
+
+export async function saveChatEvent(eventType: string, summary: string, relatedFoodLogId?: string) {
+  const userId = await getUserId();
+  if (!userId) return;
+
+  await supabase.from('chat_events' as any).insert({
+    user_id: userId,
+    event_type: eventType,
+    message_summary: summary,
+    related_food_log_id: relatedFoodLogId ?? null,
+  });
+}
+
 // ============ EVENING REFLECTIONS ============
 
 export async function saveEveningReflection(date: string, emotion?: string, hungerLevel?: number, hardestPart?: string) {
