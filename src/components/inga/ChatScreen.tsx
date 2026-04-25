@@ -268,7 +268,11 @@ export function ChatScreen() {
             className="inga-input flex-1 resize-none max-h-32"
             disabled={loading}
           />
-          <VoiceInput onConfirm={(text) => send(text)} disabled={loading} />
+          <VoiceInput
+            onConfirm={(text) => send(text)}
+            onEdit={(text) => setInput(text)}
+            disabled={loading}
+          />
           <button
             type="submit"
             disabled={loading || !input.trim()}

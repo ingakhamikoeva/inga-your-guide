@@ -274,7 +274,10 @@ export function DailyScreen() {
                 placeholder="Овсянка с ягодами..."
                 onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
               />
-              <VoiceInput onConfirm={(text) => setMeals(prev => [...prev, text])} />
+              <VoiceInput
+                onConfirm={(text) => setMeals(prev => [...prev, text])}
+                onEdit={(text) => setMealText(text)}
+              />
               <button onClick={handleAddMeal} className="inga-btn-primary px-4">+</button>
             </div>
 
