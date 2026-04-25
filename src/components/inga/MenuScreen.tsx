@@ -53,6 +53,7 @@ export function MenuScreen() {
             { id: 'education' as const, icon: '📚', label: 'Обучение' },
             { id: 'progress' as const, icon: '📊', label: 'Мой прогресс' },
             { id: 'consultation' as const, icon: '👩‍⚕️', label: 'Консультация с Ингой' },
+            { id: 'profile' as const, icon: '👤', label: 'Профиль' },
           ].map(item => (
             <button
               key={item.id}
@@ -267,10 +268,34 @@ export function MenuScreen() {
             <p className="text-sm text-muted-foreground">{gamification.streakMessage}</p>
           </div>
 
+          {(() => {
+            const goalReached =
+              profile.goalWeight !== undefined &&
+              weeklyData.length > 0 &&
+              weeklyData[weeklyData.length - 1].weight <= profile.goalWeight;
+            if (goalReached) {
+              return (
+                <div className="inga-card border-primary/40 bg-primary/5">
+                  <div className="font-bold mb-1">🎉 Цель достигнута</div>
+                  <p className="text-sm text-muted-foreground">
+                    {hasName(profile.name)
+                      ? `${cleanName(profile.name)}, ты это сделала 💛 Ты достигла своей цели. Теперь переходим к фиксации результата.`
+                      : 'Ты это сделала 💛 Цель достигнута. Теперь переходим к фиксации результата.'}
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <div className="inga-card space-y-2">
             <div className="font-bold">Недельный прогресс</div>
             <p className="text-sm text-muted-foreground">Изменение веса: <span className="font-semibold text-foreground">{formatDelta(gamification.weekChange)}</span></p>
-            <p className="text-sm text-muted-foreground">{gamification.weeklyInsight}</p>
+            <p className="text-sm text-muted-foreground">
+              {hasName(profile.name)
+                ? `${cleanName(profile.name)}, ${gamification.weeklyInsight.charAt(0).toLowerCase()}${gamification.weeklyInsight.slice(1)}`
+                : gamification.weeklyInsight}
+            </p>
           </div>
 
           <div className="inga-card">
