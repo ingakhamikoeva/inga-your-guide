@@ -16,7 +16,7 @@ export function WelcomeScreen() {
         <p className="text-muted-foreground mb-2">Мягко, без срывов и откатов.</p>
         <p className="text-muted-foreground">Тебя ждут вкусная еда, понятная система и поддержка.</p>
       </div>
-      <button onClick={() => setStep('survey-data')} className="inga-btn-primary text-lg px-10 py-4">
+      <button onClick={() => setStep('survey-name')} className="inga-btn-primary text-lg px-10 py-4">
         Начать
       </button>
     </div>
