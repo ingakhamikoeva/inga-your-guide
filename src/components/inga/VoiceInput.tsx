@@ -115,16 +115,8 @@ export function VoiceInput({ onConfirm, lang = 'ru-RU', disabled }: VoiceInputPr
   };
 
   if (!supported) {
-    return (
-      <button
-        type="button"
-        title="Голосовой ввод не поддерживается этим браузером"
-        disabled
-        className="px-3 py-2 rounded-xl bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
-      >
-        🎤
-      </button>
-    );
+    // Hide entirely — text input remains available
+    return null;
   }
 
   return (
