@@ -177,10 +177,17 @@ export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: Voic
                     Да, сохранить
                   </button>
                   <button
-                    onClick={() => setEditing(v => !v)}
+                    onClick={() => {
+                      if (onEdit) {
+                        onEdit(transcript);
+                        reset();
+                      } else {
+                        setEditing(v => !v);
+                      }
+                    }}
                     className="inga-btn-secondary text-sm py-2"
                   >
-                    {editing ? 'Готово' : 'Изменить текст'}
+                    {editing ? 'Готово' : 'Изменить'}
                   </button>
                   <button
                     onClick={reset}
