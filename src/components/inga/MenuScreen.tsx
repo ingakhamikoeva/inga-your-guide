@@ -338,5 +338,58 @@ export function MenuScreen() {
     );
   }
 
+  if (section === 'profile') {
+    return <ProfileSection onBack={() => setSection('main')} initialName={profile.name ?? ''} onSave={(n) => updateProfile({ name: n })} />;
+  }
+
   return null;
+}
+
+function ProfileSection({ onBack, initialName, onSave }: { onBack: () => void; initialName: string; onSave: (name: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(initialName);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const handleSave = () => {
+    onSave(cleanName(name));
+    setEditing(false);
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1500);
+  };
+
+  return (
+    <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+      <button onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
+      <h2 className="text-2xl font-bold mb-4">👤 Профиль</h2>
+
+      <div className="w-full max-w-sm inga-card space-y-3">
+        <div className="text-sm text-muted-foreground">Имя</div>
+        {!editing ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xl font-semibold">{cleanName(initialName) || 'Не указано'}</div>
+            <button onClick={() => { setName(initialName); setEditing(true); }} className="inga-btn-secondary">
+              Изменить имя
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              maxLength={40}
+              autoFocus
+              className="inga-input"
+              placeholder="Твоё имя"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleSave} className="inga-btn-primary flex-1">Сохранить</button>
+              <button onClick={() => setEditing(false)} className="inga-btn-secondary flex-1">Отмена</button>
+            </div>
+          </div>
+        )}
+        {savedFlash && <p className="text-xs text-primary">Сохранено</p>}
+      </div>
+    </div>
+  );
 }
