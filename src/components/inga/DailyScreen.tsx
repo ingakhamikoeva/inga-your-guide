@@ -331,6 +331,15 @@ export function DailyScreen() {
       <button onClick={() => setStep('menu')} className="mt-6 text-sm text-muted-foreground underline">
         Открыть меню
       </button>
+
+      {/* Floating chat button */}
+      <button
+        onClick={() => setStep('chat')}
+        aria-label="Открыть чат с Ингой"
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl hover:scale-105 transition-transform z-50"
+      >
+        💬
+      </button>
     </div>
   );
 }
