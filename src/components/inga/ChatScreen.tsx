@@ -173,6 +173,7 @@ export function ChatScreen() {
       setMessages(prev => prev.slice(0, assistantIndex));
     } finally {
       setLoading(false);
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   };
 
