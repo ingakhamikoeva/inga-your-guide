@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useApp } from '@/context/AppContext';
@@ -12,6 +13,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -101,15 +103,26 @@ export function AuthScreen() {
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Пароль</label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="inga-input"
-            placeholder="Минимум 6 символов"
-            minLength={6}
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="inga-input pr-12"
+              placeholder="Минимум 6 символов"
+              minLength={6}
+              required
+            />
+            <button
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => setShowPassword(v => !v)}
+              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full"
+            >
+              {showPassword ? <EyeOff className="w-[18px] h-[18px]" strokeWidth={1.75} /> : <Eye className="w-[18px] h-[18px]" strokeWidth={1.75} />}
+            </button>
+          </div>
         </div>
 
         {error && (
