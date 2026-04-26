@@ -18,6 +18,9 @@ export function DailyScreen() {
   const [steps, setSteps] = useState('');
   const [mealText, setMealText] = useState('');
   const [meals, setMeals] = useState<string[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState('');
+  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
   const [emotion, setEmotion] = useState('');
   const [hunger, setHunger] = useState(3);
   const [hardest, setHardest] = useState('');
