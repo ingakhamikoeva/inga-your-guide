@@ -50,6 +50,7 @@ export function ChatScreen() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Record<number, PendingMeal>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayReport = dailyReports.find(r => r.date === today);
