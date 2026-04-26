@@ -258,6 +258,8 @@ export function ChatScreen() {
           className="flex gap-2 items-end"
         >
           <textarea
+            ref={inputRef}
+            autoFocus
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => {
