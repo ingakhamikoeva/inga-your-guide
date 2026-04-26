@@ -337,14 +337,18 @@ export function DailyScreen() {
         Открыть меню
       </button>
 
-      {/* Floating chat button */}
-      <button
-        onClick={() => setStep('chat')}
-        aria-label="Открыть чат с Ингой"
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl hover:scale-105 transition-transform z-50"
-      >
-        💬
-      </button>
+      {/* Floating chat button — anchored to app container on desktop, corner on mobile */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center">
+        <div className="relative w-full max-w-md">
+          <button
+            onClick={() => setStep('chat')}
+            aria-label="Открыть чат с Ингой"
+            className="pointer-events-auto absolute bottom-6 right-4 sm:right-2 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl hover:scale-105 transition-transform"
+          >
+            💬
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
