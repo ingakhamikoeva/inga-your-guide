@@ -7,15 +7,6 @@ import { VoiceInput } from './VoiceInput';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-const QUICK_PROMPTS = [
-  'Хочу сладкого',
-  'Что съесть?',
-  'Мне нужна поддержка',
-  'Я переела',
-  'Помоги с ужином',
-  'Что выбрать в кафе?',
-];
-
 interface PendingMeal {
   msgIndex: number;
   description: string;
