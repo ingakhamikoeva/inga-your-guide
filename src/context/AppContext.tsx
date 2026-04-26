@@ -76,6 +76,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveLocalState(state);
   }, [step, profile, calculations, dailyReports, weeklyData, medals]);
 
+  // Extra safety: flush state to localStorage on tab hide / page unload
+  // (iOS Safari may discard the page when screen locks)
+  useEffect(() => {
+    const flush = () => saveLocalState(state);
+    window.addEventListener('visibilitychange', flush);
+    window.addEventListener('pagehide', flush);
+    window.addEventListener('beforeunload', flush);
+    return () => {
+      window.removeEventListener('visibilitychange', flush);
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('beforeunload', flush);
+    };
+  });
+
   const updateProfile = useCallback((data: Partial<UserProfile>) => {
     setProfile(prev => {
       const updated = { ...prev, ...data };

@@ -25,25 +25,31 @@ function AppFlow() {
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
+    // Restore step from saved state on auth — never force 'welcome' if user has progress
+    const restoreStep = (currentStep: string) => {
+      if (currentStep === 'auth') {
+        // No saved progress → start at welcome
+        setStep('welcome');
+      }
+      // Otherwise keep the saved step (survey-name, daily, etc.)
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const authed = !!session?.user;
       setIsAuthed(authed);
       setAuthReady(true);
-      if (authed && step === 'auth') {
-        setStep('welcome');
-      }
+      if (authed) restoreStep(step);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       const authed = !!session?.user;
       setIsAuthed(authed);
       setAuthReady(true);
-      if (authed && step === 'auth') {
-        setStep('welcome');
-      }
+      if (authed) restoreStep(step);
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!authReady) return null;
