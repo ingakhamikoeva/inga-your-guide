@@ -265,9 +265,92 @@ export function DailyScreen() {
             <h3 className="text-xl font-bold">{getText('Что ты ела сегодня?', 'Что ты ел сегодня?', profile.gender)}</h3>
             <p className="text-sm text-muted-foreground">Запиши каждый приём пищи</p>
 
-            {meals.map((m, i) => (
-              <div key={i} className="inga-card text-sm">✅ {m}</div>
-            ))}
+            {meals.map((m, i) => {
+              const isEditing = editingIndex === i;
+              const isConfirmingDelete = confirmDeleteIndex === i;
+              return (
+                <div key={i} className="inga-card text-sm space-y-2">
+                  {isEditing ? (
+                    <>
+                      <input
+                        value={editingText}
+                        onChange={e => setEditingText(e.target.value)}
+                        autoFocus
+                        className="inga-input"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && editingText.trim()) {
+                            setMeals(prev => prev.map((mm, idx) => idx === i ? editingText.trim() : mm));
+                            setEditingIndex(null);
+                          }
+                          if (e.key === 'Escape') setEditingIndex(null);
+                        }}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            if (!editingText.trim()) return;
+                            setMeals(prev => prev.map((mm, idx) => idx === i ? editingText.trim() : mm));
+                            setEditingIndex(null);
+                          }}
+                          className="inga-btn-primary text-xs py-1.5 px-3 flex-1"
+                        >
+                          Сохранить
+                        </button>
+                        <button
+                          onClick={() => setEditingIndex(null)}
+                          className="inga-btn-secondary text-xs py-1.5 px-3 flex-1"
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground italic">Анализ дня обновится после сохранения.</p>
+                    </>
+                  ) : isConfirmingDelete ? (
+                    <>
+                      <p>Удалить этот приём пищи?</p>
+                      <p className="text-xs text-muted-foreground italic">«{m}»</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setMeals(prev => prev.filter((_, idx) => idx !== i));
+                            setConfirmDeleteIndex(null);
+                          }}
+                          className="inga-btn-primary text-xs py-1.5 px-3 flex-1"
+                        >
+                          Да, удалить
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteIndex(null)}
+                          className="inga-btn-secondary text-xs py-1.5 px-3 flex-1"
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="flex-1">✅ {m}</span>
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          onClick={() => { setEditingIndex(i); setEditingText(m); setConfirmDeleteIndex(null); }}
+                          className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          aria-label="Изменить"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => { setConfirmDeleteIndex(i); setEditingIndex(null); }}
+                          className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          aria-label="Удалить"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             <div className="flex gap-2">
               <input
