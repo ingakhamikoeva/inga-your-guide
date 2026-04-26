@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Mic } from 'lucide-react';
 
 interface VoiceInputProps {
   onConfirm: (text: string) => void;
@@ -123,19 +124,27 @@ export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: Voic
 
   return (
     <>
-      <button
-        type="button"
-        onClick={recording ? stop : start}
-        disabled={disabled}
-        title={recording ? 'Остановить запись' : 'Голосовой ввод'}
-        className={`px-3 py-2 rounded-xl transition-all ${
-          recording
-            ? 'bg-destructive text-destructive-foreground animate-pulse'
-            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-        } disabled:opacity-50`}
-      >
-        {recording ? '⏺' : '🎤'}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={recording ? stop : start}
+          disabled={disabled}
+          title={recording ? 'Остановить запись' : 'Голосовой ввод'}
+          aria-label={recording ? 'Остановить запись' : 'Голосовой ввод'}
+          className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition-all border ${
+            recording
+              ? 'bg-[hsl(25_95%_55%/0.15)] border-[hsl(25_95%_55%)] text-[hsl(25_95%_45%)] animate-pulse'
+              : 'bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+          } disabled:opacity-50`}
+        >
+          <Mic className="w-[18px] h-[18px]" strokeWidth={1.75} />
+        </button>
+        {recording && (
+          <span className="text-xs text-[hsl(25_95%_45%)] font-medium whitespace-nowrap">
+            Слушаю…
+          </span>
+        )}
+      </div>
 
       {showDialog && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={reset}>
