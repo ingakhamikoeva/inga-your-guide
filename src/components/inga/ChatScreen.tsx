@@ -83,6 +83,8 @@ export function ChatScreen() {
     setMessages(nextMessages);
     setInput('');
     setLoading(true);
+    // Keep focus in the input field after sending
+    requestAnimationFrame(() => inputRef.current?.focus());
 
     const userContext = {
       name: profile.name,
