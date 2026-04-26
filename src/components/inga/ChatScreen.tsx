@@ -50,6 +50,7 @@ export function ChatScreen() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Record<number, PendingMeal>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayReport = dailyReports.find(r => r.date === today);
@@ -82,6 +83,8 @@ export function ChatScreen() {
     setMessages(nextMessages);
     setInput('');
     setLoading(true);
+    // Keep focus in the input field after sending
+    requestAnimationFrame(() => inputRef.current?.focus());
 
     const userContext = {
       name: profile.name,
@@ -170,6 +173,7 @@ export function ChatScreen() {
       setMessages(prev => prev.slice(0, assistantIndex));
     } finally {
       setLoading(false);
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   };
 
@@ -255,6 +259,8 @@ export function ChatScreen() {
           className="flex gap-2 items-end"
         >
           <textarea
+            ref={inputRef}
+            autoFocus
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => {

@@ -16,10 +16,7 @@ export function SurveyNameScreen() {
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
-      <h2 className="text-2xl font-bold mb-2">Как тебя зовут?</h2>
-      <p className="text-muted-foreground mb-8 text-center max-w-sm">
-        Я буду обращаться к тебе по имени — так теплее.
-      </p>
+      <h2 className="text-2xl font-bold mb-8">Как тебя зовут?</h2>
 
       <div className="w-full max-w-sm space-y-4">
         <input
