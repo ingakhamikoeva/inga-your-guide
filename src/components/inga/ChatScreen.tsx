@@ -182,102 +182,94 @@ export function ChatScreen() {
   return (
     <div className="flex flex-col h-screen max-h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-        <button onClick={() => setStep('daily')} className="text-sm text-muted-foreground">← Назад</button>
-        <h2 className="font-semibold">💬 Чат с Ингой</h2>
-        <button onClick={() => setStep('menu')} className="text-sm text-muted-foreground">Меню</button>
+      <div className="border-b border-border bg-card">
+        <div className="mx-auto w-full max-w-[760px] flex items-center justify-between px-4 py-3">
+          <button onClick={() => setStep('daily')} className="text-sm text-muted-foreground">← Назад</button>
+          <h2 className="font-semibold">Поговорим?</h2>
+          <button onClick={() => setStep('menu')} className="text-sm text-muted-foreground">Меню</button>
+        </div>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl whitespace-pre-wrap text-sm ${
-              m.role === 'user'
-                ? 'bg-primary text-primary-foreground rounded-br-sm'
-                : 'bg-secondary text-secondary-foreground rounded-bl-sm'
-            }`}>
-              {m.content || (loading && i === messages.length - 1 ? '...' : '')}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[760px] px-4 py-4 space-y-3">
+          {messages.map((m, i) => (
+            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl whitespace-pre-wrap break-words text-sm ${
+                m.role === 'user'
+                  ? 'bg-primary text-primary-foreground rounded-br-sm'
+                  : 'bg-secondary text-secondary-foreground rounded-bl-sm'
+              }`}>
+                {m.content || (loading && i === messages.length - 1 ? '...' : '')}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {/* Save-meal offer cards */}
-        {Object.values(pending).map(p => (
-          !p.dismissed && (
-            <div key={p.msgIndex} className="inga-card border-primary/40 bg-primary/5 ml-2 max-w-[85%]">
-              <p className="text-sm mb-2">Хочешь, сохраню это как приём пищи в дневник?</p>
-              <p className="text-xs text-muted-foreground italic mb-3">«{p.description}»</p>
-              {p.saved ? (
-                <p className="text-sm text-primary font-medium">✓ Сохранено в дневник</p>
-              ) : (
-                <div className="flex gap-2">
-                  <button onClick={() => handleSaveMeal(p.msgIndex)} className="inga-btn-primary text-sm py-1.5 px-3 flex-1">
-                    Да, сохранить
-                  </button>
-                  <button onClick={() => handleDismissMeal(p.msgIndex)} className="inga-btn-secondary text-sm py-1.5 px-3 flex-1">
-                    Нет, обсуждаем
-                  </button>
-                </div>
-              )}
-            </div>
-          )
-        ))}
+          {/* Save-meal offer cards */}
+          {Object.values(pending).map(p => (
+            !p.dismissed && (
+              <div key={p.msgIndex} className="inga-card border-primary/40 bg-primary/5 max-w-[80%]">
+                <p className="text-sm mb-2">Хочешь, сохраню это как приём пищи в дневник?</p>
+                <p className="text-xs text-muted-foreground italic mb-3">«{p.description}»</p>
+                {p.saved ? (
+                  <p className="text-sm text-primary font-medium">✓ Сохранено в дневник</p>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={() => handleSaveMeal(p.msgIndex)} className="inga-btn-primary text-sm py-1.5 px-3 flex-1">
+                      Да, сохранить
+                    </button>
+                    <button onClick={() => handleDismissMeal(p.msgIndex)} className="inga-btn-secondary text-sm py-1.5 px-3 flex-1">
+                      Нет, обсуждаем
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          ))}
 
-        {error && (
-          <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl">{error}</div>
-        )}
+          {error && (
+            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl">{error}</div>
+          )}
+        </div>
       </div>
 
-      {/* Quick prompts */}
-      <div className="px-4 pb-2 pt-2 border-t border-border bg-card">
-        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-          {QUICK_PROMPTS.map(q => (
-            <button
-              key={q}
-              onClick={() => send(q)}
-              disabled={loading}
-              className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-
-        {/* Input */}
-        <form
-          onSubmit={e => { e.preventDefault(); send(input); }}
-          className="flex gap-2 items-end"
-        >
-          <textarea
-            ref={inputRef}
-            autoFocus
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                send(input);
-              }
-            }}
-            placeholder="Напиши сообщение..."
-            rows={1}
-            className="inga-input flex-1 resize-none max-h-32"
-            disabled={loading}
-          />
-          <VoiceInput
-            onConfirm={(text) => send(text)}
-            onEdit={(text) => setInput(text)}
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="inga-btn-primary px-4 py-2 disabled:opacity-50"
+      {/* Input */}
+      <div className="border-t border-border bg-card">
+        <div className="mx-auto w-full max-w-[760px] px-4 py-3">
+          <form
+            onSubmit={e => { e.preventDefault(); send(input); }}
+            className="flex gap-2 items-end"
           >
-            ↑
-          </button>
-        </form>
+            <textarea
+              ref={inputRef}
+              autoFocus
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  send(input);
+                }
+              }}
+              placeholder="Напиши сообщение..."
+              rows={1}
+              className="inga-input flex-1 resize-none max-h-32"
+              disabled={loading}
+            />
+            <VoiceInput
+              onConfirm={(text) => send(text)}
+              onEdit={(text) => setInput(text)}
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="inga-btn-primary px-4 py-2 disabled:opacity-50"
+            >
+              ↑
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
