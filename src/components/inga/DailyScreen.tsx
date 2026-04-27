@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
@@ -7,6 +7,10 @@ import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
+import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
+
+const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
+
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
