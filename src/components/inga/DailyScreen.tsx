@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
@@ -7,6 +7,10 @@ import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
+import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
+
+const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
+
 
 type DailyTab = 'morning' | 'meals' | 'evening';
 
@@ -27,9 +31,25 @@ export function DailyScreen() {
   const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [awardedMedal, setAwardedMedal] = useState<Medal | null>(null);
+  const [showPlanning, setShowPlanning] = useState(false);
+  const [planText, setPlanText] = useState('');
+  const [planSavedMessage, setPlanSavedMessage] = useState(false);
+  const [yesterdayPlan, setYesterdayPlan] = useState<string | null>(null);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  // Detect "sweet trigger" from weight gain reasons
+  const sweetTrigger = (profile.weightGainReasons ?? []).some(r =>
+    r.toLowerCase().includes('сладк')
+  );
+
+  // Load yesterday's plan (if any) to show as soft hint on meals tab
+  useEffect(() => {
+    loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
+  }, [today]);
+
 
   const handleSaveMorning = () => {
     if (weight) {
@@ -90,8 +110,107 @@ export function DailyScreen() {
       addAwardedMedal(summary.nextMedal);
       setAwardedMedal(summary.nextMedal);
     }
+
+    // Show meal-planning intro after the FIRST completed day, only once.
+    const introShown = (() => {
+      try { return localStorage.getItem(PLANNING_INTRO_KEY) === 'true'; } catch { return false; }
+    })();
+    const completedDaysBefore = dailyReports.filter(r => r.date !== today).length;
+    if (!introShown && completedDaysBefore === 0) {
+      setShowPlanning(true);
+    } else {
+      setSaved(true);
+    }
+  };
+
+  const finishPlanning = () => {
+    try { localStorage.setItem(PLANNING_INTRO_KEY, 'true'); } catch {}
+    setShowPlanning(false);
+    setPlanSavedMessage(false);
     setSaved(true);
   };
+
+  const handleSavePlan = async () => {
+    const text = planText.trim();
+    if (!text) {
+      finishPlanning();
+      return;
+    }
+    try {
+      await saveMealPlan(tomorrow, text);
+    } catch {}
+    setPlanSavedMessage(true);
+  };
+
+
+  if (showPlanning) {
+    const plannedVerb = getText('планировала', 'планировал', profile.gender);
+    return (
+      <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+        <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
+          {!planSavedMessage ? (
+            <>
+              <h2 className="text-xl font-bold">План на завтра</h2>
+              <p className="text-sm text-muted-foreground">
+                Знаешь, что сильно помогает не срываться? Планирование еды накануне.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Постарайся вечером заранее подумать, что ты будешь есть завтра: завтрак, обед, ужин и перекусы. Так ты не остаёшься {getText('одна', 'один', profile.gender)} на один с голодом и случайной едой.
+              </p>
+
+              <div className="inga-card">
+                <p className="font-semibold mb-2 text-sm">Как планировать</p>
+                <p className="text-sm text-muted-foreground mb-1">В каждый основной приём пищи добавь:</p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• нежирный белок</li>
+                  <li>• клетчатку / овощи</li>
+                  <li>• сложные углеводы</li>
+                  {sweetTrigger && <li>• сладкую точку после основного приёма пищи</li>}
+                </ul>
+                {sweetTrigger && (
+                  <p className="text-xs text-muted-foreground italic mt-2">
+                    Сладкая точка — не отдельный перекус и не перед сном. Лучше после завтрака, обеда или дневного приёма пищи.
+                  </p>
+                )}
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Не нужно расписывать идеально. Достаточно набросать основу — так завтра будет проще держать ритм.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Хочешь коротко записать план на завтра?</label>
+                <textarea
+                  value={planText}
+                  onChange={e => setPlanText(e.target.value)}
+                  className="inga-input min-h-[96px] resize-none"
+                  placeholder="Например: завтрак — омлет и овощи, обед — курица с гречкой, ужин — рыба с салатом"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={handleSavePlan} className="inga-btn-primary flex-1">
+                  Сохранить план
+                </button>
+                <button onClick={finishPlanning} className="inga-btn-secondary flex-1">
+                  Пропустить
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-base">
+                Отлично. Завтра у тебя уже есть опора — это сильно упрощает день.
+              </p>
+              <button onClick={finishPlanning} className="inga-btn-primary w-full">
+                Продолжить →
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (saved) {
     return (
@@ -171,6 +290,9 @@ export function DailyScreen() {
               setHardest('');
               setMorningAnalysis(null);
               setAwardedMedal(null);
+              setShowPlanning(false);
+              setPlanText('');
+              setPlanSavedMessage(false);
             }}
             className="inga-btn-secondary flex-1"
           >
@@ -264,6 +386,18 @@ export function DailyScreen() {
           <div className="space-y-4 animate-fade-in-up">
             <h3 className="text-xl font-bold">{getText('Что ты ела сегодня?', 'Что ты ел сегодня?', profile.gender)}</h3>
             <p className="text-sm text-muted-foreground">Запиши каждый приём пищи</p>
+
+            {yesterdayPlan && (
+              <div className="inga-bubble text-sm space-y-1">
+                <p className="text-muted-foreground">
+                  Вчера ты {getText('планировала', 'планировал', profile.gender)} на сегодня:
+                </p>
+                <p className="font-medium whitespace-pre-wrap">{yesterdayPlan}</p>
+                <p className="text-xs text-muted-foreground italic">
+                  Можно идти по плану или изменить его по ситуации.
+                </p>
+              </div>
+            )}
 
             {meals.map((m, i) => {
               const isEditing = editingIndex === i;

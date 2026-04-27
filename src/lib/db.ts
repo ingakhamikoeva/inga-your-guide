@@ -230,6 +230,47 @@ export async function loadCheckins(): Promise<{ date: string; weight: number }[]
   return (data ?? []).map(d => ({ date: d.date, weight: Number(d.weight_kg) }));
 }
 
+// ============ MEAL PLANS ============
+
+export async function saveMealPlan(dateFor: string, planText: string) {
+  const userId = await getUserId();
+  if (!userId) return;
+
+  const { data: existing } = await supabase
+    .from('meal_plans')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('date_for', dateFor)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from('meal_plans')
+      .update({ plan_text: planText })
+      .eq('id', existing.id);
+  } else {
+    await supabase.from('meal_plans').insert({
+      user_id: userId,
+      date_for: dateFor,
+      plan_text: planText,
+    });
+  }
+}
+
+export async function loadMealPlanForDate(dateFor: string): Promise<string | null> {
+  const userId = await getUserId();
+  if (!userId) return null;
+
+  const { data } = await supabase
+    .from('meal_plans')
+    .select('plan_text')
+    .eq('user_id', userId)
+    .eq('date_for', dateFor)
+    .maybeSingle();
+
+  return data?.plan_text ?? null;
+}
+
 // ============ FOOD LOGS ============
 
 export async function saveFoodLog(description: string, mealTag: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'unknown' = 'unknown') {
