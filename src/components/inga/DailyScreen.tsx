@@ -31,9 +31,25 @@ export function DailyScreen() {
   const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [awardedMedal, setAwardedMedal] = useState<Medal | null>(null);
+  const [showPlanning, setShowPlanning] = useState(false);
+  const [planText, setPlanText] = useState('');
+  const [planSavedMessage, setPlanSavedMessage] = useState(false);
+  const [yesterdayPlan, setYesterdayPlan] = useState<string | null>(null);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  // Detect "sweet trigger" from weight gain reasons
+  const sweetTrigger = (profile.weightGainReasons ?? []).some(r =>
+    r.toLowerCase().includes('сладк')
+  );
+
+  // Load yesterday's plan (if any) to show as soft hint on meals tab
+  useEffect(() => {
+    loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
+  }, [today]);
+
 
   const handleSaveMorning = () => {
     if (weight) {
