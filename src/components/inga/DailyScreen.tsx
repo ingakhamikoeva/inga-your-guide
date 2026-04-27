@@ -290,6 +290,9 @@ export function DailyScreen() {
               setHardest('');
               setMorningAnalysis(null);
               setAwardedMedal(null);
+              setShowPlanning(false);
+              setPlanText('');
+              setPlanSavedMessage(false);
             }}
             className="inga-btn-secondary flex-1"
           >
