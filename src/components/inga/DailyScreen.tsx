@@ -384,6 +384,18 @@ export function DailyScreen() {
             <h3 className="text-xl font-bold">{getText('Что ты ела сегодня?', 'Что ты ел сегодня?', profile.gender)}</h3>
             <p className="text-sm text-muted-foreground">Запиши каждый приём пищи</p>
 
+            {yesterdayPlan && (
+              <div className="inga-bubble text-sm space-y-1">
+                <p className="text-muted-foreground">
+                  Вчера ты {getText('планировала', 'планировал', profile.gender)} на сегодня:
+                </p>
+                <p className="font-medium whitespace-pre-wrap">{yesterdayPlan}</p>
+                <p className="text-xs text-muted-foreground italic">
+                  Можно идти по плану или изменить его по ситуации.
+                </p>
+              </div>
+            )}
+
             {meals.map((m, i) => {
               const isEditing = editingIndex === i;
               const isConfirmingDelete = confirmDeleteIndex === i;
