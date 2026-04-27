@@ -110,8 +110,38 @@ export function DailyScreen() {
       addAwardedMedal(summary.nextMedal);
       setAwardedMedal(summary.nextMedal);
     }
+
+    // Show meal-planning intro after the FIRST completed day, only once.
+    const introShown = (() => {
+      try { return localStorage.getItem(PLANNING_INTRO_KEY) === 'true'; } catch { return false; }
+    })();
+    const completedDaysBefore = dailyReports.filter(r => r.date !== today).length;
+    if (!introShown && completedDaysBefore === 0) {
+      setShowPlanning(true);
+    } else {
+      setSaved(true);
+    }
+  };
+
+  const finishPlanning = () => {
+    try { localStorage.setItem(PLANNING_INTRO_KEY, 'true'); } catch {}
+    setShowPlanning(false);
+    setPlanSavedMessage(false);
     setSaved(true);
   };
+
+  const handleSavePlan = async () => {
+    const text = planText.trim();
+    if (!text) {
+      finishPlanning();
+      return;
+    }
+    try {
+      await saveMealPlan(tomorrow, text);
+    } catch {}
+    setPlanSavedMessage(true);
+  };
+
 
   if (saved) {
     return (
