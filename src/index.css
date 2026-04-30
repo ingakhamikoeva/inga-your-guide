@@ -97,8 +97,21 @@
     @apply border-border;
   }
 
+  html {
+    /* Larger base size for readability on mobile (17px), 18px on desktop */
+    font-size: 17px;
+  }
+
+  @media (min-width: 768px) {
+    html {
+      font-size: 18px;
+    }
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
   }
 }
 
@@ -112,11 +125,17 @@
   }
 
   .inga-input {
-    @apply w-full rounded-xl border border-input bg-background px-4 py-3 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-ring;
+    @apply w-full rounded-xl border border-input bg-background px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-ring;
+    font-size: 17px;
+    min-height: 52px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
   }
 
   .inga-btn {
-    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 font-semibold transition-all duration-200 active:scale-[0.97];
+    @apply inline-flex items-center justify-center rounded-xl px-6 font-semibold transition-all duration-200 active:scale-[0.97];
+    font-size: 17px;
+    min-height: 52px;
   }
 
   .inga-btn-primary {
