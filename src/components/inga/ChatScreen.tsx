@@ -80,90 +80,69 @@ export function ChatScreen() {
     // Keep focus in the input field after sending
     requestAnimationFrame(() => inputRef.current?.focus());
 
+    // Build minimised user context — no email, no auth IDs, no payment info.
     const userContext = {
       name: profile.name,
       gender: profile.gender,
-      stage,
-      calorieTarget: calculations?.totalCalories,
-      trackingMethod: profile.trackingMethod,
-      pattern: profile.foodProfile?.pattern,
-      trigger: profile.foodProfile?.trigger ?? profile.emotionalTrigger,
-      todayMeals: todayReport?.meals.map(m => m.description) ?? [],
-      yesterdayConclusion: yesterdayReport?.hardestPart,
+      age: profile.age,
+      height: profile.height,
       weight: profile.weight,
       goalWeight: profile.goalWeight,
-      sleepHours: todayReport?.sleepHours,
-      stepsYesterday: todayReport?.stepsYesterday,
+      stage,
+      trackingMethod: profile.trackingMethod,
+      triggers: [profile.foodProfile?.trigger, profile.emotionalTrigger].filter(Boolean) as string[],
+      pattern: profile.foodProfile?.pattern,
+      calorieTarget: calculations?.totalCalories,
     };
 
-    // Send only role/content to backend
-    const apiMessages = nextMessages.map(m => ({ role: m.role, content: m.content }));
+    const dayContext = {
+      todayMeals: todayReport?.meals.map(m => m.description) ?? [],
+      sleepHours: todayReport?.sleepHours,
+      stepsYesterday: todayReport?.stepsYesterday,
+      yesterdayConclusion: yesterdayReport?.hardestPart,
+    };
 
-    let assistantSoFar = '';
+    const route = classifyRoute(trimmed, userContext);
     const assistantIndex = nextMessages.length;
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
     try {
-      const resp = await fetch(CHAT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ messages: apiMessages, userContext }),
+      const { answer } = await askInga({
+        message: trimmed,
+        routeType: route,
+        userContext,
+        dayContext,
       });
 
-      if (!resp.ok || !resp.body) {
-        let msg = 'Не получилось получить ответ. Попробуй ещё раз.';
-        try { const j = await resp.json(); if (j?.error) msg = j.error; } catch {}
-        throw new Error(msg);
+      const display = stripMarkers(answer);
+      setMessages(prev => prev.map((m, i) => i === assistantIndex ? { ...m, content: display } : m));
+
+      // Offer to save the user's message as a meal if it sounds like a meal description.
+      if (FOOD_HINT.test(trimmed)) {
+        setPending(prev => ({
+          ...prev,
+          [assistantIndex]: { msgIndex: assistantIndex, description: trimmed, saved: false, dismissed: false },
+        }));
       }
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      let done = false;
-
-      while (!done) {
-        const { done: d, value } = await reader.read();
-        if (d) break;
-        buf += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buf.indexOf('\n')) !== -1) {
-          let line = buf.slice(0, nl);
-          buf = buf.slice(nl + 1);
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (!line || line.startsWith(':')) continue;
-          if (!line.startsWith('data: ')) continue;
-          const json = line.slice(6).trim();
-          if (json === '[DONE]') { done = true; break; }
-          try {
-            const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) {
-              assistantSoFar += delta;
-              const display = stripMarkers(assistantSoFar);
-              setMessages(prev => prev.map((m, i) => i === assistantIndex ? { ...m, content: display } : m));
-            }
-          } catch {
-            buf = line + '\n' + buf;
-            break;
-          }
-        }
+      // Log a safety chat event when symptoms are detected.
+      if (route === 'safety' || SAFETY_HINT.test(trimmed)) {
+        saveChatEvent('safety', trimmed.slice(0, 200)).catch(() => {});
       }
 
-      // After stream complete: process markers
-      const offer = extractOfferMeal(assistantSoFar);
-      const event = extractChatEvent(assistantSoFar);
-      if (offer) {
-        setPending(prev => ({ ...prev, [assistantIndex]: { msgIndex: assistantIndex, description: offer, saved: false, dismissed: false } }));
+      // Also honour any markers the model may emit (kept for forward-compat).
+      const offer = extractOfferMeal(answer);
+      const event = extractChatEvent(answer);
+      if (offer && !FOOD_HINT.test(trimmed)) {
+        setPending(prev => ({
+          ...prev,
+          [assistantIndex]: { msgIndex: assistantIndex, description: offer, saved: false, dismissed: false },
+        }));
       }
-      if (event) {
-        saveChatEvent(event.type, event.summary).catch(() => {});
-      }
+      if (event) saveChatEvent(event.type, event.summary).catch(() => {});
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Ошибка соединения';
-      setError(msg);
+      console.error(e);
+      setError('Инга сейчас временно не отвечает. Попробуй ещё раз чуть позже.');
       setMessages(prev => prev.slice(0, assistantIndex));
     } finally {
       setLoading(false);
