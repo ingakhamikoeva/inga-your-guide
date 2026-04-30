@@ -3,6 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { saveFoodLog, saveChatEvent } from '@/lib/db';
 import { detectStage } from '@/lib/soft-swap';
 import { withName, hasName } from '@/lib/user-name';
+import { askInga, classifyRoute } from '@/lib/ai-provider';
 import { VoiceInput } from './VoiceInput';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
@@ -14,7 +15,9 @@ interface PendingMeal {
   dismissed: boolean;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/inga-chat`;
+// Lightweight food/symptom detection used to offer meal-save and to flag safety chat events.
+const FOOD_HINT = /(съел|съела|поел|поела|завтрак|обед|ужин|перекус|выпил|выпила|скушал|скушала)/i;
+const SAFETY_HINT = /(обморок|сильная слабость|головокруж|боль в груди|рвота|вызвать рвоту|хочу голодать)/i;
 
 function stripMarkers(text: string): string {
   return text
