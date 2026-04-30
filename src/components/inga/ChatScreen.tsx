@@ -180,22 +180,22 @@ export function ChatScreen() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-background">
+    <div className="flex flex-col min-h-dvh max-h-dvh h-dvh bg-background">
       {/* Header */}
-      <div className="border-b border-border bg-card">
+      <div className="border-b border-border bg-card shrink-0">
         <div className="mx-auto w-full max-w-[760px] flex items-center justify-between px-4 py-3">
-          <button onClick={() => setStep('daily')} className="text-sm text-muted-foreground">← Назад</button>
-          <h2 className="font-semibold">Поговорим?</h2>
-          <button onClick={() => setStep('menu')} className="text-sm text-muted-foreground">Меню</button>
+          <button onClick={() => setStep('daily')} className="text-base text-muted-foreground">← Назад</button>
+          <h2 className="font-semibold text-lg">Поговорим?</h2>
+          <button onClick={() => setStep('menu')} className="text-base text-muted-foreground">Меню</button>
         </div>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[760px] px-4 py-4 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
+        <div className="mx-auto w-full max-w-[760px] px-4 py-4 space-y-3 pb-6">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl whitespace-pre-wrap break-words text-sm ${
+              <div className={`max-w-[85%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-[17px] leading-[1.5] ${
                 m.role === 'user'
                   ? 'bg-primary text-primary-foreground rounded-br-sm'
                   : 'bg-secondary text-secondary-foreground rounded-bl-sm'
@@ -208,17 +208,17 @@ export function ChatScreen() {
           {/* Save-meal offer cards */}
           {Object.values(pending).map(p => (
             !p.dismissed && (
-              <div key={p.msgIndex} className="inga-card border-primary/40 bg-primary/5 max-w-[80%]">
-                <p className="text-sm mb-2">Хочешь, сохраню это как приём пищи в дневник?</p>
-                <p className="text-xs text-muted-foreground italic mb-3">«{p.description}»</p>
+              <div key={p.msgIndex} className="inga-card border-primary/40 bg-primary/5 max-w-[85%]">
+                <p className="text-base mb-2">Хочешь, сохраню это как приём пищи в дневник?</p>
+                <p className="text-sm text-muted-foreground italic mb-3">«{p.description}»</p>
                 {p.saved ? (
-                  <p className="text-sm text-primary font-medium">✓ Сохранено в дневник</p>
+                  <p className="text-base text-primary font-medium">✓ Сохранено в дневник</p>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => handleSaveMeal(p.msgIndex)} className="inga-btn-primary text-sm py-1.5 px-3 flex-1">
+                    <button onClick={() => handleSaveMeal(p.msgIndex)} className="inga-btn-primary text-base py-2 px-3 flex-1">
                       Да, сохранить
                     </button>
-                    <button onClick={() => handleDismissMeal(p.msgIndex)} className="inga-btn-secondary text-sm py-1.5 px-3 flex-1">
+                    <button onClick={() => handleDismissMeal(p.msgIndex)} className="inga-btn-secondary text-base py-2 px-3 flex-1">
                       Нет, обсуждаем
                     </button>
                   </div>
@@ -228,13 +228,16 @@ export function ChatScreen() {
           ))}
 
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl">{error}</div>
+            <div className="text-base text-destructive bg-destructive/10 p-3 rounded-xl">{error}</div>
           )}
         </div>
       </div>
 
-      {/* Input */}
-      <div className="border-t border-border bg-card">
+      {/* Input — sticky, respects iOS safe-area */}
+      <div
+        className="border-t border-border bg-card shrink-0"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="mx-auto w-full max-w-[760px] px-4 py-3">
           <form
             onSubmit={e => { e.preventDefault(); send(input); }}
@@ -264,7 +267,7 @@ export function ChatScreen() {
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="inga-btn-primary px-4 py-2 disabled:opacity-50"
+              className="inga-btn-primary px-4 disabled:opacity-50 shrink-0"
             >
               ↑
             </button>
