@@ -9,6 +9,8 @@ import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
 import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
 import { DailySummaryCard } from './DailySummaryCard';
+import { GoalReachedModal } from './GoalReachedModal';
+import { hasReachedGoal } from '@/lib/soft-swap';
 
 const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 
@@ -16,7 +18,7 @@ const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
-  const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals } = useApp();
+  const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
   const [tab, setTab] = useState<DailyTab>('morning');
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
@@ -32,6 +34,7 @@ export function DailyScreen() {
   const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [awardedMedal, setAwardedMedal] = useState<Medal | null>(null);
+  const [showGoalReached, setShowGoalReached] = useState(false);
   const [showPlanning, setShowPlanning] = useState(false);
   const [planText, setPlanText] = useState('');
   const [planSavedMessage, setPlanSavedMessage] = useState(false);
