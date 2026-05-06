@@ -335,6 +335,9 @@ export function DailyScreen() {
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+      {showGoalReached && (
+        <GoalReachedModal sex={profile.gender} onContinue={handleEnterFixation} />
+      )}
       {/* Tab navigation */}
       <div className="flex gap-2 mb-6 w-full max-w-sm">
         {(['morning', 'meals', 'evening'] as DailyTab[]).map(t => (
