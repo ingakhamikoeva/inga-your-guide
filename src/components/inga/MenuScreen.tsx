@@ -220,6 +220,7 @@ export function MenuScreen() {
           <div className="space-y-4">
             <div className="inga-card">
               <div className="font-semibold mb-1">Текущий этап</div>
+              <p className="text-sm text-foreground mb-1">{stageLabel(stage)}</p>
               <p className="text-sm text-muted-foreground">{describeStage(stage)}</p>
             </div>
 
