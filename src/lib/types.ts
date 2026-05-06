@@ -14,6 +14,15 @@ export interface UserProfile {
   trackingMethod: 'calories' | 'palm' | 'plate';
   foodTestAnswers: number[];
   foodProfile?: FoodProfile;
+  // Weight-stage tracking
+  currentStage?: 'loss' | 'fixation' | 'maintenance';
+  goalReachedAt?: string;
+  fixationStartedAt?: string;
+  maintenanceStartedAt?: string;
+  equilibriumCalories?: number;
+  currentFixationCalories?: number;
+  fixationWeekNumber?: number;
+  lastCalorieIncreaseAt?: string;
 }
 
 export interface FoodProfile {

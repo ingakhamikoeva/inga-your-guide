@@ -2,7 +2,9 @@
 // Не запреты, а замены более калорийных продуктов на более лёгкие,
 // сохраняя сытость и удовольствие.
 
-export type WeightStage = 'active' | 'fixation' | 'maintenance';
+// 'loss' = active weight loss, 'fixation' = consolidating result, 'maintenance' = keeping weight.
+// 'active' kept as a legacy alias of 'loss' for backwards compatibility.
+export type WeightStage = 'loss' | 'fixation' | 'maintenance' | 'active';
 
 export interface SoftSwap {
   from: string;
@@ -96,22 +98,50 @@ export const DRINKS_TEXT =
 export const FAT_LEVER_TEXT =
   'Жиры нужны организму, но 1 г жира = 9 ккал (белок и углеводы — по 4 ккал). На активном этапе их легко перебрать, поэтому выбираем более лёгкие варианты — без голода и запретов.';
 
-export function describeStage(stage: WeightStage): string {
+export function stageLabel(stage: WeightStage): string {
   switch (stage) {
-    case 'active':
-      return 'Сейчас этап активного снижения веса: фокус на дефиците калорий, нежирном белке и клетчатке.';
-    case 'fixation':
-      return 'Сейчас этап фиксации: постепенно возвращаем калорийность к равновесной, можно аккуратно вернуть более жирные продукты.';
-    case 'maintenance':
-      return 'Сейчас этап поддержания: питание гибкое, главное — разнообразие и вес в безопасном коридоре.';
+    case 'fixation': return 'Фиксация веса';
+    case 'maintenance': return 'Сохранение веса';
+    default: return 'Активное снижение веса';
   }
 }
 
-// Определение этапа по текущему весу относительно цели
-export function detectStage(currentWeight?: number, goalWeight?: number): WeightStage {
-  if (!currentWeight || !goalWeight) return 'active';
-  const diff = currentWeight - goalWeight;
-  if (diff > 1.5) return 'active';
-  if (diff > -1.5) return 'fixation';
-  return 'maintenance';
+export function describeStage(stage: WeightStage): string {
+  switch (stage) {
+    case 'fixation':
+      return 'Сейчас наша задача — закрепить результат и постепенно выйти на равновесную калорийность.';
+    case 'maintenance':
+      return 'На этом этапе задача — питаться нормально, сохранять результат и следить, чтобы вес оставался в безопасном коридоре.';
+    default:
+      return 'Сейчас этап активного снижения веса: фокус на дефиците калорий, нежирном белке и клетчатке.';
+  }
+}
+
+// Stage is determined by the explicit currentStage stored in the profile.
+// Transitions to fixation/maintenance happen only via user confirmation
+// (after reaching goal weight, or after completing fixation).
+export function detectStage(
+  currentWeight?: number,
+  goalWeight?: number,
+  storedStage?: WeightStage,
+): WeightStage {
+  if (storedStage === 'fixation' || storedStage === 'maintenance') return storedStage;
+  return 'loss';
+}
+
+// Has the user just reached (or passed) their goal? Used to trigger celebration.
+export function hasReachedGoal(currentWeight?: number, goalWeight?: number): boolean {
+  if (!currentWeight || !goalWeight) return false;
+  return currentWeight <= goalWeight;
+}
+
+export function corridorStatus(
+  currentWeight: number,
+  goalWeight: number,
+): 'below' | 'in_range' | 'above' {
+  const low = goalWeight - 1;
+  const high = goalWeight + 1;
+  if (currentWeight < low) return 'below';
+  if (currentWeight > high) return 'above';
+  return 'in_range';
 }
