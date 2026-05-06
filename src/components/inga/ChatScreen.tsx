@@ -50,7 +50,7 @@ export function ChatScreen() {
   const todayReport = dailyReports.find(r => r.date === today);
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const yesterdayReport = dailyReports.find(r => r.date === yesterday);
-  const stage = detectStage(profile.weight, profile.goalWeight);
+  const stage = detectStage(profile.weight, profile.goalWeight, profile.currentStage);
 
   useEffect(() => {
     if (messages.length === 0) {
