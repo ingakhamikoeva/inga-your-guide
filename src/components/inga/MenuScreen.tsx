@@ -3,7 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play } from 'lucide-react';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
-import { describeStage, detectStage } from '@/lib/soft-swap';
+import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
 
 type MenuSection = 'main' | 'how-to' | 'recipes' | 'audio' | 'progress' | 'profile' | 'consultation';
@@ -78,7 +78,7 @@ export function MenuScreen() {
   const today = new Date().toISOString().slice(0, 10);
   const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals);
   const formatDelta = (value: number | null) => value === null ? 'пока мало данных' : value > 0 ? `+${value} кг` : `${value} кг`;
-  const stage = detectStage(profile.weight, profile.goalWeight);
+  const stage = detectStage(profile.weight, profile.goalWeight, profile.currentStage);
 
   if (section === 'main') {
     const items = [
