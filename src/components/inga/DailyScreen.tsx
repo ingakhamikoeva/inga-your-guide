@@ -373,6 +373,9 @@ export function DailyScreen() {
       {showGoalReached && (
         <GoalReachedModal sex={profile.gender} onContinue={handleEnterFixation} />
       )}
+      {showFixationDone && (
+        <FixationCompleteModal sex={profile.gender} onContinue={handleEnterMaintenance} />
+      )}
       {/* Tab navigation */}
       <div className="flex gap-2 mb-6 w-full max-w-sm">
         {(['morning', 'meals', 'evening'] as DailyTab[]).map(t => (
