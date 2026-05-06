@@ -248,6 +248,73 @@ export type Database = {
           },
         ]
       }
+      daily_nutrition_summary: {
+        Row: {
+          calorie_target: number | null
+          calories_eaten_estimated: number
+          calories_left: number | null
+          carbs_estimated_g: number
+          carbs_status: Database["public"]["Enums"]["macro_status_t"] | null
+          created_at: string
+          date: string
+          fat_estimated_g: number
+          fat_status: Database["public"]["Enums"]["macro_status_t"] | null
+          fiber_estimated_g: number
+          fiber_status: Database["public"]["Enums"]["fiber_status_t"] | null
+          id: string
+          is_estimate: boolean
+          protein_estimated_g: number
+          protein_status: Database["public"]["Enums"]["protein_status_t"] | null
+          summary_comment: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calorie_target?: number | null
+          calories_eaten_estimated?: number
+          calories_left?: number | null
+          carbs_estimated_g?: number
+          carbs_status?: Database["public"]["Enums"]["macro_status_t"] | null
+          created_at?: string
+          date: string
+          fat_estimated_g?: number
+          fat_status?: Database["public"]["Enums"]["macro_status_t"] | null
+          fiber_estimated_g?: number
+          fiber_status?: Database["public"]["Enums"]["fiber_status_t"] | null
+          id?: string
+          is_estimate?: boolean
+          protein_estimated_g?: number
+          protein_status?:
+            | Database["public"]["Enums"]["protein_status_t"]
+            | null
+          summary_comment?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calorie_target?: number | null
+          calories_eaten_estimated?: number
+          calories_left?: number | null
+          carbs_estimated_g?: number
+          carbs_status?: Database["public"]["Enums"]["macro_status_t"] | null
+          created_at?: string
+          date?: string
+          fat_estimated_g?: number
+          fat_status?: Database["public"]["Enums"]["macro_status_t"] | null
+          fiber_estimated_g?: number
+          fiber_status?: Database["public"]["Enums"]["fiber_status_t"] | null
+          id?: string
+          is_estimate?: boolean
+          protein_estimated_g?: number
+          protein_status?:
+            | Database["public"]["Enums"]["protein_status_t"]
+            | null
+          summary_comment?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       evening_reflections: {
         Row: {
           created_at: string
@@ -371,6 +438,93 @@ export type Database = {
           },
         ]
       }
+      food_reference: {
+        Row: {
+          allowed_active_loss: boolean | null
+          allowed_as_snack: boolean | null
+          allowed_fixation: boolean | null
+          allowed_maintenance: boolean | null
+          calories_per_100g: number | null
+          carbs_per_100g: number | null
+          category: string | null
+          created_at: string
+          external_food_name: string | null
+          external_id: string | null
+          external_source: string | null
+          fat_per_100g: number | null
+          fiber_per_100g: number | null
+          high_fat: boolean | null
+          high_sugar: boolean | null
+          id: string
+          last_synced_at: string | null
+          liquid_calories: boolean | null
+          product_name_en: string | null
+          product_name_ru: string
+          protein_per_100g: number | null
+          recommended_portion_g: number | null
+          replacement_options: Json | null
+          source_priority: number | null
+          updated_at: string
+          user_explanation: string | null
+        }
+        Insert: {
+          allowed_active_loss?: boolean | null
+          allowed_as_snack?: boolean | null
+          allowed_fixation?: boolean | null
+          allowed_maintenance?: boolean | null
+          calories_per_100g?: number | null
+          carbs_per_100g?: number | null
+          category?: string | null
+          created_at?: string
+          external_food_name?: string | null
+          external_id?: string | null
+          external_source?: string | null
+          fat_per_100g?: number | null
+          fiber_per_100g?: number | null
+          high_fat?: boolean | null
+          high_sugar?: boolean | null
+          id?: string
+          last_synced_at?: string | null
+          liquid_calories?: boolean | null
+          product_name_en?: string | null
+          product_name_ru: string
+          protein_per_100g?: number | null
+          recommended_portion_g?: number | null
+          replacement_options?: Json | null
+          source_priority?: number | null
+          updated_at?: string
+          user_explanation?: string | null
+        }
+        Update: {
+          allowed_active_loss?: boolean | null
+          allowed_as_snack?: boolean | null
+          allowed_fixation?: boolean | null
+          allowed_maintenance?: boolean | null
+          calories_per_100g?: number | null
+          carbs_per_100g?: number | null
+          category?: string | null
+          created_at?: string
+          external_food_name?: string | null
+          external_id?: string | null
+          external_source?: string | null
+          fat_per_100g?: number | null
+          fiber_per_100g?: number | null
+          high_fat?: boolean | null
+          high_sugar?: boolean | null
+          id?: string
+          last_synced_at?: string | null
+          liquid_calories?: boolean | null
+          product_name_en?: string | null
+          product_name_ru?: string
+          protein_per_100g?: number | null
+          recommended_portion_g?: number | null
+          replacement_options?: Json | null
+          source_priority?: number | null
+          updated_at?: string
+          user_explanation?: string | null
+        }
+        Relationships: []
+      }
       meal_plans: {
         Row: {
           created_at: string
@@ -397,6 +551,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      nutrients_reference: {
+        Row: {
+          amount_per_100g: number | null
+          created_at: string
+          food_id: string | null
+          id: string
+          nutrient_code: string | null
+          nutrient_name: string
+          source: string | null
+          source_food_id: string | null
+          unit: string | null
+        }
+        Insert: {
+          amount_per_100g?: number | null
+          created_at?: string
+          food_id?: string | null
+          id?: string
+          nutrient_code?: string | null
+          nutrient_name: string
+          source?: string | null
+          source_food_id?: string | null
+          unit?: string | null
+        }
+        Update: {
+          amount_per_100g?: number | null
+          created_at?: string
+          food_id?: string | null
+          id?: string
+          nutrient_code?: string | null
+          nutrient_name?: string
+          source?: string | null
+          source_food_id?: string | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrients_reference_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "food_reference"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -664,11 +862,14 @@ export type Database = {
         | "canceled"
       content_type: "recipe" | "sos" | "lesson" | "audio"
       eating_pattern: "emotional" | "restorative" | "chaotic" | "intuitive"
+      fiber_status_t: "low" | "ok" | "good"
       input_type: "text" | "photo" | "voice"
       interoception_level: "high" | "medium" | "low"
+      macro_status_t: "ok" | "high" | "too_high"
       meal_tag: "breakfast" | "lunch" | "dinner" | "snack" | "unknown"
       nutrient_status: "low" | "ok" | "high" | "unknown"
       pace_type: "fast" | "slow"
+      protein_status_t: "low" | "ok" | "good"
       subscription_status: "active" | "expired"
       tracking_method_type: "calories" | "palm" | "plate"
       trigger_type: "fatigue" | "stress" | "hunger" | "no_plan" | "social"
@@ -811,11 +1012,14 @@ export const Constants = {
       ],
       content_type: ["recipe", "sos", "lesson", "audio"],
       eating_pattern: ["emotional", "restorative", "chaotic", "intuitive"],
+      fiber_status_t: ["low", "ok", "good"],
       input_type: ["text", "photo", "voice"],
       interoception_level: ["high", "medium", "low"],
+      macro_status_t: ["ok", "high", "too_high"],
       meal_tag: ["breakfast", "lunch", "dinner", "snack", "unknown"],
       nutrient_status: ["low", "ok", "high", "unknown"],
       pace_type: ["fast", "slow"],
+      protein_status_t: ["low", "ok", "good"],
       subscription_status: ["active", "expired"],
       tracking_method_type: ["calories", "palm", "plate"],
       trigger_type: ["fatigue", "stress", "hunger", "no_plan", "social"],

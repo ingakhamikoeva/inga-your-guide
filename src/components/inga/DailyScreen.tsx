@@ -8,6 +8,7 @@ import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
 import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
+import { DailySummaryCard } from './DailySummaryCard';
 
 const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 
@@ -384,6 +385,12 @@ export function DailyScreen() {
 
         {tab === 'meals' && (
           <div className="space-y-4 animate-fade-in-up">
+            <DailySummaryCard
+              meals={meals}
+              date={today}
+              calorieTarget={calculations?.totalCalories ?? null}
+              goalWeightKg={profile.goalWeight}
+            />
             <h3 className="text-xl font-bold">{getText('Что ты ела сегодня?', 'Что ты ел сегодня?', profile.gender)}</h3>
             <p className="text-sm text-muted-foreground">Запиши каждый приём пищи</p>
 
