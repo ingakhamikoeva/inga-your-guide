@@ -303,13 +303,11 @@ export function MenuScreen() {
               <p className="text-sm text-muted-foreground">{gamification.streakMessage}</p>
             </div>
 
-            {goalReached && (
+            {goalReached && stage === 'loss' && (
               <div className="inga-card border-primary/40 bg-primary/5">
                 <div className="font-semibold mb-1">🎉 Цель достигнута</div>
                 <p className="text-sm text-muted-foreground">
-                  {hasName(profile.name)
-                    ? `${cleanName(profile.name)}, ты это сделала 💛 Теперь переходим к фиксации результата.`
-                    : 'Ты это сделала 💛 Цель достигнута. Теперь переходим к фиксации результата.'}
+                  Открой утренний экран — там можно перейти к фиксации результата.
                 </p>
               </div>
             )}
