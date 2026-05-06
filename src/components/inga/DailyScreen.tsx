@@ -73,10 +73,27 @@ export function DailyScreen() {
         profile.gender,
       );
       setMorningAnalysis(result);
+      // Goal-reached check: only on active loss stage
+      const stage = profile.currentStage ?? 'loss';
+      if (stage === 'loss' && hasReachedGoal(w, profile.goalWeight) && !profile.goalReachedAt) {
+        setShowGoalReached(true);
+      }
     } else {
       setMorningAnalysis(null);
       setTab('meals');
     }
+  };
+
+  const handleEnterFixation = () => {
+    setShowGoalReached(false);
+    updateProfile({
+      currentStage: 'fixation',
+      goalReachedAt: today,
+      fixationStartedAt: today,
+      fixationWeekNumber: 1,
+      currentFixationCalories: calculations?.corridorMin ?? calculations?.totalCalories ?? undefined,
+      lastCalorieIncreaseAt: today,
+    });
   };
 
   const formatDelta = (d: number | null) => {
