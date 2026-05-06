@@ -724,12 +724,20 @@ export type Database = {
           age: number | null
           birth_year: number | null
           created_at: string
+          current_fixation_calories: number | null
+          current_stage: Database["public"]["Enums"]["weight_stage"]
           current_weight_kg: number | null
           emotional_trigger: string | null
+          equilibrium_calories: number | null
+          fixation_started_at: string | null
+          fixation_week_number: number | null
+          goal_reached_at: string | null
           goal_weight_kg: number | null
           height_cm: number | null
           hips_cm: number | null
           id: string
+          last_calorie_increase_at: string | null
+          maintenance_started_at: string | null
           sex: string | null
           start_weight_kg: number | null
           steps_baseline: number | null
@@ -742,12 +750,20 @@ export type Database = {
           age?: number | null
           birth_year?: number | null
           created_at?: string
+          current_fixation_calories?: number | null
+          current_stage?: Database["public"]["Enums"]["weight_stage"]
           current_weight_kg?: number | null
           emotional_trigger?: string | null
+          equilibrium_calories?: number | null
+          fixation_started_at?: string | null
+          fixation_week_number?: number | null
+          goal_reached_at?: string | null
           goal_weight_kg?: number | null
           height_cm?: number | null
           hips_cm?: number | null
           id?: string
+          last_calorie_increase_at?: string | null
+          maintenance_started_at?: string | null
           sex?: string | null
           start_weight_kg?: number | null
           steps_baseline?: number | null
@@ -760,12 +776,20 @@ export type Database = {
           age?: number | null
           birth_year?: number | null
           created_at?: string
+          current_fixation_calories?: number | null
+          current_stage?: Database["public"]["Enums"]["weight_stage"]
           current_weight_kg?: number | null
           emotional_trigger?: string | null
+          equilibrium_calories?: number | null
+          fixation_started_at?: string | null
+          fixation_week_number?: number | null
+          goal_reached_at?: string | null
           goal_weight_kg?: number | null
           height_cm?: number | null
           hips_cm?: number | null
           id?: string
+          last_calorie_increase_at?: string | null
+          maintenance_started_at?: string | null
           sex?: string | null
           start_weight_kg?: number | null
           steps_baseline?: number | null
@@ -875,6 +899,7 @@ export type Database = {
       trigger_type: "fatigue" | "stress" | "hunger" | "no_plan" | "social"
       user_status: "trial" | "active" | "expired"
       vulnerable_time: "morning" | "day" | "evening" | "night"
+      weight_stage: "loss" | "fixation" | "maintenance"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1025,6 +1050,7 @@ export const Constants = {
       trigger_type: ["fatigue", "stress", "hunger", "no_plan", "social"],
       user_status: ["trial", "active", "expired"],
       vulnerable_time: ["morning", "day", "evening", "night"],
+      weight_stage: ["loss", "fixation", "maintenance"],
     },
   },
 } as const

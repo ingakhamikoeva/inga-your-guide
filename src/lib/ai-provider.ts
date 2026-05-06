@@ -21,7 +21,7 @@ export interface AskIngaUserContext {
   height?: number;
   weight?: number;
   goalWeight?: number;
-  stage?: 'active' | 'fixation' | 'maintenance';
+  stage?: 'loss' | 'active' | 'fixation' | 'maintenance';
   trackingMethod?: 'calories' | 'palm' | 'plate';
   triggers?: string[];
   pattern?: string;

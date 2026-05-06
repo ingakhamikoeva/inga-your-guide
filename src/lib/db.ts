@@ -46,6 +46,14 @@ export async function saveUserProfile(profile: Partial<UserProfile>) {
     steps_baseline: profile.stepsPerDay ?? null,
     weight_gain_reasons: profile.weightGainReasons ?? null,
     emotional_trigger: profile.emotionalTrigger ?? null,
+    current_stage: (profile.currentStage ?? 'loss') as 'loss' | 'fixation' | 'maintenance',
+    goal_reached_at: profile.goalReachedAt ?? null,
+    fixation_started_at: profile.fixationStartedAt ?? null,
+    maintenance_started_at: profile.maintenanceStartedAt ?? null,
+    equilibrium_calories: profile.equilibriumCalories ?? null,
+    current_fixation_calories: profile.currentFixationCalories ?? null,
+    fixation_week_number: profile.fixationWeekNumber ?? null,
+    last_calorie_increase_at: profile.lastCalorieIncreaseAt ?? null,
   };
 
   const { data: existing } = await supabase
@@ -84,6 +92,14 @@ export async function loadUserProfile(): Promise<Partial<UserProfile> | null> {
     stepsPerDay: data?.steps_baseline ?? undefined,
     weightGainReasons: data?.weight_gain_reasons ?? undefined,
     emotionalTrigger: data?.emotional_trigger ?? undefined,
+    currentStage: (data?.current_stage as 'loss' | 'fixation' | 'maintenance' | undefined) ?? 'loss',
+    goalReachedAt: data?.goal_reached_at ?? undefined,
+    fixationStartedAt: data?.fixation_started_at ?? undefined,
+    maintenanceStartedAt: data?.maintenance_started_at ?? undefined,
+    equilibriumCalories: data?.equilibrium_calories ?? undefined,
+    currentFixationCalories: data?.current_fixation_calories ?? undefined,
+    fixationWeekNumber: data?.fixation_week_number ?? undefined,
+    lastCalorieIncreaseAt: data?.last_calorie_increase_at ?? undefined,
   };
 }
 
