@@ -75,10 +75,32 @@ export function DailyScreen() {
         profile.gender,
       );
       setMorningAnalysis(result);
-      // Goal-reached check: only on active loss stage
+      // Stage transition checks
       const stage = profile.currentStage ?? 'loss';
       if (stage === 'loss' && hasReachedGoal(w, profile.goalWeight) && !profile.goalReachedAt) {
         setShowGoalReached(true);
+      } else if (
+        stage === 'fixation' &&
+        profile.goalWeight &&
+        profile.equilibriumCalories &&
+        profile.currentFixationCalories &&
+        profile.currentFixationCalories >= profile.equilibriumCalories &&
+        corridorStatus(w, profile.goalWeight) === 'in_range'
+      ) {
+        setShowFixationDone(true);
+      } else if (stage === 'fixation' && profile.lastCalorieIncreaseAt && profile.currentFixationCalories) {
+        // Weekly +200 ramp toward equilibrium
+        const lastInc = new Date(profile.lastCalorieIncreaseAt).getTime();
+        const daysSince = Math.floor((Date.now() - lastInc) / (1000 * 60 * 60 * 24));
+        const eq = profile.equilibriumCalories ?? calculations?.totalCalories;
+        if (daysSince >= 7 && eq && profile.currentFixationCalories < eq) {
+          const next = Math.min(eq, profile.currentFixationCalories + 200);
+          updateProfile({
+            currentFixationCalories: next,
+            fixationWeekNumber: (profile.fixationWeekNumber ?? 1) + 1,
+            lastCalorieIncreaseAt: today,
+          });
+        }
       }
     } else {
       setMorningAnalysis(null);
