@@ -110,13 +110,24 @@ export function DailyScreen() {
 
   const handleEnterFixation = () => {
     setShowGoalReached(false);
+    const target = calculations?.totalCalories;
+    const startCalories = calculations?.corridorMin ?? (target ? target - 400 : undefined);
     updateProfile({
       currentStage: 'fixation',
       goalReachedAt: today,
       fixationStartedAt: today,
       fixationWeekNumber: 1,
-      currentFixationCalories: calculations?.corridorMin ?? calculations?.totalCalories ?? undefined,
+      currentFixationCalories: startCalories,
+      equilibriumCalories: target ?? undefined,
       lastCalorieIncreaseAt: today,
+    });
+  };
+
+  const handleEnterMaintenance = () => {
+    setShowFixationDone(false);
+    updateProfile({
+      currentStage: 'maintenance',
+      maintenanceStartedAt: today,
     });
   };
 
