@@ -10,7 +10,8 @@ import { VoiceInput } from './VoiceInput';
 import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
-import { hasReachedGoal } from '@/lib/soft-swap';
+import { FixationCompleteModal } from './FixationCompleteModal';
+import { hasReachedGoal, corridorStatus } from '@/lib/soft-swap';
 
 const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 
@@ -35,6 +36,7 @@ export function DailyScreen() {
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [awardedMedal, setAwardedMedal] = useState<Medal | null>(null);
   const [showGoalReached, setShowGoalReached] = useState(false);
+  const [showFixationDone, setShowFixationDone] = useState(false);
   const [showPlanning, setShowPlanning] = useState(false);
   const [planText, setPlanText] = useState('');
   const [planSavedMessage, setPlanSavedMessage] = useState(false);
