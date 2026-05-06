@@ -231,8 +231,11 @@ export function MenuScreen() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                     <YAxis domain={['dataMin - 1', 'dataMax + 1']} tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="weight" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: 'hsl(var(--primary))' }} />
+                    <Tooltip
+                      formatter={(value: number) => [`${value} кг`, 'Вес']}
+                      labelFormatter={(label) => `Дата: ${label}`}
+                    />
+                    <Line type="monotone" dataKey="weight" name="Вес" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: 'hsl(var(--primary))' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
