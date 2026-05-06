@@ -253,12 +253,18 @@ export function MenuScreen() {
               </div>
             </div>
 
-            <div className="inga-card">
-              <div className="font-semibold mb-2">Безопасный коридор веса</div>
-              <p className="text-sm text-muted-foreground">
-                Ориентир: от <span className="font-semibold text-foreground">{Math.round((profile.height - 100) * 0.85)} кг</span> до <span className="font-semibold text-foreground">{Math.round((profile.height - 100) * 1.05)} кг</span>. Это спокойный диапазон, в котором тело чувствует себя устойчиво.
-              </p>
-            </div>
+            {stage !== 'active' && profile.goalWeight && (
+              <div className="inga-card">
+                <div className="font-semibold mb-2">Безопасный коридор веса</div>
+                <p className="text-sm text-muted-foreground">
+                  {stage === 'fixation' ? 'Твой ориентир: ' : 'Твой рабочий диапазон: '}
+                  от <span className="font-semibold text-foreground">{profile.goalWeight - 1} кг</span> до <span className="font-semibold text-foreground">{profile.goalWeight + 1} кг</span>.
+                  {stage === 'fixation'
+                    ? ' Колебания веса внутри этого диапазона — нормальны. Мы следим не за одной цифрой, а за коридором.'
+                    : ' Если вес выходит за коридор, мы спокойно корректируем питание.'}
+                </p>
+              </div>
+            )}
 
             <div className="inga-card space-y-2">
               <div className="font-semibold">Серия</div>
