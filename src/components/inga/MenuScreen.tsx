@@ -254,15 +254,39 @@ export function MenuScreen() {
               </div>
             </div>
 
-            {stage !== 'active' && profile.goalWeight && (
+            {(stage === 'fixation' || stage === 'maintenance') && profile.goalWeight && (() => {
+              const low = profile.goalWeight - 1;
+              const high = profile.goalWeight + 1;
+              const status = profile.weight ? corridorStatus(profile.weight, profile.goalWeight) : null;
+              const statusText =
+                status === 'in_range' ? 'Вес в безопасном коридоре. Продолжаем в обычном ритме.' :
+                status === 'above' ? 'Вес вышел выше коридора. На этой неделе немного сократим калорийность и вернёмся в диапазон.' :
+                status === 'below' ? 'Вес ниже коридора. Сейчас важно стабилизироваться и не продолжать снижаться.' :
+                null;
+              return (
+                <div className="inga-card">
+                  <div className="font-semibold mb-2">Безопасный коридор веса</div>
+                  <p className="text-sm text-muted-foreground">
+                    {stage === 'fixation' ? 'Твой ориентир: ' : 'Твой рабочий диапазон: '}
+                    от <span className="font-semibold text-foreground">{low} кг</span> до <span className="font-semibold text-foreground">{high} кг</span>.
+                    {stage === 'fixation'
+                      ? ' Колебания веса внутри этого диапазона — нормальны.'
+                      : ' Каждое утро смотрим, остаётся ли вес в коридоре.'}
+                  </p>
+                  {statusText && stage === 'maintenance' && (
+                    <p className="text-sm text-foreground mt-2">{statusText}</p>
+                  )}
+                </div>
+              );
+            })()}
+
+            {stage === 'fixation' && profile.currentFixationCalories && (
               <div className="inga-card">
-                <div className="font-semibold mb-2">Безопасный коридор веса</div>
+                <div className="font-semibold mb-1">Фиксация: калорийность</div>
                 <p className="text-sm text-muted-foreground">
-                  {stage === 'fixation' ? 'Твой ориентир: ' : 'Твой рабочий диапазон: '}
-                  от <span className="font-semibold text-foreground">{profile.goalWeight - 1} кг</span> до <span className="font-semibold text-foreground">{profile.goalWeight + 1} кг</span>.
-                  {stage === 'fixation'
-                    ? ' Колебания веса внутри этого диапазона — нормальны. Мы следим не за одной цифрой, а за коридором.'
-                    : ' Если вес выходит за коридор, мы спокойно корректируем питание.'}
+                  Сейчас твой ориентир — <span className="font-semibold text-foreground">{profile.currentFixationCalories} ккал в день</span>
+                  {profile.fixationWeekNumber ? ` (неделя ${profile.fixationWeekNumber})` : ''}.
+                  {' '}Каждую неделю аккуратно прибавляем ~200 ккал — за счёт половинки авокадо, целого яйца, 40–50 г сыра, орехов в порции или ложки масла в салат.
                 </p>
               </div>
             )}
