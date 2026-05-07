@@ -326,10 +326,45 @@ async function callAIProvider(
 
 // ---------- HTTP entry ----------
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+async function requireAuth(req: Request): Promise<{ ok: true; userId: string } | { ok: false; response: Response }> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "unauthorized", userMessage: "Нужно войти в аккаунт, чтобы Инга могла ответить." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      ),
+    };
+  }
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+  const token = authHeader.replace("Bearer ", "");
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims?.sub) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "unauthorized", userMessage: "Нужно войти в аккаунт, чтобы Инга могла ответить." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      ),
+    };
+  }
+  return { ok: true, userId: data.claims.sub as string };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
 
   try {
     const body = (await req.json()) as AskBody;
