@@ -158,6 +158,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const contentLength = Number(req.headers.get("content-length") || 0);
+    if (contentLength > 10_000) {
+      return new Response(
+        JSON.stringify({ estimate: FALLBACK, source: "payload_too_large" }),
+        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const body = (await req.json()) as EstimateRequest;
     const text = (body.text || "").trim();
 
@@ -165,6 +173,16 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ estimate: FALLBACK, source: "empty" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (text.length > 1000) {
+      return new Response(
+        JSON.stringify({
+          estimate: FALLBACK,
+          source: "too_long",
+          userMessage: "Запись слишком длинная. Опиши приём пищи короче.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // TODO: future — try food_reference + USDA before falling back to AI estimate

@@ -367,6 +367,15 @@ Deno.serve(async (req) => {
   if (!auth.ok) return auth.response;
 
   try {
+    // Reject oversized payloads early (defence in depth).
+    const contentLength = Number(req.headers.get("content-length") || 0);
+    if (contentLength > 50_000) {
+      return new Response(
+        JSON.stringify({ error: "payload_too_large", userMessage: "Сообщение слишком большое." }),
+        { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const body = (await req.json()) as AskBody;
     const message = (body?.message || "").toString().trim();
     if (!message) {
@@ -374,6 +383,41 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (message.length > 3000) {
+      return new Response(
+        JSON.stringify({
+          error: "message_too_long",
+          userMessage: "Сообщение слишком длинное. Сократи его, пожалуйста, и отправь ещё раз.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const routeTypeRaw = (body?.routeType || "").toString();
+    if (routeTypeRaw.length > 50) {
+      return new Response(
+        JSON.stringify({ error: "route_too_long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    try {
+      if (body?.userContext && JSON.stringify(body.userContext).length > 10_000) {
+        return new Response(
+          JSON.stringify({ error: "user_context_too_large" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      if (body?.dayContext && JSON.stringify(body.dayContext).length > 15_000) {
+        return new Response(
+          JSON.stringify({ error: "day_context_too_large" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    } catch (_) {
+      return new Response(
+        JSON.stringify({ error: "invalid_context" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // Strip any potentially sensitive fields if frontend accidentally sends them.
