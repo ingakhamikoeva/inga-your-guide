@@ -503,7 +503,7 @@ Deno.serve(async (req) => {
 
     let answer: string;
     try {
-      answer = await callAIProvider(provider, messages, { temperature: 0.4 });
+      answer = await callAIProvider(provider, messages, { temperature: modelCfg.temperature ?? 0.4, maxTokens: modelCfg.max_tokens ?? 700, model: modelCfg.model });
     } catch (e) {
       console.error("ask-inga provider failure:", e);
       return new Response(
