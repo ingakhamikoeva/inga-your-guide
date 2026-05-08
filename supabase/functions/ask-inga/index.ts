@@ -228,6 +228,8 @@ ${baseUserBlock(ctx, day)}
 }
 
 function buildSystemPrompt(route: RouteType, ctx?: SafeUserContext, day?: DayContext): string {
+  const override = (PROMPT_OVERRIDES[route] || "").trim();
+  if (override) return `${override}\n\n${baseUserBlock(ctx, day)}`;
   switch (route) {
     case "food_recommendation": return foodRecommendationPrompt(ctx, day);
     case "support": return supportPrompt(ctx, day);
@@ -237,6 +239,49 @@ function buildSystemPrompt(route: RouteType, ctx?: SafeUserContext, day?: DayCon
     case "maintenance": return maintenancePrompt(ctx, day);
     default: return generalPrompt(ctx, day);
   }
+}
+
+interface AppLimits {
+  max_message_length: number;
+  max_user_context_bytes: number;
+  max_day_context_bytes: number;
+  max_payload_bytes: number;
+}
+interface AppModel {
+  provider: string;
+  model?: string;
+  temperature?: number;
+  max_tokens?: number;
+}
+const DEFAULT_LIMITS: AppLimits = {
+  max_message_length: 3000,
+  max_user_context_bytes: 10_000,
+  max_day_context_bytes: 15_000,
+  max_payload_bytes: 50_000,
+};
+const DEFAULT_MODEL: AppModel = { provider: "deepseek", model: "deepseek-chat", temperature: 0.4, max_tokens: 700 };
+const DEFAULT_TONE = TONE;
+
+async function loadSettings(client: ReturnType<typeof createClient>) {
+  const { data } = await client.from("app_settings").select("key,value").in("key", ["ai_prompts", "ai_model", "ai_limits"]);
+  let limits = { ...DEFAULT_LIMITS };
+  let model = { ...DEFAULT_MODEL };
+  PROMPT_OVERRIDES = {};
+  TONE = DEFAULT_TONE;
+  if (data) {
+    for (const row of data as Array<{ key: string; value: Record<string, unknown> }>) {
+      if (row.key === "ai_prompts" && row.value) {
+        const v = row.value as Record<string, string>;
+        if (typeof v.tone === "string" && v.tone.trim()) TONE = v.tone;
+        for (const k of ["food_recommendation", "support", "safety", "food_analysis", "fixation", "maintenance", "general"]) {
+          if (typeof v[k] === "string") PROMPT_OVERRIDES[k] = v[k];
+        }
+      }
+      if (row.key === "ai_model" && row.value) model = { ...DEFAULT_MODEL, ...(row.value as AppModel) };
+      if (row.key === "ai_limits" && row.value) limits = { ...DEFAULT_LIMITS, ...(row.value as AppLimits) };
+    }
+  }
+  return { limits, model };
 }
 
 // ---------- Provider abstraction ----------
