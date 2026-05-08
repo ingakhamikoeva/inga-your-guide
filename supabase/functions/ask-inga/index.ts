@@ -289,6 +289,7 @@ async function loadSettings(client: ReturnType<typeof createClient>) {
 interface ProviderOptions {
   temperature?: number;
   maxTokens?: number;
+  model?: string;
 }
 
 async function callDeepseek(messages: ChatMessage[], opts: ProviderOptions): Promise<string> {
