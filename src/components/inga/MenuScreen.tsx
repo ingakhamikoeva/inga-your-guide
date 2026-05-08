@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play } from 'lucide-react';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
+import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
 
 const palmMethodCards = [
@@ -108,6 +109,19 @@ const paceLabels: Record<string, string> = {
 export function MenuScreen() {
   const { setStep, weeklyData, profile, dailyReports, medals, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>('main');
+  const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
+
+  useEffect(() => {
+    getSetting<Record<string, { title?: string; content?: string }>>('lesson_overrides').then((v) => {
+      if (v) setLessonOverrides(v);
+    });
+  }, []);
+
+  const effectiveTopics = howToTopics.map((t) => {
+    const ov = lessonOverrides[t.title];
+    if (!ov) return t;
+    return { ...t, title: ov.title || t.title, content: ov.content || t.content };
+  });
 
   const today = new Date().toISOString().slice(0, 10);
   const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals);
@@ -177,7 +191,7 @@ export function MenuScreen() {
           <p className="text-sm text-muted-foreground mb-4">Метод и принципы — без жёстких ограничений и срывов.</p>
           <p className="text-xs text-muted-foreground italic mb-4">{describeStage(stage)}</p>
           <div className="space-y-2.5">
-            {howToTopics.map(topic => (
+            {effectiveTopics.map(topic => (
               <details key={topic.title} className="inga-card group">
                 <summary className="font-semibold cursor-pointer flex items-center justify-between list-none">
                   <span>{topic.title}</span>

@@ -115,10 +115,13 @@ function baseUserBlock(ctx?: SafeUserContext, day?: DayContext): string {
 - Анализ вчера: ${d.yesterdayConclusion ?? "—"}`;
 }
 
-const TONE = `Ты — Инга, тёплый и спокойный AI-помощник по снижению веса.
+let TONE = `Ты — Инга, тёплый и спокойный AI-помощник по снижению веса.
 О себе говоришь в женском роде. К пользователю обращаешься в роде, соответствующем полу.
 Без обвинений, без чувства вины, без сложных медицинских терминов.
 Коротко, по-человечески, 1–2 практических шага.`;
+
+// Overrides loaded from app_settings.ai_prompts at request time
+let PROMPT_OVERRIDES: Record<string, string> = {};
 
 function foodRecommendationPrompt(ctx?: SafeUserContext, day?: DayContext): string {
   return `${TONE}
@@ -225,6 +228,8 @@ ${baseUserBlock(ctx, day)}
 }
 
 function buildSystemPrompt(route: RouteType, ctx?: SafeUserContext, day?: DayContext): string {
+  const override = (PROMPT_OVERRIDES[route] || "").trim();
+  if (override) return `${override}\n\n${baseUserBlock(ctx, day)}`;
   switch (route) {
     case "food_recommendation": return foodRecommendationPrompt(ctx, day);
     case "support": return supportPrompt(ctx, day);
@@ -236,17 +241,61 @@ function buildSystemPrompt(route: RouteType, ctx?: SafeUserContext, day?: DayCon
   }
 }
 
+interface AppLimits {
+  max_message_length: number;
+  max_user_context_bytes: number;
+  max_day_context_bytes: number;
+  max_payload_bytes: number;
+}
+interface AppModel {
+  provider: string;
+  model?: string;
+  temperature?: number;
+  max_tokens?: number;
+}
+const DEFAULT_LIMITS: AppLimits = {
+  max_message_length: 3000,
+  max_user_context_bytes: 10_000,
+  max_day_context_bytes: 15_000,
+  max_payload_bytes: 50_000,
+};
+const DEFAULT_MODEL: AppModel = { provider: "deepseek", model: "deepseek-chat", temperature: 0.4, max_tokens: 700 };
+const DEFAULT_TONE = TONE;
+
+async function loadSettings(client: ReturnType<typeof createClient>) {
+  const { data } = await client.from("app_settings").select("key,value").in("key", ["ai_prompts", "ai_model", "ai_limits"]);
+  let limits = { ...DEFAULT_LIMITS };
+  let model = { ...DEFAULT_MODEL };
+  PROMPT_OVERRIDES = {};
+  TONE = DEFAULT_TONE;
+  if (data) {
+    for (const row of data as Array<{ key: string; value: Record<string, unknown> }>) {
+      if (row.key === "ai_prompts" && row.value) {
+        const v = row.value as Record<string, string>;
+        if (typeof v.tone === "string" && v.tone.trim()) TONE = v.tone;
+        for (const k of ["food_recommendation", "support", "safety", "food_analysis", "fixation", "maintenance", "general"]) {
+          if (typeof v[k] === "string") PROMPT_OVERRIDES[k] = v[k];
+        }
+      }
+      if (row.key === "ai_model" && row.value) model = { ...DEFAULT_MODEL, ...(row.value as AppModel) };
+      if (row.key === "ai_limits" && row.value) limits = { ...DEFAULT_LIMITS, ...(row.value as AppLimits) };
+    }
+  }
+  return { limits, model };
+}
+
 // ---------- Provider abstraction ----------
 
 interface ProviderOptions {
   temperature?: number;
   maxTokens?: number;
+  model?: string;
 }
 
 async function callDeepseek(messages: ChatMessage[], opts: ProviderOptions): Promise<string> {
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   const baseUrl = Deno.env.get("DEEPSEEK_BASE_URL") || "https://api.deepseek.com";
-  const model = Deno.env.get("DEEPSEEK_MODEL") || "deepseek-chat";
+  const model = opts.model || Deno.env.get("DEEPSEEK_MODEL") || "deepseek-chat";
 
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not configured");
 
@@ -366,10 +415,15 @@ Deno.serve(async (req) => {
   const auth = await requireAuth(req);
   if (!auth.ok) return auth.response;
 
+  const adminClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!,
+  );
+  const { limits, model: modelCfg } = await loadSettings(adminClient);
+
   try {
-    // Reject oversized payloads early (defence in depth).
     const contentLength = Number(req.headers.get("content-length") || 0);
-    if (contentLength > 50_000) {
+    if (contentLength > limits.max_payload_bytes) {
       return new Response(
         JSON.stringify({ error: "payload_too_large", userMessage: "Сообщение слишком большое." }),
         { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -384,7 +438,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (message.length > 3000) {
+    if (message.length > limits.max_message_length) {
       return new Response(
         JSON.stringify({
           error: "message_too_long",
@@ -401,13 +455,13 @@ Deno.serve(async (req) => {
       );
     }
     try {
-      if (body?.userContext && JSON.stringify(body.userContext).length > 10_000) {
+      if (body?.userContext && JSON.stringify(body.userContext).length > limits.max_user_context_bytes) {
         return new Response(
           JSON.stringify({ error: "user_context_too_large" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (body?.dayContext && JSON.stringify(body.dayContext).length > 15_000) {
+      if (body?.dayContext && JSON.stringify(body.dayContext).length > limits.max_day_context_bytes) {
         return new Response(
           JSON.stringify({ error: "day_context_too_large" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -449,7 +503,7 @@ Deno.serve(async (req) => {
 
     let answer: string;
     try {
-      answer = await callAIProvider(provider, messages, { temperature: 0.4 });
+      answer = await callAIProvider(provider, messages, { temperature: modelCfg.temperature ?? 0.4, maxTokens: modelCfg.max_tokens ?? 700, model: modelCfg.model });
     } catch (e) {
       console.error("ask-inga provider failure:", e);
       return new Response(
