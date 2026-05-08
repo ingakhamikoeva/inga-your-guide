@@ -345,8 +345,8 @@ async function requireAuth(req: Request): Promise<{ ok: true; userId: string } |
     { global: { headers: { Authorization: authHeader } } },
   );
   const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims?.sub) {
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user?.id) {
     return {
       ok: false,
       response: new Response(
@@ -355,7 +355,7 @@ async function requireAuth(req: Request): Promise<{ ok: true; userId: string } |
       ),
     };
   }
-  return { ok: true, userId: data.claims.sub as string };
+  return { ok: true, userId: data.user.id };
 }
 
 Deno.serve(async (req) => {
