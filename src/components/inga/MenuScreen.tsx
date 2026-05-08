@@ -183,7 +183,71 @@ export function MenuScreen() {
                   <span>{topic.title}</span>
                   <ChevronRight size={18} className="text-muted-foreground transition-transform group-open:rotate-90" />
                 </summary>
-                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{topic.content}</p>
+                {(topic as any).isPalmMethod ? (
+                  <div className="mt-3 space-y-3">
+                    <p className="text-sm text-muted-foreground leading-relaxed">{topic.content}</p>
+                    <img
+                      src={palmMethodImage}
+                      alt="Метод ладони: ладонь — белок, кулак — углеводы, две ладони лодочкой — овощи, верхняя фаланга большого пальца — жиры"
+                      className="w-full rounded-xl"
+                      loading="lazy"
+                    />
+                    <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
+                      <p>Метод ладони помогает быстро понять, сколько еды положить на тарелку.</p>
+                      <p>Размер руки у каждого свой, поэтому порция получается индивидуальной: человеку с маленькой рукой — меньше, человеку с большой рукой — больше.</p>
+                      <p>Это не строгая формула, а удобный ориентир, когда не хочется всё взвешивать.</p>
+                    </div>
+                    <div className="space-y-2.5">
+                      {palmMethodCards.map(card => (
+                        <div key={card.title} className="rounded-xl border border-border bg-background/50 p-3.5">
+                          <div className="font-semibold text-sm mb-1.5">{card.title}</div>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{card.body}</p>
+                          {card.list && (
+                            <ul className="text-sm text-muted-foreground mt-2 space-y-0.5">
+                              {card.list.map(it => <li key={it}>• {it}</li>)}
+                            </ul>
+                          )}
+                          {card.extra && <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{card.extra}</p>}
+                          {card.examples && (
+                            <ul className="text-sm text-muted-foreground mt-1.5 space-y-0.5">
+                              {card.examples.map(ex => <li key={ex}>• {ex}</li>)}
+                            </ul>
+                          )}
+                          {card.note && <p className="text-xs text-muted-foreground mt-2 leading-relaxed italic">{card.note}</p>}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rounded-xl bg-primary/5 border border-primary/20 p-3.5">
+                      <div className="font-semibold text-sm mb-2">Как собрать приём пищи</div>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• белок — ладонь без пальцев</li>
+                        <li>• углеводы — кулак</li>
+                        <li>• овощи — две ладони лодочкой</li>
+                        <li>• жиры — верхняя фаланга большого пальца</li>
+                      </ul>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                        Пример: куриная грудка + гречка + овощной салат + немного масла.
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border p-3.5 space-y-2">
+                      <div className="font-semibold text-sm">Важное уточнение</div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Метод ладони — это ориентир, а не строгий закон. Если ты снижаешь вес, лучше соблюдать принцип:
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-0.5">
+                        <li>• белок — в каждый основной приём пищи</li>
+                        <li>• овощи — как можно чаще</li>
+                        <li>• углеводы — по порции, а не бесконтрольно</li>
+                        <li>• жиры — небольшими порциями</li>
+                      </ul>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Метод ладони помогает не усложнять питание. Тебе не нужно каждый раз считать всё до грамма. Достаточно собрать тарелку так, чтобы в ней были: белок + углеводы + овощи + немного жиров. Так проще держать сытость, снижать вес и не жить в режиме вечных расчётов.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{topic.content}</p>
+                )}
               </details>
             ))}
           </div>
