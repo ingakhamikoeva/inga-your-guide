@@ -109,6 +109,19 @@ const paceLabels: Record<string, string> = {
 export function MenuScreen() {
   const { setStep, weeklyData, profile, dailyReports, medals, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>('main');
+  const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
+
+  useEffect(() => {
+    getSetting<Record<string, { title?: string; content?: string }>>('lesson_overrides').then((v) => {
+      if (v) setLessonOverrides(v);
+    });
+  }, []);
+
+  const effectiveTopics = howToTopics.map((t) => {
+    const ov = lessonOverrides[t.title];
+    if (!ov) return t;
+    return { ...t, title: ov.title || t.title, content: ov.content || t.content };
+  });
 
   const today = new Date().toISOString().slice(0, 10);
   const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals);
