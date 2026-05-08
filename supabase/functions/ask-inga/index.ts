@@ -295,7 +295,7 @@ interface ProviderOptions {
 async function callDeepseek(messages: ChatMessage[], opts: ProviderOptions): Promise<string> {
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   const baseUrl = Deno.env.get("DEEPSEEK_BASE_URL") || "https://api.deepseek.com";
-  const model = Deno.env.get("DEEPSEEK_MODEL") || "deepseek-chat";
+  const model = opts.model || Deno.env.get("DEEPSEEK_MODEL") || "deepseek-chat";
 
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY is not configured");
 
