@@ -438,7 +438,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (message.length > 3000) {
+    if (message.length > limits.max_message_length) {
       return new Response(
         JSON.stringify({
           error: "message_too_long",
@@ -455,13 +455,13 @@ Deno.serve(async (req) => {
       );
     }
     try {
-      if (body?.userContext && JSON.stringify(body.userContext).length > 10_000) {
+      if (body?.userContext && JSON.stringify(body.userContext).length > limits.max_user_context_bytes) {
         return new Response(
           JSON.stringify({ error: "user_context_too_large" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (body?.dayContext && JSON.stringify(body.dayContext).length > 15_000) {
+      if (body?.dayContext && JSON.stringify(body.dayContext).length > limits.max_day_context_bytes) {
         return new Response(
           JSON.stringify({ error: "day_context_too_large" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
