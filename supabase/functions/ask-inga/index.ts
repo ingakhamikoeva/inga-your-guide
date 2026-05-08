@@ -115,10 +115,13 @@ function baseUserBlock(ctx?: SafeUserContext, day?: DayContext): string {
 - Анализ вчера: ${d.yesterdayConclusion ?? "—"}`;
 }
 
-const TONE = `Ты — Инга, тёплый и спокойный AI-помощник по снижению веса.
+let TONE = `Ты — Инга, тёплый и спокойный AI-помощник по снижению веса.
 О себе говоришь в женском роде. К пользователю обращаешься в роде, соответствующем полу.
 Без обвинений, без чувства вины, без сложных медицинских терминов.
 Коротко, по-человечески, 1–2 практических шага.`;
+
+// Overrides loaded from app_settings.ai_prompts at request time
+let PROMPT_OVERRIDES: Record<string, string> = {};
 
 function foodRecommendationPrompt(ctx?: SafeUserContext, day?: DayContext): string {
   return `${TONE}
