@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play } from 'lucide-react';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
+import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
 
 const palmMethodCards = [
