@@ -415,10 +415,15 @@ Deno.serve(async (req) => {
   const auth = await requireAuth(req);
   if (!auth.ok) return auth.response;
 
+  const adminClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!,
+  );
+  const { limits, model: modelCfg } = await loadSettings(adminClient);
+
   try {
-    // Reject oversized payloads early (defence in depth).
     const contentLength = Number(req.headers.get("content-length") || 0);
-    if (contentLength > 50_000) {
+    if (contentLength > limits.max_payload_bytes) {
       return new Response(
         JSON.stringify({ error: "payload_too_large", userMessage: "Сообщение слишком большое." }),
         { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
