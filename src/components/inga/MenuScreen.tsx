@@ -191,7 +191,7 @@ export function MenuScreen() {
           <p className="text-sm text-muted-foreground mb-4">Метод и принципы — без жёстких ограничений и срывов.</p>
           <p className="text-xs text-muted-foreground italic mb-4">{describeStage(stage)}</p>
           <div className="space-y-2.5">
-            {howToTopics.map(topic => (
+            {effectiveTopics.map(topic => (
               <details key={topic.title} className="inga-card group">
                 <summary className="font-semibold cursor-pointer flex items-center justify-between list-none">
                   <span>{topic.title}</span>
