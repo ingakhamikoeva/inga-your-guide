@@ -11,6 +11,9 @@ import {
   saveEveningReflection,
   saveFoodLog,
   loadUserProfile,
+  loadUserPlan,
+  loadBehaviorProfile,
+  loadAssessmentAnswers,
   loadCheckins,
   logUserEvent,
   startTrial,
@@ -34,6 +37,7 @@ interface AppContextValue extends AppState {
   addWeightEntry: (date: string, weight: number) => void;
   addAwardedMedal: (medal: Medal) => void;
   syncToDb: () => Promise<void>;
+  hydrateFromDb: () => Promise<AppStep>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -155,6 +159,66 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [profile, calculations]);
 
+  // Hydrate state from DB after auth (essential for cross-domain login where localStorage is empty)
+  const hydrateFromDb = useCallback(async (): Promise<AppStep> => {
+    const authed = await isAuthenticated();
+    if (!authed) return 'auth';
+
+    const [dbProfile, dbPlan, dbBehavior, dbAnswers, dbCheckins] = await Promise.all([
+      loadUserProfile(),
+      loadUserPlan(),
+      loadBehaviorProfile(),
+      loadAssessmentAnswers(),
+      loadCheckins(),
+    ]);
+
+    const merged: Partial<UserProfile> = {
+      ...profile,
+      ...(dbProfile ?? {}),
+      ...(dbPlan?.paceChoice ? { paceChoice: dbPlan.paceChoice } : {}),
+      ...(dbPlan?.trackingMethod ? { trackingMethod: dbPlan.trackingMethod } : {}),
+      ...(dbBehavior ? { foodProfile: dbBehavior } : {}),
+      ...(dbAnswers ? { foodTestAnswers: dbAnswers } : {}),
+    };
+    setProfile(merged);
+
+    let calc = calculations;
+    if (merged.height && merged.weight && merged.age) {
+      calc = calculateAll(merged);
+      if (merged.paceChoice) {
+        const corridor = getCorridorForPace(calc.totalCalories, merged.paceChoice);
+        calc.corridorMin = corridor.corridorMin;
+        calc.corridorMax = corridor.corridorMax;
+      } else if (dbPlan?.corridorMin && dbPlan?.corridorMax) {
+        calc.corridorMin = dbPlan.corridorMin;
+        calc.corridorMax = dbPlan.corridorMax;
+      }
+      if (dbPlan?.calorieTarget) calc.totalCalories = dbPlan.calorieTarget;
+      setCalculations(calc);
+    }
+
+    if (dbCheckins.length > 0) setWeeklyData(dbCheckins);
+
+    // Determine resume step based on data completeness
+    const resume: AppStep = (() => {
+      if (!merged.name) return 'survey-name';
+      if (!merged.gender || !merged.age || !merged.height || !merged.weight) return 'survey-data';
+      if (!merged.weightGainReasons?.length) return 'survey-reasons';
+      if (!merged.emotionalTrigger) return 'survey-emotions';
+      if (!calc) return 'calculations';
+      if (!merged.goalWeight) return 'goal-weight';
+      if (merged.waist === undefined || merged.hips === undefined) return 'measurements';
+      if (!merged.paceChoice) return 'pace-choice';
+      if (!merged.trackingMethod) return 'tracking-method';
+      if (!merged.foodTestAnswers?.length) return 'food-test-intro';
+      if (!merged.foodProfile?.pattern) return 'food-test-result';
+      return 'daily';
+    })();
+
+    setStep(resume);
+    return resume;
+  }, [profile, calculations]);
+
   return (
     <AppContext.Provider
       value={{
@@ -165,6 +229,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         weeklyData, addWeightEntry,
         medals, addAwardedMedal,
         syncToDb,
+        hydrateFromDb,
       }}
     >
       {children}
