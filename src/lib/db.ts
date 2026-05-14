@@ -105,6 +105,56 @@ export async function loadUserProfile(): Promise<Partial<UserProfile> | null> {
 
 // ============ USER PLAN ============
 
+export async function loadUserPlan(): Promise<{
+  paceChoice?: 'fast' | 'slow';
+  trackingMethod?: 'calories' | 'palm' | 'plate';
+  calorieTarget?: number;
+  corridorMin?: number;
+  corridorMax?: number;
+} | null> {
+  const userId = await getUserId();
+  if (!userId) return null;
+  const { data } = await supabase.from('user_plan').select('*').eq('user_id', userId).maybeSingle();
+  if (!data) return null;
+  return {
+    paceChoice: (data.pace as 'fast' | 'slow' | null) ?? undefined,
+    trackingMethod: (data.tracking_method as 'calories' | 'palm' | 'plate' | null) ?? undefined,
+    calorieTarget: data.calorie_target ?? undefined,
+    corridorMin: data.calorie_corridor_low ?? undefined,
+    corridorMax: data.calorie_corridor_high ?? undefined,
+  };
+}
+
+export async function loadBehaviorProfile(): Promise<FoodProfile | null> {
+  const userId = await getUserId();
+  if (!userId) return null;
+  const { data } = await supabase.from('behavior_profile').select('*').eq('user_id', userId).maybeSingle();
+  if (!data) return null;
+  const invert = <T extends string>(map: Record<string, T>, val: string | null) =>
+    val ? Object.entries(map).find(([, v]) => v === val)?.[0] ?? '' : '';
+  return {
+    pattern: invert(patternMap, data.eating_pattern),
+    trigger: invert(triggerMap, data.primary_trigger),
+    vulnerableTime: invert(timeMap, data.vulnerable_time),
+    awareness: invert(awarenessMap, data.interoception_level),
+    supportStyle: invert(styleMap, data.recommended_coaching_style),
+  };
+}
+
+export async function loadAssessmentAnswers(): Promise<number[] | null> {
+  const userId = await getUserId();
+  if (!userId) return null;
+  const { data } = await supabase
+    .from('assessment_answers')
+    .select('answers_json')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const arr = data?.answers_json as unknown;
+  return Array.isArray(arr) ? (arr as number[]) : null;
+}
+
 export async function saveUserPlan(profile: Partial<UserProfile>, calculations: Calculations | null) {
   const userId = await getUserId();
   if (!userId) return;
