@@ -37,6 +37,7 @@ interface AppContextValue extends AppState {
   addWeightEntry: (date: string, weight: number) => void;
   addAwardedMedal: (medal: Medal) => void;
   syncToDb: () => Promise<void>;
+  hydrateFromDb: () => Promise<AppStep>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
