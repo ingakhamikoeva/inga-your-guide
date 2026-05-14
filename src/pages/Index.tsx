@@ -20,32 +20,39 @@ import { MenuScreen } from '@/components/inga/MenuScreen';
 import { ChatScreen } from '@/components/inga/ChatScreen';
 
 function AppFlow() {
-  const { step, setStep } = useApp();
+  const { step, setStep, profile, hydrateFromDb } = useApp();
   const [authReady, setAuthReady] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const hydratedRef = useState({ done: false })[0];
 
   useEffect(() => {
-    // Restore step from saved state on auth — never force 'welcome' if user has progress
-    const restoreStep = (currentStep: string) => {
-      if (currentStep === 'auth') {
-        // No saved progress → start at welcome
-        setStep('welcome');
+    const handleAuth = async (authed: boolean) => {
+      setIsAuthed(authed);
+      setAuthReady(true);
+      if (!authed) {
+        hydratedRef.done = false;
+        return;
       }
-      // Otherwise keep the saved step (survey-name, daily, etc.)
+      // Always hydrate from DB on login — localStorage may be empty (e.g. new domain)
+      if (!hydratedRef.done) {
+        hydratedRef.done = true;
+        // Defer to avoid Supabase deadlock inside auth callback
+        setTimeout(async () => {
+          try {
+            await hydrateFromDb();
+          } catch {
+            if (step === 'auth') setStep('welcome');
+          }
+        }, 0);
+      }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const authed = !!session?.user;
-      setIsAuthed(authed);
-      setAuthReady(true);
-      if (authed) restoreStep(step);
+      handleAuth(!!session?.user);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      const authed = !!session?.user;
-      setIsAuthed(authed);
-      setAuthReady(true);
-      if (authed) restoreStep(step);
+      handleAuth(!!session?.user);
     });
 
     return () => subscription.unsubscribe();
