@@ -255,13 +255,10 @@ POST /functions/v1/start-trial   (Authorization: Bearer <user-jwt>)
 
 Используются на стороне edge-функций, не напрямую из браузера.
 
-- **Lovable AI Gateway** — основной. Один ключ `LOVABLE_API_KEY`,
-  даёт доступ к моделям `google/gemini-*` и `openai/gpt-*` без отдельных
-  аккаунтов у вендоров. URL: `https://ai.gateway.lovable.dev/v1`.
-  При своём Supabase можно продолжать ходить туда — ключ лежит в
-  workspace Lovable.
-- **DeepSeek** (опционально) — fallback / альтернатива. Секреты:
-  `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`.
+- **DeepSeek** — основной провайдер для `ask-inga` сейчас. Вызов идёт напрямую в `https://api.deepseek.com/chat/completions`, модель по умолчанию `deepseek-chat`. Секреты: `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`. Все три уже сконфигурированы в Lovable Cloud.
+- **Lovable AI Gateway** — резервный канал. Ключ `LOVABLE_API_KEY` присутствует в окружении edge-функций и используется в `estimate-nutrition`. Для `ask-inga` он зарезервирован под будущий fallback (модели `google/gemini-*`, `openai/gpt-*` через `https://ai.gateway.lovable.dev/v1`).
+
+Переключение провайдера для `ask-inga` делается через таблицу `app_settings`, ключ `ai_model` (поля `provider`, `model`, `temperature`, `max_tokens`).
 
 Обработка ошибок: `429` — лимит, `402` — закончились кредиты —
 эти статусы фронт показывает пользователю.
