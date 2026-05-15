@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Эти значения вшиваются в JS-бандл во время сборки.
+        # Для подключения к существующему Lovable Cloud бэкенду используйте
+        # текущие значения из Lovable. Для своего Supabase — подставьте свои.
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
+        VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
+    image: legche-web:latest
+    container_name: legche-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    # Если будете терминировать TLS снаружи (Caddy/Traefik/Cloudflare),
+    # уберите проброс 80:80 и подключите контейнер к внешней сети reverse-proxy.
