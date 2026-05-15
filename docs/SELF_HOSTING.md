@@ -218,7 +218,7 @@ Edge-функции (`ask-inga`, `estimate-nutrition`, `start-trial`) продо
 
 | Функция              | Назначение                                                        | Внешние секреты                              |
 |----------------------|-------------------------------------------------------------------|----------------------------------------------|
-| `ask-inga`           | Основной чат с Ингой: маршрутизация запроса (food/support/safety/...), сборка system-prompt, вызов LLM, возврат ответа. | `LOVABLE_API_KEY` или `DEEPSEEK_*`           |
+| `ask-inga`           | Основной чат с Ингой: маршрутизация запроса (food/support/safety/...), сборка system-prompt, вызов LLM, возврат ответа. **Сейчас по умолчанию использует DeepSeek** (`DEEPSEEK_*`). `LOVABLE_API_KEY` есть в окружении и зарезервирован под будущий fallback на Lovable AI Gateway. | `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL` (+ `LOVABLE_API_KEY` опц.) |
 | `estimate-nutrition` | Оценивает КБЖУ блюда по текстовому описанию (для дневного саммари). | `LOVABLE_API_KEY`                            |
 | `start-trial`        | Создаёт строку в `subscriptions`, выставляет `trial_ends_at`.     | —                                            |
 
