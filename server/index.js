@@ -1,11 +1,10 @@
-// Self-hosted API server replacing Lovable edge functions.
-// All secrets come from .env. The frontend talks to this server when
-// VITE_API_BASE_URL is set; otherwise it still uses supabase.functions.invoke.
+// Self-hosted API server. No Supabase SDK — JWT is verified locally
+// against JWT_SECRET (HS256). DB is reached directly via DATABASE_URL.
 
 import express from "express";
 import cors from "cors";
 import pg from "pg";
-import { createClient } from "@supabase/supabase-js";
+import jwt from "jsonwebtoken";
 
 import { handleAskInga } from "./ask-inga.js";
 import { handleEstimateNutrition } from "./estimate-nutrition.js";
@@ -14,26 +13,17 @@ import { handleStartTrial } from "./start-trial.js";
 const {
   PORT = "8787",
   DATABASE_URL,
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY,
+  JWT_SECRET,
   CORS_ORIGIN = "*",
 } = process.env;
 
 if (!DATABASE_URL) console.warn("[boot] DATABASE_URL is not set");
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.warn("[boot] SUPABASE_URL / SUPABASE_ANON_KEY missing — JWT validation will fail");
-}
+if (!JWT_SECRET) console.warn("[boot] JWT_SECRET is not set — auth will fail");
 
-// Single pg pool, shared across handlers
 export const pool = new pg.Pool({
   connectionString: DATABASE_URL,
   max: 5,
   ssl: DATABASE_URL?.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
-});
-
-// Auth-only client: used to validate the user's JWT.
-const supabaseAuth = createClient(SUPABASE_URL || "", SUPABASE_ANON_KEY || "", {
-  auth: { persistSession: false, autoRefreshToken: false },
 });
 
 export async function requireAuth(req, res) {
@@ -43,12 +33,19 @@ export async function requireAuth(req, res) {
     return null;
   }
   const token = h.slice(7);
-  const { data, error } = await supabaseAuth.auth.getUser(token);
-  if (error || !data?.user) {
+  try {
+    // Supabase issues HS256 JWTs signed with the project's JWT secret.
+    // We verify locally — no network call, no Supabase SDK needed.
+    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
+    if (!payload?.sub) {
+      res.status(401).json({ error: "unauthorized" });
+      return null;
+    }
+    return { authId: payload.sub, token, payload };
+  } catch (e) {
     res.status(401).json({ error: "unauthorized" });
     return null;
   }
-  return { authId: data.user.id, token };
 }
 
 const app = express();

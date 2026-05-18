@@ -52,8 +52,7 @@
 | Переменная                | Назначение                                            |
 |---------------------------|-------------------------------------------------------|
 | `DATABASE_URL`            | Postgres: `postgresql://user:pass@host:5432/db?sslmode=require` |
-| `SUPABASE_URL`            | Тот же, что у фронта — для валидации JWT              |
-| `SUPABASE_ANON_KEY`       | Тот же anon key — для `auth.getUser(token)`           |
+| `JWT_SECRET`              | JWT-секрет Supabase-проекта (Settings → API → JWT Secret). Используется для **локальной** валидации токенов, без сетевых вызовов в Supabase. |
 | `DEEPSEEK_API_KEY`        | Ключ DeepSeek                                          |
 | `DEEPSEEK_BASE_URL`       | По умолчанию `https://api.deepseek.com`                |
 | `DEEPSEEK_MODEL`          | По умолчанию `deepseek-chat`                           |
