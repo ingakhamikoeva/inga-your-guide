@@ -2,13 +2,15 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Build-time переменные (фронту нужны URL и anon-key Supabase)
+# Build-time переменные (фронту нужны URL и anon-key Supabase + URL своего API)
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
 ARG VITE_SUPABASE_PROJECT_ID
+ARG VITE_API_BASE_URL
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 COPY package.json bun.lockb* package-lock.json* ./
 RUN if [ -f bun.lockb ]; then \
