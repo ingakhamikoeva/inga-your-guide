@@ -410,10 +410,8 @@ export async function logUserEvent(type: string, payload?: Json) {
 export async function startTrial() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
-
-  await supabase.functions.invoke('start-trial', {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  });
+  const { invokeFunction } = await import('@/lib/api-invoke');
+  await invokeFunction('start-trial', {});
 }
 
 // ============ CONSULTATIONS ============

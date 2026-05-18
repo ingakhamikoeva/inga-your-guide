@@ -1,21 +1,41 @@
 version: "3.9"
 
 services:
+  # Backend API: replaces Lovable edge functions (ask-inga, estimate-nutrition, start-trial).
+  # Reads all secrets from .env. Talks to Postgres directly via DATABASE_URL.
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: legche-api:latest
+    container_name: legche-api
+    restart: unless-stopped
+    environment:
+      PORT: "8787"
+      DATABASE_URL: ${DATABASE_URL}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - "8787:8787"
+
+  # Frontend SPA. Build-time VITE_* values are baked into the JS bundle.
   web:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        # Эти значения вшиваются в JS-бандл во время сборки.
-        # Для подключения к существующему Lovable Cloud бэкенду используйте
-        # текущие значения из Lovable. Для своего Supabase — подставьте свои.
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
         VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     image: legche-web:latest
     container_name: legche-web
     restart: unless-stopped
+    depends_on:
+      - api
     ports:
       - "80:80"
-    # Если будете терминировать TLS снаружи (Caddy/Traefik/Cloudflare),
-    # уберите проброс 80:80 и подключите контейнер к внешней сети reverse-proxy.

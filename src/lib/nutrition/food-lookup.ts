@@ -4,6 +4,7 @@
 //           3) AI estimate via the estimate-nutrition edge function.
 
 import { supabase } from '@/integrations/supabase/client';
+import { invokeFunction } from '@/lib/api-invoke';
 import type { MealNutrition } from './types';
 
 const EMPTY: MealNutrition = {
@@ -54,9 +55,7 @@ async function tryFoodReference(text: string): Promise<MealNutrition | null> {
 
 async function tryAIEstimate(text: string): Promise<MealNutrition> {
   try {
-    const { data, error } = await supabase.functions.invoke('estimate-nutrition', {
-      body: { text },
-    });
+    const { data, error } = await invokeFunction<{ estimate?: any }>('estimate-nutrition', { text });
     if (error || !data?.estimate) return EMPTY;
     const e = data.estimate;
     return {
