@@ -3,7 +3,7 @@
 // Today this hits the Lovable Cloud edge function `ask-inga`. Tomorrow it can point at
 // a different backend (e.g. RU-hosted) without touching UI code.
 
-import { supabase } from '@/integrations/supabase/client';
+import { invokeFunction } from '@/lib/api-invoke';
 
 export type RouteType =
   | 'food_recommendation'
@@ -76,13 +76,11 @@ export async function askInga(input: AskIngaInput): Promise<AskIngaResult> {
   const routeType = input.routeType ?? classifyRoute(input.message, input.userContext);
 
   try {
-    const { data, error } = await supabase.functions.invoke('ask-inga', {
-      body: {
-        message: input.message,
-        routeType,
-        userContext: input.userContext ?? {},
-        dayContext: input.dayContext ?? {},
-      },
+    const { data, error } = await invokeFunction<{ answer?: string; userMessage?: string }>('ask-inga', {
+      message: input.message,
+      routeType,
+      userContext: input.userContext ?? {},
+      dayContext: input.dayContext ?? {},
     });
 
     if (error || !data || typeof (data as { answer?: unknown }).answer !== 'string') {
