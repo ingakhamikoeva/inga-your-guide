@@ -202,11 +202,22 @@ export function AuthScreen() {
       </button>
 
       <button
-        onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}
+        onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); setInfo(''); }}
         className="mt-4 text-sm text-muted-foreground underline"
       >
         {mode === 'signup' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Создать'}
       </button>
+
+      {mode === 'login' && (
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          disabled={loading}
+          className="mt-2 text-sm text-muted-foreground underline"
+        >
+          Забыл пароль?
+        </button>
+      )}
     </div>
   );
 }
