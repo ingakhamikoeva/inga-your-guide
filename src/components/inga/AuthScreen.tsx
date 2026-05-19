@@ -141,6 +141,11 @@ export function AuthScreen() {
             {error}
           </div>
         )}
+        {info && (
+          <div className="text-sm text-foreground bg-primary/10 rounded-xl px-4 py-3">
+            {info}
+          </div>
+        )}
 
         <button
           type="submit"
