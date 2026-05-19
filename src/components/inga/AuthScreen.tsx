@@ -13,6 +13,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -55,13 +56,23 @@ export function AuthScreen() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
       if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        });
         if (signUpError) throw signUpError;
-        setStep('welcome');
+        if (data.session) {
+          setStep('welcome');
+        } else {
+          setInfo('Мы отправили письмо для подтверждения на ' + email + '. Перейди по ссылке из письма, затем войди.');
+          setMode('login');
+        }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -128,6 +139,11 @@ export function AuthScreen() {
         {error && (
           <div className="text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-2">
             {error}
+          </div>
+        )}
+        {info && (
+          <div className="text-sm text-foreground bg-primary/10 rounded-xl px-4 py-3">
+            {info}
           </div>
         )}
 
