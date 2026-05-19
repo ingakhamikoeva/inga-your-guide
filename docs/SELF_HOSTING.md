@@ -1,171 +1,124 @@
-# Self-hosting «Личный диетолог Инга» (полностью на своём сервере)
+# Self-Hosting Guide — Личный диетолог Инга
 
-С этой ревизией приложение работает **без edge-функций Lovable**. Всё крутится
-в двух Docker-контейнерах на вашем сервере:
+Полностью автономный деплой на ваш сервер. Никаких облачных зависимостей, кроме DeepSeek и (опционально) SMTP-провайдера.
 
-- `web` — статический фронт (React + Vite, отдаётся nginx).
-- `api` — Node/Express, заменяет edge-функции `ask-inga`, `estimate-nutrition`,
-  `start-trial`. Берёт ключи DeepSeek и строку подключения к Postgres из `.env`.
-
-База данных — любой Postgres (свой Supabase, self-hosted Supabase, чистый PG).
-
----
-
-## 1. Архитектура
+## Архитектура
 
 ```
-[Браузер] ── HTTPS ──▶ [nginx (web)]                       (статика SPA)
-   │
-   └── HTTPS ──▶ [Node API (api:8787)] ──▶ DeepSeek API
-                              │
-                              └────────▶ Postgres (DATABASE_URL)
-
-       Auth (login/session) ──▶ Supabase Auth (URL + anon key)
-       CRUD таблиц            ──▶ Supabase REST (тот же URL, RLS)
+Browser → Nginx/Caddy (TLS)
+              ├── legche.online        → web (Vite SPA)
+              └── api.legche.online    → kong:8000
+                                          ├── /auth/v1/*       → gotrue
+                                          ├── /rest/v1/*       → postgrest
+                                          ├── /realtime/v1/*   → realtime
+                                          ├── /storage/v1/*    → storage-api
+                                          └── /functions/v1/*  → api (DeepSeek)
+                                                 ↓
+                                              db (postgres:15 + RLS)
 ```
 
-Фронт продолжает использовать `@supabase/supabase-js` для auth и обычных
-запросов к таблицам (RLS на стороне Postgres). А все «умные» вызовы
-(LLM, триал) теперь идут на собственный `api`-контейнер.
+## Требования
 
-Переключение делается одной build-time переменной — **`VITE_API_BASE_URL`**.
-Если она задана, фронт зовёт `${VITE_API_BASE_URL}/ask-inga` и т.д.
-Если пусто — старый путь через `supabase.functions.invoke`.
+- Docker 24+ и Docker Compose v2
+- Домен с двумя записями: `legche.online` и `api.legche.online`
+- 4 GB RAM минимум (рекомендуется 8 GB)
+- Node 18+ на машине администратора (для генерации ключей)
 
----
+## Установка
 
-## 2. Переменные окружения
-
-См. `.env.example`. Группы:
-
-### Фронт (build-time, попадает в JS-бандл, должны быть ПУБЛИЧНЫМИ)
-
-| Переменная                    | Назначение                                        |
-|-------------------------------|---------------------------------------------------|
-| `VITE_SUPABASE_URL`           | URL Supabase для auth и REST                      |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Anon key (публичный)                            |
-| `VITE_SUPABASE_PROJECT_ID`    | Project ref                                       |
-| `VITE_API_BASE_URL`           | URL вашего `api`-контейнера, напр. `https://api.legche.online` |
-
-### API-сервер (server-side, секреты НЕ попадают в браузер)
-
-| Переменная                | Назначение                                            |
-|---------------------------|-------------------------------------------------------|
-| `DATABASE_URL`            | Postgres: `postgresql://user:pass@host:5432/db?sslmode=require` |
-| `JWT_SECRET`              | JWT-секрет Supabase-проекта (Settings → API → JWT Secret). Используется для **локальной** валидации токенов, без сетевых вызовов в Supabase. |
-| `DEEPSEEK_API_KEY`        | Ключ DeepSeek                                          |
-| `DEEPSEEK_BASE_URL`       | По умолчанию `https://api.deepseek.com`                |
-| `DEEPSEEK_MODEL`          | По умолчанию `deepseek-chat`                           |
-| `CORS_ORIGIN`             | Разрешённые домены фронта, через запятую или `*`      |
-
----
-
-## 3. Запуск
+### 1. Подготовка `.env`
 
 ```bash
-git clone <ваш-репозиторий>
-cd <repo>
-
 cp .env.example .env
-# Заполните DATABASE_URL, DEEPSEEK_*, VITE_*, VITE_API_BASE_URL, CORS_ORIGIN
-
-docker compose build
-docker compose up -d
+./scripts/generate-keys.sh >> .env
+# Откройте .env, заполните DEEPSEEK_API_KEY, SMTP, OAuth по желанию
+# Сгенерируйте REALTIME_SECRET_KEY_BASE: openssl rand -base64 64
 ```
 
-После старта:
-- фронт на `http://<server-ip>/`
-- API на `http://<server-ip>:8787/healthz` → `{"ok":true}`
+### 2. Запуск
 
-Для prod закройте 8787 файрволом и поставьте reverse-proxy (Caddy):
+```bash
+docker compose up -d
+docker compose logs -f db          # дождитесь "ready to accept connections"
+docker compose ps                  # все сервисы — Up (healthy)
+```
 
-```caddyfile
-legche.online, www.legche.online {
+При **первом** запуске `db` автоматически применит схему из `server/migrations/*.sql` — все таблицы, RLS, триггеры, ENUM-ы создаются 1-в-1 как было на Supabase Cloud.
+
+### 3. Обратный прокси (Caddy — пример)
+
+```caddy
+legche.online {
     reverse_proxy localhost:80
 }
 
 api.legche.online {
-    reverse_proxy localhost:8787
+    reverse_proxy localhost:8000
 }
 ```
 
-И в `.env` укажите `VITE_API_BASE_URL=https://api.legche.online`.
+Или Nginx — стандартный `proxy_pass` на `80` и `8000`.
 
----
-
-## 4. База данных
-
-### 4.1 Перенос схемы
+### 4. (опционально) Перенос данных из Supabase Cloud
 
 ```bash
-export DATABASE_URL="postgresql://postgres:PASSWORD@HOST:5432/postgres"
-./scripts/apply-migrations.sh
+export SOURCE_DB_URL='postgres://postgres.<ref>:<pwd>@aws-0-...pooler.supabase.com:6543/postgres'
+./scripts/migrate-from-cloud.sh
 ```
 
-Скрипт прогоняет все файлы из `supabase/migrations/` по порядку.
+Скрипт делает `pg_dump --data-only` схем `public` и `auth` и заливает в локальный контейнер. Пользователи, пароли, профили, food-логи — переносятся as-is.
 
-### 4.2 Перенос данных (если нужно)
+### 5. Создание первого админа
 
 ```bash
-pg_dump --data-only --schema=public --schema=auth \
-    "postgresql://postgres:OLD_PASS@db.OLD-REF.supabase.co:5432/postgres" > data.sql
-psql "$DATABASE_URL" < data.sql
+# Зарегистрируйтесь обычным образом через UI, затем:
+docker compose exec db psql -U inga_db_user -d postgres -c \
+  "INSERT INTO public.user_roles(user_id, role) VALUES ('<your-auth-id>', 'admin');"
 ```
 
-### 4.3 Auth
+## Полезные команды
 
-Auth (email + Google + Apple) остаётся в Supabase. Если вы поднимаете
-свой Supabase, включите провайдеры в новом проекте и добавьте redirect URL'ы
-для своего домена.
+| Действие | Команда |
+|---|---|
+| Логи всех сервисов | `docker compose logs -f` |
+| Логи одного | `docker compose logs -f auth` |
+| Psql в БД | `docker compose exec db psql -U inga_db_user -d postgres` |
+| Studio (web admin) | http://your-server:3001 |
+| Бэкап БД | `docker compose exec db pg_dump -U inga_db_user postgres > backup.sql` |
+| Рестарт сервиса | `docker compose restart api` |
+| Полная остановка | `docker compose down` (данные в volume сохраняются) |
+| Снести данные | `docker compose down -v` ⚠️ |
 
----
+## Переменные окружения
 
-## 5. API: контракты эндпоинтов
+| Переменная | Назначение |
+|---|---|
+| `SITE_URL` | Публичный URL фронта (для редиректов OAuth, email-confirm). |
+| `API_EXTERNAL_URL` | Публичный URL API (Kong). |
+| `POSTGRES_*` | Креды БД. **Уже совпадают с вашими настройками.** |
+| `DATABASE_URL` | DSN для нашего Node-API. |
+| `JWT_SECRET` | Подписывает все JWT (auth, anon, service). Генерируется. |
+| `ANON_KEY` | Публичный JWT с role=anon. Используется фронтом и Kong. |
+| `SERVICE_ROLE_KEY` | Админский JWT (обходит RLS). Только для серверного кода. |
+| `GOTRUE_MAILER_AUTOCONFIRM` | `true` → не требовать подтверждения email. Удобно для дева. |
+| `GOTRUE_EXTERNAL_GOOGLE_*` | Включить вход через Google. |
+| `GOTRUE_EXTERNAL_APPLE_*` | Включить вход через Apple. |
+| `DEEPSEEK_*` | LLM для ask-inga и estimate-nutrition. |
+| `VITE_SUPABASE_URL` | На фронте: указывает на Kong. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | = `ANON_KEY`. |
 
-Все три эндпоинта требуют заголовок `Authorization: Bearer <supabase-jwt>`.
+## Что НЕ изменилось
 
-### POST `/ask-inga`
-```json
-Request:  { "message": "что съесть на ужин?",
-            "routeType": "food_recommendation",   // опционально
-            "userContext": {...}, "dayContext": {...} }
-Response: { "answer": "...", "route": "food_recommendation", "provider": "deepseek" }
-```
+- Весь код фронта (`src/**`) — переезжает без правок.
+- Все RLS-политики, триггеры, `handle_new_user`, `has_role`.
+- API edge-функций (`ask-inga`, `estimate-nutrition`, `start-trial`) — фронт по-прежнему зовёт их через `supabase.functions.invoke(...)`, Kong маршрутизирует на наш Node-сервер.
 
-### POST `/estimate-nutrition`
-```json
-Request:  { "text": "200г куриной грудки и салат" }
-Response: { "estimate": { "calories": 350, "protein_g": 45, ... }, "source": "ai_estimate" }
-```
+## Траблшутинг
 
-### POST `/start-trial`
-```json
-Request:  {}
-Response: { "ok": true }
-```
+**`auth` падает с "role does not exist"** — supabase/postgres-образ создаёт нужные роли при первом старте. Если использовали чистый `postgres:15`, поменяйте на `supabase/postgres:15.8.1.060` (как в compose).
 
-Ошибки: 401 (нет токена / истёк), 400 (валидация), 503 (LLM недоступен),
-500 (внутренняя). Фронт умеет показывать понятные сообщения из поля
-`userMessage`.
+**`401` на `/rest/v1/*`** — Kong требует `apikey` header или `Authorization: Bearer <jwt>`. supabase-js клиент шлёт оба автоматически — убедитесь, что `VITE_SUPABASE_PUBLISHABLE_KEY` равен `ANON_KEY`.
 
----
+**Email не приходит** — проверьте SMTP-креды или поставьте `GOTRUE_MAILER_AUTOCONFIRM=true` для тестов.
 
-## 6. Откат и режимы
-
-- **Полный self-host**: `.env` заполнен, `VITE_API_BASE_URL` указывает на свой API.
-- **Гибрид**: используете свою БД, но AI оставляете в Lovable —
-  оставьте `VITE_API_BASE_URL` пустым и не запускайте `api`-контейнер.
-- **Полный Lovable**: всё пусто кроме `VITE_*` — работает старая схема edge-функций.
-
----
-
-## 7. Безопасность
-
-- `DEEPSEEK_API_KEY`, `DATABASE_URL`, `SUPABASE_*` — **только** в окружении
-  `api`-контейнера, никогда в `VITE_*`.
-- JWT валидируется на каждом запросе через `supabase.auth.getUser(token)`.
-- RLS политик в БД достаточно, чтобы пользователь не дотянулся до чужих
-  строк даже через прямой REST.
-- `start-trial` использует pg-пул с правами роли БД, указанной в
-  `DATABASE_URL`. Для production-надёжности дайте этой роли только нужные
-  права (INSERT в `subscriptions`, SELECT по `users`).
+**Realtime не работает** — проверьте, что задан `REALTIME_SECRET_KEY_BASE` (64 байта).

@@ -1,8 +1,219 @@
 version: "3.9"
 
+# ─────────────────────────────────────────────────────────────────────────
+# Self-hosted Supabase stack + your app.
+# All data lives on YOUR server. No cloud dependencies.
+#
+# Services:
+#   db        — Postgres 15 (your DB + Supabase internal schemas)
+#   auth      — GoTrue (email/password + Google + Apple OAuth)
+#   rest      — PostgREST (auto REST for public schema, honors RLS)
+#   realtime  — Supabase Realtime (postgres_changes)
+#   storage   — Supabase Storage API (file uploads)
+#   meta      — postgres-meta (used by Studio)
+#   studio    — Web admin UI (optional, :3001)
+#   kong      — API gateway, single entrypoint on :8000
+#   api       — Our Node server (DeepSeek + business endpoints)
+#   web       — Vite SPA (nginx static)
+# ─────────────────────────────────────────────────────────────────────────
+
 services:
-  # Backend API: replaces Lovable edge functions (ask-inga, estimate-nutrition, start-trial).
-  # Reads all secrets from .env. Talks to Postgres directly via DATABASE_URL.
+  # ── Database ──────────────────────────────────────────────────────────
+  db:
+    image: supabase/postgres:15.8.1.060
+    container_name: legche-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: 3600
+    volumes:
+      - legche_pgdata:/var/lib/postgresql/data
+      # App schema (your tables + RLS + triggers). Runs once on empty DB.
+      - ./server/migrations:/docker-entrypoint-initdb.d/zzz-app:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # ── Auth (GoTrue) ─────────────────────────────────────────────────────
+  auth:
+    image: supabase/gotrue:v2.158.1
+    container_name: legche-auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${SITE_URL}
+      GOTRUE_DISABLE_SIGNUP: ${GOTRUE_DISABLE_SIGNUP:-false}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_MAILER_AUTOCONFIRM:-false}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Inga}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-admin@legche.online}
+      GOTRUE_EXTERNAL_GOOGLE_ENABLED: ${GOTRUE_EXTERNAL_GOOGLE_ENABLED:-false}
+      GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: ${GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID}
+      GOTRUE_EXTERNAL_GOOGLE_SECRET: ${GOTRUE_EXTERNAL_GOOGLE_SECRET}
+      GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: ${API_EXTERNAL_URL}/auth/v1/callback
+      GOTRUE_EXTERNAL_APPLE_ENABLED: ${GOTRUE_EXTERNAL_APPLE_ENABLED:-false}
+      GOTRUE_EXTERNAL_APPLE_CLIENT_ID: ${GOTRUE_EXTERNAL_APPLE_CLIENT_ID}
+      GOTRUE_EXTERNAL_APPLE_SECRET: ${GOTRUE_EXTERNAL_APPLE_SECRET}
+      GOTRUE_EXTERNAL_APPLE_REDIRECT_URI: ${API_EXTERNAL_URL}/auth/v1/callback
+
+  # ── PostgREST (REST API for public schema) ────────────────────────────
+  rest:
+    image: postgrest/postgrest:v12.2.0
+    container_name: legche-rest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      PGRST_DB_SCHEMAS: public,storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+
+  # ── Realtime ──────────────────────────────────────────────────────────
+  realtime:
+    image: supabase/realtime:v2.30.34
+    container_name: legche-realtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${REALTIME_SECRET_KEY_BASE:-UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: "false"
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+
+  # ── Storage ───────────────────────────────────────────────────────────
+  storage:
+    image: supabase/storage-api:v1.11.13
+    container_name: legche-storage
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+    volumes:
+      - legche_storage:/var/lib/storage
+
+  # ── postgres-meta (DB introspection for Studio) ───────────────────────
+  meta:
+    image: supabase/postgres-meta:v0.84.2
+    container_name: legche-meta
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: ${POSTGRES_DB}
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+  # ── Studio (web admin, optional) ──────────────────────────────────────
+  studio:
+    image: supabase/studio:20240729-ce42139
+    container_name: legche-studio
+    restart: unless-stopped
+    depends_on:
+      meta:
+        condition: service_started
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEFAULT_ORGANIZATION_NAME: Legche
+      DEFAULT_PROJECT_NAME: Inga
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3001:3000"
+
+  # ── Kong API Gateway ──────────────────────────────────────────────────
+  kong:
+    image: kong:2.8.1
+    container_name: legche-kong
+    restart: unless-stopped
+    depends_on:
+      - auth
+      - rest
+      - realtime
+      - storage
+      - api
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+    volumes:
+      - ./docker/kong/kong.yml:/var/lib/kong/kong.yml:ro
+    ports:
+      - "8000:8000"
+
+  # ── Our Node API (DeepSeek + business endpoints) ──────────────────────
+  # Mounted at /functions/v1/* by Kong. Fronted invokes via
+  # supabase.functions.invoke('ask-inga') → kong → api.
   api:
     build:
       context: ./server
@@ -10,6 +221,9 @@ services:
     image: legche-api:latest
     container_name: legche-api
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       PORT: "8787"
       DATABASE_URL: ${DATABASE_URL}
@@ -18,10 +232,8 @@ services:
       DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
       DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
-    ports:
-      - "8787:8787"
 
-  # Frontend SPA. Build-time VITE_* values are baked into the JS bundle.
+  # ── Frontend SPA ──────────────────────────────────────────────────────
   web:
     build:
       context: .
@@ -35,6 +247,10 @@ services:
     container_name: legche-web
     restart: unless-stopped
     depends_on:
-      - api
+      - kong
     ports:
       - "80:80"
+
+volumes:
+  legche_pgdata:
+  legche_storage:
