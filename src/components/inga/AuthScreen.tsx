@@ -53,6 +53,27 @@ export function AuthScreen() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setError('');
+    setInfo('');
+    if (!email) {
+      setError('Введи email, на который придёт ссылка для восстановления');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetErr) throw resetErr;
+      setInfo('Письмо с ссылкой для восстановления отправлено на ' + email);
+    } catch (err: any) {
+      setError(err.message || 'Не удалось отправить письмо');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -181,11 +202,22 @@ export function AuthScreen() {
       </button>
 
       <button
-        onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); }}
+        onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); setInfo(''); }}
         className="mt-4 text-sm text-muted-foreground underline"
       >
         {mode === 'signup' ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Создать'}
       </button>
+
+      {mode === 'login' && (
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          disabled={loading}
+          className="mt-2 text-sm text-muted-foreground underline"
+        >
+          Забыл пароль?
+        </button>
+      )}
     </div>
   );
 }
