@@ -249,7 +249,7 @@ services:
     depends_on:
       - kong
     ports:
-      - "80:80"
+      - "${WEB_HTTP_PORT:-8080}:80"
 
 # ─────────────────────────────────────────────────────────────────────────
 # Persistent named volumes.
