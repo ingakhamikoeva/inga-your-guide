@@ -53,6 +53,27 @@ export function AuthScreen() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setError('');
+    setInfo('');
+    if (!email) {
+      setError('Введи email, на который придёт ссылка для восстановления');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetErr) throw resetErr;
+      setInfo('Письмо с ссылкой для восстановления отправлено на ' + email);
+    } catch (err: any) {
+      setError(err.message || 'Не удалось отправить письмо');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
