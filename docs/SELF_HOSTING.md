@@ -87,7 +87,30 @@ docker compose exec db psql -U inga_db_user -d postgres -c \
 | Бэкап БД | `docker compose exec db pg_dump -U inga_db_user postgres > backup.sql` |
 | Рестарт сервиса | `docker compose restart api` |
 | Полная остановка | `docker compose down` (данные в volume сохраняются) |
-| Снести данные | `docker compose down -v` ⚠️ |
+| Пересборка с сохранением данных | `docker compose up -d --build` ✅ |
+| Обновление образов | `docker compose pull && docker compose up -d` ✅ |
+| Снести данные | `docker compose down -v` ⚠️ (необратимо) |
+
+### Постоянное хранилище
+
+Данные живут в **named volumes** (не внутри контейнеров):
+
+| Volume | Что хранит | Путь в контейнере |
+|---|---|---|
+| `legche_pgdata` | Postgres: пользователи, профили, чек-ины, RLS — **вся БД** | `/var/lib/postgresql/data` |
+| `legche_storage` | Файлы Supabase Storage (аватары, загрузки) | `/var/lib/storage` |
+
+Volumes **переживают**: `restart`, `stop`, `down`, `up --build`, `pull`, обновление образа, переименование папки проекта (имена закреплены через `name:` в `docker-compose.yml`).
+
+Volumes **удаляются только** командой `docker compose down -v` или `docker volume rm`.
+
+Бэкап на хосте:
+```bash
+docker run --rm -v legche_pgdata:/data -v $(pwd):/backup alpine \
+  tar czf /backup/pgdata-$(date +%F).tar.gz -C /data .
+```
+
+Init-скрипт `server/migrations/000_init.sql` монтируется в `/docker-entrypoint-initdb.d/` и выполняется **только на пустом томе** — повторный `up --build` его не перезапустит и данные не затрёт.
 
 ## Переменные окружения
 
