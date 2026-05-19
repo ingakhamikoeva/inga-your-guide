@@ -13,6 +13,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
   const [googleLoading, setGoogleLoading] = useState(false);
