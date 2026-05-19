@@ -251,6 +251,27 @@ services:
     ports:
       - "80:80"
 
+# ─────────────────────────────────────────────────────────────────────────
+# Persistent named volumes.
+#
+# Survive:
+#   • docker compose restart / stop / start
+#   • docker compose down            (containers removed, volumes kept)
+#   • docker compose up --build      (image rebuild, data kept)
+#   • docker compose pull && up -d   (image upgrade, data kept)
+#
+# Destroyed ONLY by an explicit:
+#   • docker compose down -v
+#   • docker volume rm legche_pgdata legche_storage
+#
+# Explicit `name:` pins the volume name regardless of COMPOSE_PROJECT_NAME
+# or the directory the compose file is launched from, so moving / renaming
+# the project folder will NOT orphan your data.
+# ─────────────────────────────────────────────────────────────────────────
 volumes:
   legche_pgdata:
+    name: legche_pgdata
+    driver: local
   legche_storage:
+    name: legche_storage
+    driver: local
