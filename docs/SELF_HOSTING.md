@@ -138,7 +138,15 @@ Init-скрипт `server/migrations/000_init.sql` монтируется в `/d
 
 ## Траблшутинг
 
-**`auth` падает с "role does not exist"** — supabase/postgres-образ создаёт нужные роли при первом старте. Если использовали чистый `postgres:15`, поменяйте на `supabase/postgres:15.8.1.060` (как в compose).
+**`Role "supabase_admin"/"supabase_auth_admin"/"authenticator" does not exist`** или `password authentication failed` у auth/rest/realtime — том `legche_pgdata` был создан без supabase-init-скриптов (типичный случай: первый запуск прервался, либо том унаследован от чистого `postgres:15`). Чините **без потери данных**:
+
+```bash
+./scripts/bootstrap-roles.sh
+```
+
+Скрипт идемпотентно создаёт `supabase_admin`, `supabase_auth_admin`, `supabase_storage_admin`, `authenticator`, `anon`, `authenticated`, `service_role`, выставляет им пароль из `POSTGRES_PASSWORD`, создаёт схемы `auth`/`storage`/`_realtime`/`extensions` и перезапускает зависимые сервисы.
+
+**`auth` падает с `Failed to load configuration: parse "": empty url`** — в `.env` пустой `SITE_URL` или `API_EXTERNAL_URL`. Обе переменные обязательны и должны быть полными URL со схемой (`https://legche.online`, `https://api.legche.online`).
 
 **`401` на `/rest/v1/*`** — Kong требует `apikey` header или `Authorization: Bearer <jwt>`. supabase-js клиент шлёт оба автоматически — убедитесь, что `VITE_SUPABASE_PUBLISHABLE_KEY` равен `ANON_KEY`.
 
