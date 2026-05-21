@@ -14,9 +14,11 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 COPY package.json bun.lockb* package-lock.json* ./
 RUN if [ -f bun.lockb ]; then \
-      npm i -g bun && bun install --frozen-lockfile; \
-    else \
+      npm i -g bun && bun install; \
+    elif [ -f package-lock.json ]; then \
       npm ci; \
+    else \
+      npm install; \
     fi
 
 COPY . .
