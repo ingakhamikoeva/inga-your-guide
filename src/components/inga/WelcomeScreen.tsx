@@ -70,9 +70,9 @@ export function WelcomeScreen() {
       ) : (
         <>
           <div className="inga-bubble text-center max-w-sm mb-8">
-            <p className="text-lg font-semibold mb-2">Я помогу тебе прийти к желаемому весу.</p>
-            <p className="text-muted-foreground mb-2">Мягко, без срывов и откатов.</p>
-            <p className="text-muted-foreground">Тебя ждут вкусная еда, понятная система и поддержка.</p>
+            <p className="text-lg font-semibold mb-2">Я рядом, чтобы путь к желаемому весу стал легче.</p>
+            <p className="text-muted-foreground mb-2">Без жёстких ограничений, срывов и откатов.</p>
+            <p className="text-muted-foreground">Тебя ждут вкусная еда, понятная система и поддержка на каждом этапе.</p>
           </div>
           <button onClick={handleStartFresh} className="inga-btn-primary text-lg px-10 py-4">
             Начать
