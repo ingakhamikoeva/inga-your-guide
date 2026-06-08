@@ -87,6 +87,9 @@ CREATE SCHEMA IF NOT EXISTS _realtime AUTHORIZATION supabase_admin;
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
 
+-- GoTrue создаёт schema_migrations в public
+GRANT USAGE, CREATE ON SCHEMA public TO supabase_auth_admin;
+
 -- Доступы на public для REST
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL  ON ALL TABLES    IN SCHEMA public TO anon, authenticated, service_role;
