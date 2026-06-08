@@ -26,7 +26,9 @@ fi
 
 echo "→ Создаю/обновляю системные роли Supabase в БД $POSTGRES_DB…"
 
-docker compose exec -T db psql -v ON_ERROR_STOP=1 \
+docker compose exec -T db env PGPASSWORD="$POSTGRES_PASSWORD" \
+  psql -v ON_ERROR_STOP=1 \
+  -h 127.0.0.1 -p 5432 \
   -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<SQL
 -- Идемпотентно: создаём роли только если их нет, и выставляем пароль.
 
