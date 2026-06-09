@@ -292,23 +292,6 @@ export async function resetPasswordHandler(req, res) {
   }
 }
 
-// ── OAuth (stubs) ─────────────────────────────────────────────────
-// Real Google/Apple flows arrive in Phase 6. For now return 501 so
-// the frontend can detect that managed OAuth isn't wired here yet.
-
-export function oauthRedirectHandler(req, res) {
-  const provider = String(req.params?.provider || "");
-  res.status(501).json({
-    error: "oauth_not_configured",
-    provider,
-    message: "OAuth providers are not enabled on this server yet.",
-  });
-}
-
-export function oauthCallbackHandler(_req, res) {
-  res.status(501).json({ error: "oauth_not_configured" });
-}
-
 // ── router wiring helper ──────────────────────────────────────────
 
 export function registerAuthRoutes(app, prefix = "/api/v1/auth") {
@@ -319,6 +302,5 @@ export function registerAuthRoutes(app, prefix = "/api/v1/auth") {
   app.get(`${prefix}/me`, meHandler);
   app.post(`${prefix}/forgot-password`, forgotPasswordHandler);
   app.post(`${prefix}/reset-password`, resetPasswordHandler);
-  app.get(`${prefix}/oauth/:provider`, oauthRedirectHandler);
-  app.get(`${prefix}/oauth/:provider/callback`, oauthCallbackHandler);
 }
+
