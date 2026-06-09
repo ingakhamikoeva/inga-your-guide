@@ -147,18 +147,6 @@ export const auth = {
     }
   },
 
-  // OAuth — server-side redirect. Returns { redirected: true } once
-  // the browser navigation is initiated.
-  async signInWithOAuth(
-    provider: 'google' | 'apple' | 'microsoft',
-    opts?: { redirect_uri?: string; extraParams?: Record<string, string> }
-  ): Promise<{ error: Error | null; redirected?: boolean }> {
-    const redirect = opts?.redirect_uri || window.location.origin;
-    const params = new URLSearchParams({ redirect_uri: redirect, ...(opts?.extraParams || {}) });
-    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
-    window.location.assign(`${base}/auth/oauth/${provider}?${params.toString()}`);
-    return { error: null, redirected: true };
-  },
 };
 
 function toError(e: unknown): Error {
@@ -167,21 +155,3 @@ function toError(e: unknown): Error {
   return new Error(String(e));
 }
 
-// Bridge OAuth tokens returned on the URL fragment from the API callback.
-if (typeof window !== 'undefined') {
-  try {
-    const hash = window.location.hash.replace(/^#/, '');
-    if (hash) {
-      const p = new URLSearchParams(hash);
-      const at = p.get('access_token');
-      const rt = p.get('refresh_token');
-      if (at && rt) {
-        setTokens(at, rt);
-        window.history.replaceState({}, '', window.location.pathname + window.location.search);
-        apiFetch<{ user: StoredUser }>('/auth/me')
-          .then((r) => { setTokens(at, rt, r.user); notifyAuthChange('SIGNED_IN'); })
-          .catch(() => notifyAuthChange('SIGNED_IN'));
-      }
-    }
-  } catch {}
-}
