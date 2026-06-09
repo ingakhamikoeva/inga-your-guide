@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/lib/auth';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -13,14 +13,14 @@ export default function ResetPassword() {
   const [info, setInfo] = useState('');
 
   useEffect(() => {
-    // Supabase auto-parses tokens from URL hash on load and fires PASSWORD_RECOVERY
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // Auth client auto-parses ?token=...&type=recovery (API mode) or hash (Supabase mode)
+    // and fires PASSWORD_RECOVERY.
+    const { data: { subscription } } = auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         setReady(true);
       }
     });
-    // If user already has a recovery session
-    supabase.auth.getSession().then(({ data }) => {
+    auth.getSession().then(({ data }) => {
       if (data.session) setReady(true);
     });
     return () => subscription.unsubscribe();
@@ -32,7 +32,7 @@ export default function ResetPassword() {
     setInfo('');
     setLoading(true);
     try {
-      const { error: updErr } = await supabase.auth.updateUser({ password });
+      const { error: updErr } = await auth.updateUser({ password });
       if (updErr) throw updErr;
       setInfo('Пароль обновлён. Перенаправляю...');
       setTimeout(() => navigate('/'), 1200);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/lib/auth';
 import { getSetting, saveSetting, isCurrentUserAdmin } from '@/lib/app-settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +59,7 @@ export default function Admin() {
   const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
-    const sub = supabase.auth.onAuthStateChange((_e, session) => {
+    const sub = auth.onAuthStateChange((_e, session) => {
       if (!session) setPhase('login');
       else void verify();
     });
@@ -68,7 +68,7 @@ export default function Admin() {
   }, []);
 
   async function verify() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await auth.getSession();
     if (!session) { setPhase('login'); return; }
     const isAdmin = await isCurrentUserAdmin();
     if (!isAdmin) { setPhase('denied'); return; }
@@ -92,7 +92,7 @@ export default function Admin() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setSigningIn(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await auth.signInWithPassword({ email, password });
     setSigningIn(false);
     if (error) {
       toast({ title: 'Не удалось войти', description: error.message, variant: 'destructive' });

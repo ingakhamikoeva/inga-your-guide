@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/lib/auth';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AuthScreen } from '@/components/inga/AuthScreen';
 import { WelcomeScreen } from '@/components/inga/WelcomeScreen';
@@ -36,7 +36,7 @@ function AppFlow() {
       // Always hydrate from DB on login — localStorage may be empty (e.g. new domain)
       if (!hydratedRef.done) {
         hydratedRef.done = true;
-        // Defer to avoid Supabase deadlock inside auth callback
+        // Defer to avoid auth-callback deadlocks
         setTimeout(async () => {
           try {
             await hydrateFromDb();
@@ -47,11 +47,11 @@ function AppFlow() {
       }
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
       handleAuth(!!session?.user);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    auth.getSession().then(({ data: { session } }) => {
       handleAuth(!!session?.user);
     });
 
