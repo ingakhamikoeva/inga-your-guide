@@ -1,13 +1,8 @@
-// Auth client. Mirrors the subset of `supabase.auth` used in this app so
-// pages can switch over with minimal diffs.
-//
-// Behaviour:
-// - If VITE_API_URL (or VITE_API_BASE_URL) is set, talks to the Node API.
-// - Otherwise falls back to the existing Supabase client (keeps the Lovable
-//   preview working during the staged migration).
+// Auth client. Talks to the standalone Node API (/api/v1/auth/*).
+// Mirrors the subset of supabase.auth used by the app so call sites
+// don't need to change.
 
-import { supabase } from '@/integrations/supabase/client';
-import { apiFetch, HAS_API, ApiError } from './api-client';
+import { apiFetch, ApiError } from './api-client';
 import {
   type AuthEvent,
   type AppSession,
@@ -34,8 +29,8 @@ interface TokenResp {
 }
 
 // ── recovery flow bootstrap ───────────────────────────────────────
-// On load, if the URL carries a recovery token, stash it and emit
-// PASSWORD_RECOVERY so /reset-password can react like with Supabase.
+// If the URL carries a recovery token, stash it and emit
+// PASSWORD_RECOVERY so /reset-password can react.
 const RECOVERY_KEY = 'inga_recovery_token';
 function bootstrapRecovery() {
   if (typeof window === 'undefined') return;
@@ -45,35 +40,19 @@ function bootstrapRecovery() {
     const type = url.searchParams.get('type');
     if (t && type === 'recovery') {
       sessionStorage.setItem(RECOVERY_KEY, t);
-      // strip query params so reloads don't re-fire
       url.searchParams.delete('token');
       url.searchParams.delete('type');
       window.history.replaceState({}, '', url.toString());
-      // Defer so subscribers from page mount have time to attach.
       setTimeout(() => notifyAuthChange('PASSWORD_RECOVERY'), 0);
     }
   } catch {}
 }
-if (HAS_API) bootstrapRecovery();
+bootstrapRecovery();
 
 // ── public API ────────────────────────────────────────────────────
 
 export const auth = {
   async signUp(args: { email: string; password: string }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
-    if (!HAS_API) {
-      const { data, error } = await supabase.auth.signUp({
-        email: args.email,
-        password: args.password,
-        options: { emailRedirectTo: `${window.location.origin}/` },
-      });
-      return {
-        data: {
-          session: data.session as unknown as AppSession | null,
-          user: (data.user as unknown as StoredUser) || null,
-        },
-        error: error || null,
-      };
-    }
     try {
       const r = await apiFetch<TokenResp>('/auth/signup', {
         method: 'POST',
@@ -89,16 +68,6 @@ export const auth = {
   },
 
   async signInWithPassword(args: { email: string; password: string }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
-    if (!HAS_API) {
-      const { data, error } = await supabase.auth.signInWithPassword(args);
-      return {
-        data: {
-          session: data.session as unknown as AppSession | null,
-          user: (data.user as unknown as StoredUser) || null,
-        },
-        error: error || null,
-      };
-    }
     try {
       const r = await apiFetch<TokenResp>('/auth/login', {
         method: 'POST',
@@ -114,10 +83,6 @@ export const auth = {
   },
 
   async signOut(): Promise<AuthResult> {
-    if (!HAS_API) {
-      const { error } = await supabase.auth.signOut();
-      return { error: error || null };
-    }
     try {
       await apiFetch('/auth/logout', { method: 'POST', retryOn401: false }).catch(() => undefined);
     } finally {
@@ -128,24 +93,10 @@ export const auth = {
   },
 
   async getSession(): Promise<SessionResult> {
-    if (!HAS_API) {
-      const { data, error } = await supabase.auth.getSession();
-      return {
-        data: { session: (data.session as unknown as AppSession | null) || null },
-        error: error || null,
-      };
-    }
     return { data: { session: currentSession() }, error: null };
   },
 
   async getUser(): Promise<UserResult> {
-    if (!HAS_API) {
-      const { data, error } = await supabase.auth.getUser();
-      return {
-        data: { user: (data.user as unknown as StoredUser) || null },
-        error: error || null,
-      };
-    }
     const cached = getStoredUser();
     if (cached) return { data: { user: cached }, error: null };
     try {
@@ -159,31 +110,12 @@ export const auth = {
   onAuthStateChange(cb: (event: AuthEvent, session: AppSession | null) => void): {
     data: { subscription: { unsubscribe: () => void } };
   } {
-    if (!HAS_API) {
-      const { data } = supabase.auth.onAuthStateChange((event, session) => {
-        cb(event as AuthEvent, session as unknown as AppSession | null);
-      });
-      return {
-        data: {
-          subscription: {
-            unsubscribe: () => data.subscription.unsubscribe(),
-          },
-        },
-      };
-    }
     const unsub = subscribe(cb);
-    // Emit an initial event so the consumer doesn't need a separate getSession call.
     setTimeout(() => cb(currentSession() ? 'SIGNED_IN' : 'SIGNED_OUT', currentSession()), 0);
     return { data: { subscription: { unsubscribe: unsub } } };
   },
 
   async resetPasswordForEmail(email: string, opts?: { redirectTo?: string }): Promise<AuthResult> {
-    if (!HAS_API) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: opts?.redirectTo,
-      });
-      return { error: error || null };
-    }
     try {
       await apiFetch('/auth/forgot-password', {
         method: 'POST',
@@ -197,12 +129,8 @@ export const auth = {
   },
 
   // Mirrors supabase.auth.updateUser({ password }) — used by ResetPassword.tsx.
-  // In API mode, consumes the recovery token captured at page load.
+  // Consumes the recovery token captured at page load.
   async updateUser(args: { password: string }): Promise<AuthResult> {
-    if (!HAS_API) {
-      const { error } = await supabase.auth.updateUser({ password: args.password });
-      return { error: error || null };
-    }
     const token = sessionStorage.getItem(RECOVERY_KEY);
     if (!token) return { error: new Error('No recovery token in session') };
     try {
@@ -220,26 +148,15 @@ export const auth = {
   },
 
   // OAuth — server-side redirect. Returns { redirected: true } once
-  // the browser navigation is initiated, mirroring the lovable wrapper.
+  // the browser navigation is initiated.
   async signInWithOAuth(
     provider: 'google' | 'apple' | 'microsoft',
     opts?: { redirect_uri?: string; extraParams?: Record<string, string> }
   ): Promise<{ error: Error | null; redirected?: boolean }> {
-    if (!HAS_API) {
-      // Defer to Supabase OAuth via the existing lovable wrapper at the call site.
-      try {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: provider as 'google' | 'apple' | 'azure',
-          options: { redirectTo: opts?.redirect_uri, queryParams: opts?.extraParams },
-        });
-        return { error: error || null, redirected: !error };
-      } catch (e) {
-        return { error: toError(e) };
-      }
-    }
     const redirect = opts?.redirect_uri || window.location.origin;
     const params = new URLSearchParams({ redirect_uri: redirect, ...(opts?.extraParams || {}) });
-    window.location.assign(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL}/auth/oauth/${provider}?${params.toString()}`);
+    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '';
+    window.location.assign(`${base}/auth/oauth/${provider}?${params.toString()}`);
     return { error: null, redirected: true };
   },
 };
@@ -251,7 +168,7 @@ function toError(e: unknown): Error {
 }
 
 // Bridge OAuth tokens returned on the URL fragment from the API callback.
-if (HAS_API && typeof window !== 'undefined') {
+if (typeof window !== 'undefined') {
   try {
     const hash = window.location.hash.replace(/^#/, '');
     if (hash) {
@@ -261,7 +178,6 @@ if (HAS_API && typeof window !== 'undefined') {
       if (at && rt) {
         setTokens(at, rt);
         window.history.replaceState({}, '', window.location.pathname + window.location.search);
-        // Best-effort populate user; SIGNED_IN will be fired by /auth/me consumers.
         apiFetch<{ user: StoredUser }>('/auth/me')
           .then((r) => { setTokens(at, rt, r.user); notifyAuthChange('SIGNED_IN'); })
           .catch(() => notifyAuthChange('SIGNED_IN'));

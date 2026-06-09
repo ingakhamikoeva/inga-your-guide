@@ -452,8 +452,7 @@ CREATE TRIGGER update_daily_nutrition_summary_updated_at
   BEFORE UPDATE ON public.daily_nutrition_summary
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- Realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_nutrition_summary;
+-- (realtime publication removed — standalone deploy has no PostgREST/realtime)
 
 -- ============ FOOD REFERENCE (internal product dictionary) ============
 CREATE TABLE IF NOT EXISTS public.food_reference (
@@ -565,9 +564,6 @@ CREATE POLICY "Users can delete own events" ON public.user_events
 CREATE POLICY "Users can update own consultations" ON public.consultations
   FOR UPDATE USING (user_id IN (SELECT u.user_id FROM users u WHERE u.auth_id = auth.uid()))
   WITH CHECK (user_id IN (SELECT u.user_id FROM users u WHERE u.auth_id = auth.uid()));
-
--- 2. Remove daily_nutrition_summary from realtime publication (not used in app)
-ALTER PUBLICATION supabase_realtime DROP TABLE public.daily_nutrition_summary;
 
 -- 3. Lock down SECURITY DEFINER functions: revoke EXECUTE from public roles
 REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;

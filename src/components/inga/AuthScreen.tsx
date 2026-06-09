@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { lovable } from '@/integrations/lovable/index';
 import { useApp } from '@/context/AppContext';
 
 type AuthMode = 'login' | 'signup';
@@ -23,7 +22,7 @@ export function AuthScreen() {
     setError('');
     setGoogleLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth('google', {
+      const result = await auth.signInWithOAuth('google', {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
@@ -40,7 +39,7 @@ export function AuthScreen() {
     setError('');
     setAppleLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth('apple', {
+      const result = await auth.signInWithOAuth('apple', {
         redirect_uri: window.location.origin,
       });
       if (result.error) {
