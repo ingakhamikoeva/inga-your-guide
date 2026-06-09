@@ -1,7 +1,7 @@
 // Data layer: talks only to the self-hosted Node API. No Supabase.
 // All endpoints take user_id from the JWT on the server side.
 
-import type { Json } from '@/integrations/supabase/types';
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 import type { UserProfile, Calculations, FoodProfile } from './types';
 import { apiFetch } from './api-client';
 import { currentSession } from './auth-storage';
