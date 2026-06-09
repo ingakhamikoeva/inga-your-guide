@@ -1,5 +1,5 @@
-// Port of supabase/functions/ask-inga to plain Node.
-// Same prompts, routing and provider behaviour — just runs on your own server.
+// "Ask Inga" AI endpoint — runs on the standalone Node API.
+// Same prompts, routing and provider behaviour as the legacy edge function.
 
 import { requireAuth, pool } from "./index.js";
 import { deepseekChat } from "./deepseek.js";
