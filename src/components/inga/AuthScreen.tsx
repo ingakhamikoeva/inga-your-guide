@@ -85,7 +85,6 @@ export function AuthScreen() {
         const { data, error: signUpError } = await auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
         });
         if (signUpError) throw signUpError;
         if (data.session) {
