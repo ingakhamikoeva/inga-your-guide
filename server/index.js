@@ -1,52 +1,20 @@
-// Self-hosted API server. JWT is verified locally against JWT_SECRET (HS256).
-// DB is reached directly via DATABASE_URL.
-
+// Self-hosted API server. JWT (HS256) + direct Postgres. No Supabase.
 import express from "express";
 import cors from "cors";
-import pg from "pg";
-import jwt from "jsonwebtoken";
 
+import { pool } from "./db.js";
+import { requireAuthInline as requireAuth } from "./middleware/auth.js";
 import { handleAskInga } from "./ask-inga.js";
 import { handleEstimateNutrition } from "./estimate-nutrition.js";
 import { handleStartTrial } from "./start-trial.js";
 import { registerAuthRoutes } from "./auth.js";
-import { registerDataRoutes } from "./data.js";
+import { registerRoutes } from "./routes/index.js";
 
-const {
-  PORT = "8787",
-  DATABASE_URL,
-  JWT_SECRET,
-  CORS_ORIGIN = "*",
-} = process.env;
-
-if (!DATABASE_URL) console.warn("[boot] DATABASE_URL is not set");
+const { PORT = "8787", JWT_SECRET, CORS_ORIGIN = "*" } = process.env;
 if (!JWT_SECRET) console.warn("[boot] JWT_SECRET is not set — auth will fail");
 
-export const pool = new pg.Pool({
-  connectionString: DATABASE_URL,
-  max: 5,
-  ssl: DATABASE_URL?.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
-});
-
-export async function requireAuth(req, res) {
-  const h = req.headers.authorization || "";
-  if (!h.startsWith("Bearer ")) {
-    res.status(401).json({ error: "unauthorized" });
-    return null;
-  }
-  const token = h.slice(7);
-  try {
-    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
-    if (!payload?.sub) {
-      res.status(401).json({ error: "unauthorized" });
-      return null;
-    }
-    return { authId: payload.sub, token, payload };
-  } catch (e) {
-    res.status(401).json({ error: "unauthorized" });
-    return null;
-  }
-}
+// Re-export for legacy importers (server/auth.js, ask-inga.js, etc.).
+export { pool, requireAuth };
 
 const app = express();
 app.use(cors({ origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",") }));
@@ -58,16 +26,12 @@ app.get("/healthz", (_req, res) => res.json({ ok: true }));
 registerAuthRoutes(app, "/api/v1/auth");
 
 // Data routes (Phase 2)
-registerDataRoutes(app, "/api/v1");
+registerRoutes(app, "/api/v1");
 
-// AI endpoints — exposed under /api/v1 (new) and at root (legacy).
+// AI endpoints — all under /api/v1.
 app.post("/api/v1/ask-inga", handleAskInga);
 app.post("/api/v1/estimate-nutrition", handleEstimateNutrition);
 app.post("/api/v1/start-trial", handleStartTrial);
-
-app.post("/ask-inga", handleAskInga);
-app.post("/estimate-nutrition", handleEstimateNutrition);
-app.post("/start-trial", handleStartTrial);
 
 app.listen(Number(PORT), () => {
   console.log(`[boot] legche-api listening on :${PORT}`);

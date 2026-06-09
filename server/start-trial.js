@@ -1,17 +1,12 @@
-import { requireAuth, pool } from "./index.js";
+import { pool } from "./db.js";
+import { requireAuthInline } from "./middleware/auth.js";
 
 export async function handleStartTrial(req, res) {
-  const auth = await requireAuth(req, res);
+  const auth = await requireAuthInline(req, res);
   if (!auth) return;
+  const userId = auth.authId;
 
   try {
-    const { rows: userRows } = await pool.query(
-      `SELECT user_id FROM public.users WHERE auth_id = $1 LIMIT 1`,
-      [auth.authId]
-    );
-    if (!userRows.length) return res.status(404).json({ error: "User not found" });
-    const userId = userRows[0].user_id;
-
     const { rows: existing } = await pool.query(
       `SELECT id FROM public.subscriptions WHERE user_id = $1 LIMIT 1`,
       [userId]
