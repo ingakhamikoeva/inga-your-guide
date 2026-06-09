@@ -2,6 +2,7 @@
 // Called after every add/edit/delete of a meal.
 
 import { supabase } from '@/integrations/supabase/client';
+import { HAS_API, apiFetch } from '@/lib/api-client';
 import { resolveMealNutrition } from './food-lookup';
 import { calcDailySummary } from './summary-calc';
 import type { DailySummary } from './types';
@@ -14,16 +15,13 @@ async function getUserId(): Promise<string | null> {
 }
 
 interface RecomputeOptions {
-  meals: string[];                  // raw meal descriptions for this date
-  date: string;                     // 'YYYY-MM-DD'
+  meals: string[];
+  date: string;
   calorieTarget?: number | null;
   goalWeightKg?: number;
 }
 
 export async function recomputeAndSaveSummary(opts: RecomputeOptions): Promise<DailySummary | null> {
-  const userId = await getUserId();
-  if (!userId) return null;
-
   const nutritions = await Promise.all(opts.meals.map(t => resolveMealNutrition(t)));
   const summary = calcDailySummary({
     meals: nutritions,
@@ -32,8 +30,6 @@ export async function recomputeAndSaveSummary(opts: RecomputeOptions): Promise<D
   });
 
   const row = {
-    user_id: userId,
-    date: opts.date,
     calorie_target: summary.calorie_target,
     calories_eaten_estimated: summary.calories_eaten_estimated,
     calories_left: summary.calories_left,
@@ -49,35 +45,28 @@ export async function recomputeAndSaveSummary(opts: RecomputeOptions): Promise<D
     is_estimate: summary.is_estimate,
   };
 
-  const { data: existing } = await supabase
-    .from('daily_nutrition_summary' as any)
-    .select('id')
-    .eq('user_id', userId)
-    .eq('date', opts.date)
-    .maybeSingle();
-
-  if (existing) {
-    await supabase.from('daily_nutrition_summary' as any).update(row).eq('id', (existing as any).id);
-  } else {
-    await supabase.from('daily_nutrition_summary' as any).insert(row);
+  if (HAS_API) {
+    try { await apiFetch(`/nutrition/summary/${opts.date}`, { method: 'PUT', body: row }); }
+    catch (e) { console.error('recomputeAndSaveSummary failed', e); }
+    return summary;
   }
 
-  return summary;
-}
-
-export async function loadSummaryForDate(date: string): Promise<DailySummary | null> {
   const userId = await getUserId();
   if (!userId) return null;
 
-  const { data } = await supabase
+  const fullRow = { user_id: userId, date: opts.date, ...row };
+  const { data: existing } = await supabase
     .from('daily_nutrition_summary' as any)
-    .select('*')
-    .eq('user_id', userId)
-    .eq('date', date)
-    .maybeSingle();
+    .select('id').eq('user_id', userId).eq('date', opts.date).maybeSingle();
+  if (existing) {
+    await supabase.from('daily_nutrition_summary' as any).update(fullRow).eq('id', (existing as any).id);
+  } else {
+    await supabase.from('daily_nutrition_summary' as any).insert(fullRow);
+  }
+  return summary;
+}
 
-  if (!data) return null;
-  const d = data as any;
+function mapSummary(d: any): DailySummary {
   return {
     calorie_target: d.calorie_target,
     calories_eaten_estimated: d.calories_eaten_estimated,
@@ -94,4 +83,19 @@ export async function loadSummaryForDate(date: string): Promise<DailySummary | n
     is_estimate: !!d.is_estimate,
     meal_count: d.calories_eaten_estimated > 0 ? 1 : 0,
   };
+}
+
+export async function loadSummaryForDate(date: string): Promise<DailySummary | null> {
+  if (HAS_API) {
+    const r = await apiFetch<{ summary: any | null }>(`/nutrition/summary/${date}`).catch(() => null);
+    return r?.summary ? mapSummary(r.summary) : null;
+  }
+
+  const userId = await getUserId();
+  if (!userId) return null;
+
+  const { data } = await supabase
+    .from('daily_nutrition_summary' as any)
+    .select('*').eq('user_id', userId).eq('date', date).maybeSingle();
+  return data ? mapSummary(data) : null;
 }
