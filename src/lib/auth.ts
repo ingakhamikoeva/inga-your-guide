@@ -229,7 +229,7 @@ export const auth = {
       // Defer to Supabase OAuth via the existing lovable wrapper at the call site.
       try {
         const { error } = await supabase.auth.signInWithOAuth({
-          provider,
+          provider: provider as 'google' | 'apple' | 'azure',
           options: { redirectTo: opts?.redirect_uri, queryParams: opts?.extraParams },
         });
         return { error: error || null, redirected: !error };
