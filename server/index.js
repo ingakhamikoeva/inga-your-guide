@@ -10,6 +10,7 @@ import { handleAskInga } from "./ask-inga.js";
 import { handleEstimateNutrition } from "./estimate-nutrition.js";
 import { handleStartTrial } from "./start-trial.js";
 import { registerAuthRoutes } from "./auth.js";
+import { registerDataRoutes } from "./data.js";
 
 const {
   PORT = "8787",
@@ -55,6 +56,9 @@ app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
 // Auth (Phase 1)
 registerAuthRoutes(app, "/api/v1/auth");
+
+// Data routes (Phase 2)
+registerDataRoutes(app, "/api/v1");
 
 // AI endpoints — exposed under /api/v1 (new) and at root (legacy).
 app.post("/api/v1/ask-inga", handleAskInga);
