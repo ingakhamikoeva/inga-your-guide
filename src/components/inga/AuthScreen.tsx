@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/lib/auth';
 import { lovable } from '@/integrations/lovable/index';
 import { useApp } from '@/context/AppContext';
 
@@ -62,7 +62,7 @@ export function AuthScreen() {
     }
     setLoading(true);
     try {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error: resetErr } = await auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetErr) throw resetErr;
@@ -82,7 +82,7 @@ export function AuthScreen() {
 
     try {
       if (mode === 'signup') {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await auth.signUp({
           email,
           password,
           options: { emailRedirectTo: `${window.location.origin}/` },
@@ -95,7 +95,7 @@ export function AuthScreen() {
           setMode('login');
         }
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await auth.signInWithPassword({
           email,
           password,
         });

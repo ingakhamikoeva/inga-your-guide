@@ -147,7 +147,7 @@ export default function Admin() {
             У этого аккаунта нет роли <code>admin</code>. Добавьте её в таблице <code>user_roles</code>:
             <br /><code className="text-xs">INSERT INTO user_roles (user_id, role) VALUES ('&lt;ваш auth uid&gt;', 'admin');</code>
           </p>
-          <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); setPhase('login'); }}>
+          <Button variant="outline" onClick={async () => { await auth.signOut(); setPhase('login'); }}>
             <LogOut size={16} className="mr-2" /> Выйти
           </Button>
         </div>
@@ -161,7 +161,7 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       <header className="border-b px-4 py-3 flex items-center justify-between sticky top-0 bg-background z-10">
         <h1 className="font-bold">Админ-панель</h1>
-        <Button size="sm" variant="ghost" onClick={async () => { await supabase.auth.signOut(); setPhase('login'); }}>
+        <Button size="sm" variant="ghost" onClick={async () => { await auth.signOut(); setPhase('login'); }}>
           <LogOut size={16} className="mr-2" /> Выйти
         </Button>
       </header>
