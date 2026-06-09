@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/lib/auth';
 import { getSetting, saveSetting, isCurrentUserAdmin } from '@/lib/app-settings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +59,7 @@ export default function Admin() {
   const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
-    const sub = supabase.auth.onAuthStateChange((_e, session) => {
+    const sub = auth.onAuthStateChange((_e, session) => {
       if (!session) setPhase('login');
       else void verify();
     });
@@ -68,7 +68,7 @@ export default function Admin() {
   }, []);
 
   async function verify() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await auth.getSession();
     if (!session) { setPhase('login'); return; }
     const isAdmin = await isCurrentUserAdmin();
     if (!isAdmin) { setPhase('denied'); return; }
@@ -92,7 +92,7 @@ export default function Admin() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setSigningIn(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await auth.signInWithPassword({ email, password });
     setSigningIn(false);
     if (error) {
       toast({ title: 'Не удалось войти', description: error.message, variant: 'destructive' });
@@ -147,7 +147,7 @@ export default function Admin() {
             У этого аккаунта нет роли <code>admin</code>. Добавьте её в таблице <code>user_roles</code>:
             <br /><code className="text-xs">INSERT INTO user_roles (user_id, role) VALUES ('&lt;ваш auth uid&gt;', 'admin');</code>
           </p>
-          <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); setPhase('login'); }}>
+          <Button variant="outline" onClick={async () => { await auth.signOut(); setPhase('login'); }}>
             <LogOut size={16} className="mr-2" /> Выйти
           </Button>
         </div>
@@ -161,7 +161,7 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       <header className="border-b px-4 py-3 flex items-center justify-between sticky top-0 bg-background z-10">
         <h1 className="font-bold">Админ-панель</h1>
-        <Button size="sm" variant="ghost" onClick={async () => { await supabase.auth.signOut(); setPhase('login'); }}>
+        <Button size="sm" variant="ghost" onClick={async () => { await auth.signOut(); setPhase('login'); }}>
           <LogOut size={16} className="mr-2" /> Выйти
         </Button>
       </header>

@@ -1,24 +1,24 @@
-// Unified function invocation.
-// If VITE_API_BASE_URL is set (self-hosted server), POST there.
-// Otherwise, use supabase.functions.invoke (Lovable Cloud edge functions).
+// Unified function invocation for AI endpoints.
+// If VITE_API_URL/VITE_API_BASE_URL is set, POST to the self-hosted Node API.
+// Otherwise, fall back to supabase.functions.invoke for the Lovable preview.
 
 import { supabase } from '@/integrations/supabase/client';
-
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+import { HAS_API, API_BASE, ApiError } from './api-client';
+import { getAccessToken } from './auth-storage';
 
 export async function invokeFunction<T = unknown>(
   name: string,
   body: unknown,
 ): Promise<{ data: T | null; error: Error | null }> {
-  if (!API_BASE) {
+  if (!HAS_API) {
     const { data, error } = await supabase.functions.invoke(name, { body });
     return { data: (data as T) ?? null, error: (error as Error) ?? null };
   }
 
   try {
-    const { data: session } = await supabase.auth.getSession();
-    const token = session?.session?.access_token;
-    const res = await fetch(`${API_BASE}/${name}`, {
+    const token = getAccessToken();
+    const url = `${API_BASE}/${name}`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ export async function invokeFunction<T = unknown>(
     });
     const json = await res.json().catch(() => null);
     if (!res.ok) {
-      return { data: (json as T) ?? null, error: new Error((json as any)?.error || `HTTP ${res.status}`) };
+      return { data: (json as T) ?? null, error: new ApiError(res.status, json) };
     }
     return { data: json as T, error: null };
   } catch (e) {
