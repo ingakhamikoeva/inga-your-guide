@@ -65,6 +65,18 @@ docker compose exec db psql -U inga_db_user -d postgres -c \
      SELECT user_id, 'admin' FROM public.app_credentials WHERE email='you@example.com';"
 ```
 
+## Миграция данных из Supabase Cloud (опционально)
+
+Если переезжаете с legacy-проекта на Supabase Cloud, перенесите данные одним скриптом:
+
+```bash
+SOURCE_DB_URL='postgres://postgres.<ref>:<pwd>@aws-0-...pooler.supabase.com:6543/postgres' \
+  ./scripts/migrate-from-supabase.sh
+```
+
+Скрипт делает `pg_dump public.*` из облака, мапит `auth.users` → `public.app_credentials` (bcrypt-хеши сохраняются, пользователи только-через-OAuth попадают с `NULL`-хешем и должны зайти повторно), а `public.users.auth_id` остаётся как историческая ссылка.
+
+
 ## Полезные команды
 
 | Действие | Команда |
