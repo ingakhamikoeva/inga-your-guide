@@ -1,5 +1,5 @@
-// Self-hosted API server. No Supabase SDK — JWT is verified locally
-// against JWT_SECRET (HS256). DB is reached directly via DATABASE_URL.
+// Self-hosted API server. JWT is verified locally against JWT_SECRET (HS256).
+// DB is reached directly via DATABASE_URL.
 
 import express from "express";
 import cors from "cors";
@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken";
 import { handleAskInga } from "./ask-inga.js";
 import { handleEstimateNutrition } from "./estimate-nutrition.js";
 import { handleStartTrial } from "./start-trial.js";
+import { registerAuthRoutes } from "./auth.js";
 
 const {
   PORT = "8787",
@@ -34,8 +35,6 @@ export async function requireAuth(req, res) {
   }
   const token = h.slice(7);
   try {
-    // Supabase issues HS256 JWTs signed with the project's JWT secret.
-    // We verify locally — no network call, no Supabase SDK needed.
     const payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
     if (!payload?.sub) {
       res.status(401).json({ error: "unauthorized" });
@@ -53,6 +52,14 @@ app.use(cors({ origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",") }));
 app.use(express.json({ limit: "100kb" }));
 
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
+
+// Auth (Phase 1)
+registerAuthRoutes(app, "/api/v1/auth");
+
+// AI endpoints — exposed under /api/v1 (new) and at root (legacy).
+app.post("/api/v1/ask-inga", handleAskInga);
+app.post("/api/v1/estimate-nutrition", handleEstimateNutrition);
+app.post("/api/v1/start-trial", handleStartTrial);
 
 app.post("/ask-inga", handleAskInga);
 app.post("/estimate-nutrition", handleEstimateNutrition);
