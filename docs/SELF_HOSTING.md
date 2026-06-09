@@ -1,28 +1,24 @@
 # Self-Hosting Guide — Личный диетолог Инга
 
-Полностью автономный деплой на ваш сервер. Никаких облачных зависимостей, кроме DeepSeek и (опционально) SMTP-провайдера.
+Полностью автономный деплой на ваш сервер. Только 3 контейнера, никаких Supabase-компонентов. Внешние зависимости — DeepSeek и (опционально) SMTP / OAuth-провайдеры.
 
 ## Архитектура
 
 ```
 Browser → Nginx/Caddy (TLS)
-              ├── legche.online        → web (Vite SPA)
-              └── api.legche.online    → kong:8000
-                                          ├── /auth/v1/*       → gotrue
-                                          ├── /rest/v1/*       → postgrest
-                                          ├── /realtime/v1/*   → realtime
-                                          ├── /storage/v1/*    → storage-api
-                                          └── /functions/v1/*  → api (DeepSeek)
-                                                 ↓
-                                              db (postgres:15 + RLS)
+              ├── legche.online        → web:80     (Vite SPA, nginx)
+              └── api.legche.online    → api:8787   (Node + Express, JWT)
+                                              ↓
+                                         db (postgres:15)
 ```
+
+Никаких Kong / GoTrue / PostgREST / Realtime / Storage / Studio. Фронт ходит **только** в Node API по `/api/v1/*` со своим JWT (HS256).
 
 ## Требования
 
 - Docker 24+ и Docker Compose v2
-- Домен с двумя записями: `legche.online` и `api.legche.online`
-- 4 GB RAM минимум (рекомендуется 8 GB)
-- Node 18+ на машине администратора (для генерации ключей)
+- Домен с двумя записями: `legche.online` (фронт) и `api.legche.online` (API)
+- 1 GB RAM минимум (рекомендуется 2 GB)
 
 ## Установка
 
@@ -30,50 +26,43 @@ Browser → Nginx/Caddy (TLS)
 
 ```bash
 cp .env.example .env
-./scripts/generate-keys.sh >> .env
-# Откройте .env, заполните DEEPSEEK_API_KEY, SMTP, OAuth по желанию
-# Сгенерируйте REALTIME_SECRET_KEY_BASE: openssl rand -base64 64
+# Сгенерируйте JWT-секрет и подставьте в .env:
+openssl rand -base64 48
+# Заполните POSTGRES_PASSWORD, DATABASE_URL, DEEPSEEK_API_KEY, SMTP_*
 ```
 
 ### 2. Запуск
 
 ```bash
 docker compose up -d
-docker compose logs -f db          # дождитесь "ready to accept connections"
-docker compose ps                  # все сервисы — Up (healthy)
+docker compose ps                  # все 3 сервиса — Up
+docker compose logs -f api         # видим "legche-api listening on :8787"
 ```
 
-При **первом** запуске `db` автоматически применит схему из `server/migrations/*.sql` — все таблицы, RLS, триггеры, ENUM-ы создаются 1-в-1 как было на Supabase Cloud.
+При **первом** запуске `db` автоматически прогонит все файлы из `server/migrations/*.sql` (схема таблиц + auth tables из Phase 1). На последующих запусках init-скрипты пропускаются — данные не затираются.
 
 ### 3. Обратный прокси (Caddy — пример)
 
 ```caddy
 legche.online {
-    reverse_proxy localhost:80
+    reverse_proxy localhost:8080
 }
 
 api.legche.online {
-    reverse_proxy localhost:8000
+    reverse_proxy localhost:8787
 }
 ```
 
-Или Nginx — стандартный `proxy_pass` на `80` и `8000`.
+Nginx — стандартный `proxy_pass` на `8080` и `8787`.
 
-### 4. (опционально) Перенос данных из Supabase Cloud
+### 4. Создание первого админа
 
-```bash
-export SOURCE_DB_URL='postgres://postgres.<ref>:<pwd>@aws-0-...pooler.supabase.com:6543/postgres'
-./scripts/migrate-from-cloud.sh
-```
-
-Скрипт делает `pg_dump --data-only` схем `public` и `auth` и заливает в локальный контейнер. Пользователи, пароли, профили, food-логи — переносятся as-is.
-
-### 5. Создание первого админа
+Зарегистрируйтесь обычным образом через UI, затем:
 
 ```bash
-# Зарегистрируйтесь обычным образом через UI, затем:
 docker compose exec db psql -U inga_db_user -d postgres -c \
-  "INSERT INTO public.user_roles(user_id, role) VALUES ('<your-auth-id>', 'admin');"
+  "INSERT INTO public.user_roles(user_id, role) \
+     SELECT user_id, 'admin' FROM public.app_credentials WHERE email='you@example.com';"
 ```
 
 ## Полезные команды
@@ -81,75 +70,64 @@ docker compose exec db psql -U inga_db_user -d postgres -c \
 | Действие | Команда |
 |---|---|
 | Логи всех сервисов | `docker compose logs -f` |
-| Логи одного | `docker compose logs -f auth` |
+| Логи API | `docker compose logs -f api` |
 | Psql в БД | `docker compose exec db psql -U inga_db_user -d postgres` |
-| Studio (web admin) | http://your-server:3001 |
 | Бэкап БД | `docker compose exec db pg_dump -U inga_db_user postgres > backup.sql` |
-| Рестарт сервиса | `docker compose restart api` |
+| Рестарт API | `docker compose restart api` |
 | Полная остановка | `docker compose down` (данные в volume сохраняются) |
-| Пересборка с сохранением данных | `docker compose up -d --build` ✅ |
-| Обновление образов | `docker compose pull && docker compose up -d` ✅ |
+| Пересборка с сохранением данных | `docker compose up -d --build` |
+| Обновление образов | `docker compose pull && docker compose up -d` |
 | Снести данные | `docker compose down -v` ⚠️ (необратимо) |
 
 ### Постоянное хранилище
 
-Данные живут в **named volumes** (не внутри контейнеров):
-
 | Volume | Что хранит | Путь в контейнере |
 |---|---|---|
-| `legche_pgdata` | Postgres: пользователи, профили, чек-ины, RLS — **вся БД** | `/var/lib/postgresql/data` |
-| `legche_storage` | Файлы Supabase Storage (аватары, загрузки) | `/var/lib/storage` |
+| `legche_pgdata` | Postgres: вся БД (пользователи, профили, чек-ины, плейн) | `/var/lib/postgresql/data` |
 
-Volumes **переживают**: `restart`, `stop`, `down`, `up --build`, `pull`, обновление образа, переименование папки проекта (имена закреплены через `name:` в `docker-compose.yml`).
+Volume переживает: `restart`, `stop`, `down`, `up --build`, `pull`, обновление образа. Удаляется только командой `docker compose down -v`.
 
-Volumes **удаляются только** командой `docker compose down -v` или `docker volume rm`.
-
-Бэкап на хосте:
+Бэкап тома на хост:
 ```bash
 docker run --rm -v legche_pgdata:/data -v $(pwd):/backup alpine \
   tar czf /backup/pgdata-$(date +%F).tar.gz -C /data .
 ```
 
-Init-скрипт `server/migrations/000_init.sql` монтируется в `/docker-entrypoint-initdb.d/` и выполняется **только на пустом томе** — повторный `up --build` его не перезапустит и данные не затрёт.
-
 ## Переменные окружения
 
 | Переменная | Назначение |
 |---|---|
-| `SITE_URL` | Публичный URL фронта (для редиректов OAuth, email-confirm). |
-| `API_EXTERNAL_URL` | Публичный URL API (Kong). |
-| `POSTGRES_*` | Креды БД. **Уже совпадают с вашими настройками.** |
-| `DATABASE_URL` | DSN для нашего Node-API. |
-| `JWT_SECRET` | Подписывает все JWT (auth, anon, service). Генерируется. |
-| `ANON_KEY` | Публичный JWT с role=anon. Используется фронтом и Kong. |
-| `SERVICE_ROLE_KEY` | Админский JWT (обходит RLS). Только для серверного кода. |
-| `GOTRUE_MAILER_AUTOCONFIRM` | `true` → не требовать подтверждения email. Удобно для дева. |
-| `GOTRUE_EXTERNAL_GOOGLE_*` | Включить вход через Google. |
-| `GOTRUE_EXTERNAL_APPLE_*` | Включить вход через Apple. |
-| `DEEPSEEK_*` | LLM для ask-inga и estimate-nutrition. |
-| `VITE_SUPABASE_URL` | На фронте: указывает на Kong. |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | = `ANON_KEY`. |
+| `SITE_URL` | Публичный URL фронта (для email-redirect). |
+| `WEB_HTTP_PORT` | Порт хоста для SPA-nginx (default 8080). |
+| `POSTGRES_*` / `DATABASE_URL` | Креды и DSN Postgres. |
+| `JWT_SECRET` | Подписывает все JWT (HS256). Обязательно ≥32 байт. |
+| `CORS_ORIGIN` | Список origin'ов, которым API отвечает с CORS. |
+| `DEEPSEEK_*` | LLM для `ask-inga` и `estimate-nutrition`. |
+| `SMTP_*` | Транзакционные email (сброс пароля). |
+| `OAUTH_GOOGLE_*` / `OAUTH_APPLE_*` | OAuth-провайдеры (Phase 6). |
+| `VITE_API_URL` | Build-time. URL Node API c `/api/v1`. Зашивается в JS-бандл. |
 
-## Что НЕ изменилось
+## API-эндпоинты
 
-- Весь код фронта (`src/**`) — переезжает без правок.
-- Все RLS-политики, триггеры, `handle_new_user`, `has_role`.
-- API edge-функций (`ask-inga`, `estimate-nutrition`, `start-trial`) — фронт по-прежнему зовёт их через `supabase.functions.invoke(...)`, Kong маршрутизирует на наш Node-сервер.
+Всё под `https://api.legche.online/api/v1/...`:
+
+- `auth/{signup, login, logout, refresh, me, forgot-password, reset-password}`
+- `profile`, `plan`, `behavior`, `assessment` (GET/PUT or POST)
+- `checkins`, `checkins/:date`, `reflections/:date`
+- `meal-plans/:date`, `food-logs`, `chat-events`, `events`, `consultations`
+- `nutrition/summary/:date`, `food-reference?q=...`
+- `admin/me`, `admin/settings/:key` (только для `user_roles.role='admin'`)
+- `ask-inga`, `estimate-nutrition`, `start-trial`
 
 ## Траблшутинг
 
-**`Role "supabase_admin"/"supabase_auth_admin"/"authenticator" does not exist`** или `password authentication failed` у auth/rest/realtime — том `legche_pgdata` был создан без supabase-init-скриптов (типичный случай: первый запуск прервался, либо том унаследован от чистого `postgres:15`). Чините **без потери данных**:
+**API падает с `JWT_SECRET is not set`** — пропустили шаг с генерацией; задайте в `.env` любую случайную строку ≥32 байта.
 
+**`401 unauthorized` на любом эндпоинте** — фронт не приложил `Authorization: Bearer <token>`. Проверьте `VITE_API_URL` в собранном бандле и наличие токена в `localStorage` (`inga_access_token`).
+
+**CORS-ошибка** — добавьте origin фронта в `CORS_ORIGIN` (через запятую).
+
+**Email со сбросом пароля не уходит** — пока SMTP не сконфигурирован, ссылка сброса просто **печатается в логи API**:
 ```bash
-./scripts/bootstrap-roles.sh
+docker compose logs api | grep "password reset"
 ```
-
-Скрипт идемпотентно создаёт `supabase_admin`, `supabase_auth_admin`, `supabase_storage_admin`, `authenticator`, `anon`, `authenticated`, `service_role`, выставляет им пароль из `POSTGRES_PASSWORD`, создаёт схемы `auth`/`storage`/`_realtime`/`extensions` и перезапускает зависимые сервисы.
-
-**`auth` падает с `Failed to load configuration: parse "": empty url`** — в `.env` пустой `SITE_URL` или `API_EXTERNAL_URL`. Обе переменные обязательны и должны быть полными URL со схемой (`https://legche.online`, `https://api.legche.online`).
-
-**`401` на `/rest/v1/*`** — Kong требует `apikey` header или `Authorization: Bearer <jwt>`. supabase-js клиент шлёт оба автоматически — убедитесь, что `VITE_SUPABASE_PUBLISHABLE_KEY` равен `ANON_KEY`.
-
-**Email не приходит** — проверьте SMTP-креды или поставьте `GOTRUE_MAILER_AUTOCONFIRM=true` для тестов.
-
-**Realtime не работает** — проверьте, что задан `REALTIME_SECRET_KEY_BASE` (64 байта).
