@@ -7,5 +7,5 @@ if (!DATABASE_URL) console.warn("[boot] DATABASE_URL is not set");
 export const pool = new pg.Pool({
   connectionString: DATABASE_URL,
   max: 5,
-  ssl: DATABASE_URL?.includes("sslmode=") ? undefined : { rejectUnauthorized: false },
+  ssl: /sslmode=require|sslmode=verify/.test(DATABASE_URL || "") ? { rejectUnauthorized: false } : false,
 });
