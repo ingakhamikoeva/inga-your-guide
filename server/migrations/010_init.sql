@@ -615,16 +615,8 @@ GRANT INSERT (consultation_id, user_id, status, scheduled_at, payment_id)
 GRANT UPDATE (status, scheduled_at)
   ON public.consultations TO authenticated;
 
--- Restrict access to realtime.messages so no client can subscribe
-ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Deny all realtime messages" ON realtime.messages;
-CREATE POLICY "Deny all realtime messages"
-  ON realtime.messages
-  FOR ALL
-  TO anon, authenticated
-  USING (false)
-  WITH CHECK (false);-- Roles
+-- (realtime.messages policy removed — standalone deploy has no realtime schema)
+-- Roles
 DO $$ BEGIN
   CREATE TYPE public.app_role AS ENUM ('admin', 'user');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
