@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 
 export function SurveyDataScreen() {
   const { updateProfile, setStep } = useApp();

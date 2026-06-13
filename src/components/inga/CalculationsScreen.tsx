@@ -1,5 +1,6 @@
 import { useApp } from '@/context/AppContext';
 import { useEffect, useState } from 'react';
+import { AppStep } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 
 export function CalculationsScreen() {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 import { foodTestQuestions, interpretFoodTest } from '@/lib/food-test';
 import { getText } from '@/lib/gender-text';
 

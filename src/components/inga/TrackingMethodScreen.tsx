@@ -1,4 +1,5 @@
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 
 export function TrackingMethodScreen() {
   const { updateProfile, setStep } = useApp();

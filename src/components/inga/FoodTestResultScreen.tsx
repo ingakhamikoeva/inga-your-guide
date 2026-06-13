@@ -1,4 +1,5 @@
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 import { interpretFoodTest } from '@/lib/food-test';
 
 export function FoodTestResultScreen() {
