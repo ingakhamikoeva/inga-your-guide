@@ -28,15 +28,15 @@ export function WelcomeScreen() {
   const getResumeStep = (): AppStep | null => {
     if (!profile.name) return null;
     if (!profile.gender || !profile.age || !profile.height || !profile.weight) return 'survey-data';
-    if (!profile.weightGainReasons?.length) return 'survey-reasons';
-    if (!profile.emotionalTrigger) return 'survey-emotions';
-    if (!calculations) return 'calculations';
-    if (!profile.goalWeight) return 'goal-weight';
-    if (profile.waist === undefined || profile.hips === undefined) return 'measurements';
-    if (!profile.paceChoice) return 'pace-choice';
+    if (!profile.weightGainReasons?.length) return 'survey-reasons' as AppStep;
+    if (!profile.emotionalTrigger) return 'survey-emotions' as AppStep;
+    if (!calculations) return 'calculations' as AppStep;
+    if (!profile.goalWeight) return 'goal-weight' as AppStep;
+    if (profile.waist === undefined || profile.hips === undefined) return 'measurements' as AppStep;
+    if (!profile.paceChoice) return 'pace-choice' as AppStep;
     if (!profile.trackingMethod) return 'tracking-method';
-    if (!profile.foodTestAnswers?.length) return 'food-test-intro';
-    if (!profile.foodProfile) return 'food-test-result';
+    if (!profile.foodTestAnswers?.length) return 'food-test-intro' as AppStep;
+    if (!profile.foodProfile) return 'food-test-result' as AppStep;
     return 'daily';
   };
 
