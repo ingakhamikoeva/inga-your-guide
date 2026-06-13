@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 import { checkGoalBmi } from '@/lib/calculations';
 
 export function GoalWeightScreen() {
@@ -119,7 +120,7 @@ export function GoalWeightScreen() {
         )}
 
         {status === 'ready' && (
-          <button onClick={() => setStep('measurements')} className="inga-btn-primary w-full">
+          <button onClick={() => setStep('measurements' as AppStep)} className="inga-btn-primary w-full">
             Далее →
           </button>
         )}

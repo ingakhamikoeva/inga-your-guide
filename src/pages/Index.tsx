@@ -1,26 +1,21 @@
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/auth';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 import { AuthScreen } from '@/components/inga/AuthScreen';
-import { WelcomeScreen } from '@/components/inga/WelcomeScreen';
-import { SurveyDataScreen } from '@/components/inga/SurveyDataScreen';
 import { SurveyNameScreen } from '@/components/inga/SurveyNameScreen';
-import { SurveyReasonsScreen } from '@/components/inga/SurveyReasonsScreen';
-import { SurveyEmotionsScreen } from '@/components/inga/SurveyEmotionsScreen';
-import { CalculationsScreen } from '@/components/inga/CalculationsScreen';
-import { GoalWeightScreen } from '@/components/inga/GoalWeightScreen';
-import { MeasurementsScreen } from '@/components/inga/MeasurementsScreen';
-import { PaceChoiceScreen } from '@/components/inga/PaceChoiceScreen';
+import { SurveyDataScreen } from '@/components/inga/SurveyDataScreen';
 import { TrackingMethodScreen } from '@/components/inga/TrackingMethodScreen';
-import { FoodTestIntroScreen, FoodTestScreen } from '@/components/inga/FoodTestScreen';
-import { FoodTestResultScreen } from '@/components/inga/FoodTestResultScreen';
-import { SupportStartScreen } from '@/components/inga/SupportStartScreen';
 import { DailyScreen } from '@/components/inga/DailyScreen';
 import { MenuScreen } from '@/components/inga/MenuScreen';
 import { ChatScreen } from '@/components/inga/ChatScreen';
+import { GoalScreen } from '@/components/inga/GoalScreen';
+import { WhyScreen } from '@/components/inga/WhyScreen';
+import { HowItWorksScreen } from '@/components/inga/HowItWorksScreen';
+import { RouteReadyScreen } from '@/components/inga/RouteReadyScreen';
 
 function AppFlow() {
-  const { step, setStep, profile, hydrateFromDb } = useApp();
+  const { step, setStep, hydrateFromDb } = useApp();
   const [authReady, setAuthReady] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const hydratedRef = useState({ done: false })[0];
@@ -33,15 +28,13 @@ function AppFlow() {
         hydratedRef.done = false;
         return;
       }
-      // Always hydrate from DB on login — localStorage may be empty (e.g. new domain)
       if (!hydratedRef.done) {
         hydratedRef.done = true;
-        // Defer to avoid auth-callback deadlocks
         setTimeout(async () => {
           try {
             await hydrateFromDb();
           } catch {
-            if (step === 'auth') setStep('welcome');
+            if (step === 'auth') setStep('survey-name' as AppStep);
           }
         }, 0);
       }
@@ -66,24 +59,17 @@ function AppFlow() {
   }
 
   switch (step) {
-    case 'welcome': return <WelcomeScreen />;
     case 'survey-name': return <SurveyNameScreen />;
+    case 'goal': return <GoalScreen />;
+    case 'why': return <WhyScreen />;
     case 'survey-data': return <SurveyDataScreen />;
-    case 'survey-reasons': return <SurveyReasonsScreen />;
-    case 'survey-emotions': return <SurveyEmotionsScreen />;
-    case 'calculations': return <CalculationsScreen />;
-    case 'goal-weight': return <GoalWeightScreen />;
-    case 'measurements': return <MeasurementsScreen />;
-    case 'pace-choice': return <PaceChoiceScreen />;
     case 'tracking-method': return <TrackingMethodScreen />;
-    case 'food-test-intro': return <FoodTestIntroScreen />;
-    case 'food-test': return <FoodTestScreen />;
-    case 'food-test-result': return <FoodTestResultScreen />;
-    case 'support-start': return <SupportStartScreen />;
+    case 'how-it-works': return <HowItWorksScreen />;
+    case 'route-ready': return <RouteReadyScreen />;
     case 'daily': return <DailyScreen />;
     case 'menu': return <MenuScreen />;
     case 'chat': return <ChatScreen />;
-    default: return <WelcomeScreen />;
+    default: return <SurveyNameScreen />;
   }
 }
 

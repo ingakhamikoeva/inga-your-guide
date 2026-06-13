@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 
 const reasons = [
   { id: 'sweet', label: '🍬 Сладкое' },
@@ -21,7 +22,7 @@ export function SurveyReasonsScreen() {
 
   const handleNext = () => {
     updateProfile({ weightGainReasons: selected });
-    setStep('survey-emotions');
+    setStep('survey-emotions' as AppStep);
   };
 
   return (

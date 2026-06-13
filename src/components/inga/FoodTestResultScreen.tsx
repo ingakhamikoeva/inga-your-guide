@@ -1,4 +1,5 @@
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 import { interpretFoodTest } from '@/lib/food-test';
 
 export function FoodTestResultScreen() {
@@ -43,7 +44,7 @@ export function FoodTestResultScreen() {
         </div>
       </div>
 
-      <button onClick={() => setStep('support-start')} className="inga-btn-primary w-full max-w-sm mt-8">
+      <button onClick={() => setStep('support-start' as AppStep)} className="inga-btn-primary w-full max-w-sm mt-8">
         Далее →
       </button>
     </div>

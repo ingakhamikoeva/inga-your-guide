@@ -1,5 +1,6 @@
 import { useApp } from '@/context/AppContext';
 import { useEffect, useState } from 'react';
+import { AppStep } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 
 export function CalculationsScreen() {
@@ -50,7 +51,7 @@ export function CalculationsScreen() {
         </div>
       </div>
 
-      <button onClick={() => setStep('goal-weight')} className="inga-btn-primary w-full max-w-sm mt-8">
+      <button onClick={() => setStep('goal-weight' as AppStep)} className="inga-btn-primary w-full max-w-sm mt-8">
         Далее →
       </button>
     </div>

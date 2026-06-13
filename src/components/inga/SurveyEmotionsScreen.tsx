@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 
 const emotions = [
   { id: 'anxiety', label: '😟 Тревога' },
@@ -21,7 +22,7 @@ export function SurveyEmotionsScreen() {
 
   const handleNext = () => {
     updateProfile({ emotionalTrigger: selected.join(',') });
-    setStep('calculations');
+    setStep('calculations' as AppStep);
   };
 
   return (

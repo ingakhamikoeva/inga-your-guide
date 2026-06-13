@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 
 export function MeasurementsScreen() {
   const { updateProfile, setStep } = useApp();
@@ -8,7 +9,7 @@ export function MeasurementsScreen() {
 
   const handleNext = () => {
     updateProfile({ waist: parseInt(waist), hips: parseInt(hips) });
-    setStep('pace-choice');
+    setStep('pace-choice' as AppStep);
   };
 
   return (

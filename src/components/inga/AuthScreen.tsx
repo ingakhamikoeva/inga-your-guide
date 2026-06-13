@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { useApp } from '@/context/AppContext';
+import { AppStep } from '@/lib/types';
 
 type AuthMode = 'login' | 'signup';
 
@@ -50,7 +51,7 @@ export function AuthScreen() {
         });
         if (signUpError) throw signUpError;
         if (data.session) {
-          setStep('welcome');
+          setStep('welcome' as AppStep);
         } else {
           setInfo('Мы отправили письмо для подтверждения на ' + email + '. Перейди по ссылке из письма, затем войди.');
           setMode('login');
@@ -61,7 +62,7 @@ export function AuthScreen() {
           password,
         });
         if (signInError) throw signInError;
-        setStep('welcome');
+        setStep('welcome' as AppStep);
       }
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');
