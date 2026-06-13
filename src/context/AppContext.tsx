@@ -200,7 +200,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (dbCheckins.length > 0) setWeeklyData(dbCheckins);
 
     // Determine resume step based on data completeness
-    const resume: AppStep = (() => {
+    const resume = (() => {
       if (!merged.name) return 'survey-name';
       if (!merged.gender || !merged.age || !merged.height || !merged.weight) return 'survey-data';
       if (!merged.weightGainReasons?.length) return 'survey-reasons';
@@ -213,7 +213,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!merged.foodTestAnswers?.length) return 'food-test-intro';
       if (!merged.foodProfile?.pattern) return 'food-test-result';
       return 'daily';
-    })();
+    })() as AppStep;
 
     setStep(resume);
     return resume;
