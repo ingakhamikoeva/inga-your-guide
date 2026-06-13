@@ -5,7 +5,7 @@ import { AppStep } from '@/lib/types';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
 // Sequence of onboarding steps — used to figure out where to resume
-const ONBOARDING_SEQUENCE: AppStep[] = [
+const ONBOARDING_SEQUENCE: string[] = [
   'survey-name',
   'survey-data',
   'survey-reasons',
