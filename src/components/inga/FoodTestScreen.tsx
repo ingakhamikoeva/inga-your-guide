@@ -21,7 +21,7 @@ export function FoodTestIntroScreen() {
         </ul>
         <p className="text-muted-foreground mt-3 text-sm italic">Здесь нет правильных ответов — важно выбрать то, как бывает у тебя чаще всего.</p>
       </div>
-      <button onClick={() => setStep('food-test')} className="inga-btn-primary">
+      <button onClick={() => setStep('food-test' as AppStep)} className="inga-btn-primary">
         Пройти тестирование
       </button>
     </div>
@@ -57,7 +57,7 @@ export function FoodTestScreen() {
           supportStyle: result.supportStyle,
         },
       });
-      setStep('food-test-result');
+      setStep('food-test-result' as AppStep);
     }
   };
 

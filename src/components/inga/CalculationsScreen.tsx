@@ -51,7 +51,7 @@ export function CalculationsScreen() {
         </div>
       </div>
 
-      <button onClick={() => setStep('goal-weight')} className="inga-btn-primary w-full max-w-sm mt-8">
+      <button onClick={() => setStep('goal-weight' as AppStep)} className="inga-btn-primary w-full max-w-sm mt-8">
         Далее →
       </button>
     </div>

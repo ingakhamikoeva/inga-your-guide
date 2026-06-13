@@ -9,7 +9,7 @@ export function MeasurementsScreen() {
 
   const handleNext = () => {
     updateProfile({ waist: parseInt(waist), hips: parseInt(hips) });
-    setStep('pace-choice');
+    setStep('pace-choice' as AppStep);
   };
 
   return (

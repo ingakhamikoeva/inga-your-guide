@@ -22,7 +22,7 @@ export function SurveyEmotionsScreen() {
 
   const handleNext = () => {
     updateProfile({ emotionalTrigger: selected.join(',') });
-    setStep('calculations');
+    setStep('calculations' as AppStep);
   };
 
   return (

@@ -20,7 +20,7 @@ export function SurveyDataScreen() {
       weight: parseFloat(weight),
       stepsPerDay: parseInt(steps),
     });
-    setStep('survey-reasons');
+    setStep('survey-reasons' as AppStep);
   };
 
   return (

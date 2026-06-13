@@ -22,7 +22,7 @@ export function SurveyReasonsScreen() {
 
   const handleNext = () => {
     updateProfile({ weightGainReasons: selected });
-    setStep('survey-emotions');
+    setStep('survey-emotions' as AppStep);
   };
 
   return (

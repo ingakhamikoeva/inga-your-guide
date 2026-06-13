@@ -120,7 +120,7 @@ export function GoalWeightScreen() {
         )}
 
         {status === 'ready' && (
-          <button onClick={() => setStep('measurements')} className="inga-btn-primary w-full">
+          <button onClick={() => setStep('measurements' as AppStep)} className="inga-btn-primary w-full">
             Далее →
           </button>
         )}

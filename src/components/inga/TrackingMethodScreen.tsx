@@ -6,7 +6,7 @@ export function TrackingMethodScreen() {
 
   const handleChoice = (method: 'calories' | 'palm' | 'plate') => {
     updateProfile({ trackingMethod: method });
-    setStep('food-test-intro');
+    setStep('food-test-intro' as AppStep);
   };
 
   return (

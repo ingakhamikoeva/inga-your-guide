@@ -44,7 +44,7 @@ export function FoodTestResultScreen() {
         </div>
       </div>
 
-      <button onClick={() => setStep('support-start')} className="inga-btn-primary w-full max-w-sm mt-8">
+      <button onClick={() => setStep('support-start' as AppStep)} className="inga-btn-primary w-full max-w-sm mt-8">
         Далее →
       </button>
     </div>
