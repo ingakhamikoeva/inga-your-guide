@@ -12,6 +12,18 @@ import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
 import { FixationCompleteModal } from './FixationCompleteModal';
 import { hasReachedGoal, corridorStatus } from '@/lib/soft-swap';
+import ingaPhoto from '@/assets/inga-photo.jpg';
+
+const FOOD_PREFERENCE_OPTIONS = [
+  { emoji: '🥞', label: 'Блины и сырники' },
+  { emoji: '🍰', label: 'Десерты' },
+  { emoji: '🥐', label: 'Несладкая выпечка' },
+  { emoji: '🍝', label: 'Паста и каши' },
+  { emoji: '🥗', label: 'Салаты с майонезом' },
+  { emoji: '🍖', label: 'Жирные вторые блюда' },
+  { emoji: '🌙', label: 'Вечерние перекусы' },
+  { emoji: '🧃', label: 'Сладкие напитки' },
+];
 
 const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 
