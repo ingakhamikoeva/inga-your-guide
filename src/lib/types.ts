@@ -14,6 +14,7 @@ export interface UserProfile {
   trackingMethod: 'calories' | 'palm' | 'plate';
   motivation: string[];
   foodTestAnswers: number[];
+  kgToLose?: number;
   foodProfile?: FoodProfile;
   // Weight-stage tracking
   currentStage?: 'loss' | 'fixation' | 'maintenance';

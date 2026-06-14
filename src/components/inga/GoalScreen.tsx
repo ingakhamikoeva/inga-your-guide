@@ -40,6 +40,7 @@ export function GoalScreen() {
     const currentWeight = profile.weight || (profile as any).current_weight_kg || 70;
     const targetWeight = Math.max(currentWeight - sliderValue, 45);
     updateProfile({
+      kgToLose: sliderValue,
       goal_weight_kg: targetWeight,
       goalWeight: targetWeight,
     } as any);
