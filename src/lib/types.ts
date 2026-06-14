@@ -12,6 +12,7 @@ export interface UserProfile {
   hips: number;
   paceChoice: 'fast' | 'slow';
   trackingMethod: 'calories' | 'palm' | 'plate';
+  motivation: string[];
   foodTestAnswers: number[];
   foodProfile?: FoodProfile;
   // Weight-stage tracking
