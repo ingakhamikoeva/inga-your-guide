@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
@@ -15,9 +16,8 @@ export function RouteReadyScreen() {
 
   const name = profile.name?.trim() || '';
 
-  const goalKg = Math.round(
-    (profile.weight || 70) - (profile.goalWeight || 60)
-  );
+  const rawDiff = (profile.weight || 70) - (profile.goalWeight || 65);
+  const goalKg = Math.max(Math.abs(Math.round(rawDiff)), 1);
   const monthsX = Math.ceil(goalKg / 4);
   const monthsY = Math.ceil(goalKg / 3);
 
@@ -35,10 +35,12 @@ export function RouteReadyScreen() {
       ? 'Сегодня постарайся добавлять нежирный белок размером с 1/4 части тарелки в каждый приём пищи.'
       : 'Сегодня постарайся добавлять нежирный белок размером с твою ладонь без пальцев в каждый приём пищи.';
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   return (
     <div
       className="flex flex-col items-center min-h-screen px-6 py-6 animate-fade-in-up"
-      style={{ backgroundColor: '#FAF5F0' }}
+      style={{ backgroundColor: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}
     >
       {/* Inga greeting */}
       <div className="w-full max-w-sm flex items-start gap-3 mb-6">

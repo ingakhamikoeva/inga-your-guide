@@ -49,7 +49,7 @@ export function WhyScreen() {
   return (
     <div
       className="flex flex-col items-center min-h-screen px-6 py-6 animate-fade-in-up"
-      style={{ backgroundColor: '#FAF5F0' }}
+      style={{ backgroundColor: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}
     >
       {/* Progress + back button */}
       <div className="w-full max-w-sm flex items-center gap-3 mb-8">
