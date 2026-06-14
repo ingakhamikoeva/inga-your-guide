@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.protect_consultations_notes_internal() FROM PUBLIC, anon, authenticated;
