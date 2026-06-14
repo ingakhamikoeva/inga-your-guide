@@ -61,6 +61,35 @@ export function DailyScreen() {
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
+  // Russian date string: "Пятница, 13 июня"
+  const dateLabel = (() => {
+    const raw = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  })();
+  const dayNumber = (dailyReports?.length ?? 0) + 1;
+
+  const showFoodSurvey = !foodSurveyAnswered && (!profile.food_preferences || profile.food_preferences.length === 0);
+  const showCheckinFields = !showFoodSurvey || showMorningCheckin;
+
+  const toggleFood = (label: string) => {
+    setSelectedFoods(prev => prev.includes(label) ? prev.filter(x => x !== label) : [...prev, label]);
+  };
+
+  const handleSubmitFoodSurvey = () => {
+    if (selectedFoods.length === 0) return;
+    updateProfile({ food_preferences: selectedFoods });
+    setFoodSurveyAnswered(true);
+    setTimeout(() => setShowMorningCheckin(true), 600);
+  };
+
+  const ingaResponse = (() => {
+    const first = selectedFoods[0] ?? '';
+    const n = selectedFoods.length;
+    if (n <= 2) return `Поняла, запомнила! 🧡 У меня есть рецепт для «${first}». Покажу сегодня — ты удивишься, насколько это просто.`;
+    if (n <= 4) return `Хороший список! 🧡 Начнём с «${first}» — покажу сегодня. Остальное разберём по одному в день.`;
+    return `Ты любишь поесть со вкусом — это прекрасно! 😄 Всё это можно оставить. Начнём с «${first}» — уже сегодня.`;
+  })();
+
   // Detect "sweet trigger" from weight gain reasons
   const sweetTrigger = (profile.weightGainReasons ?? []).some(r =>
     r.toLowerCase().includes('сладк')
