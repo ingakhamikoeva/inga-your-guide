@@ -420,6 +420,23 @@ export function DailyScreen() {
       {showFixationDone && (
         <FixationCompleteModal sex={profile.gender} onContinue={handleEnterMaintenance} />
       )}
+      {/* Header: date + day badge */}
+      <div className="w-full max-w-sm flex items-center justify-between mb-4">
+        <span className="text-sm text-muted-foreground">{dateLabel}</span>
+        <span
+          style={{
+            background: '#FAEEDA',
+            color: '#FF6200',
+            fontWeight: 600,
+            borderRadius: '20px',
+            padding: '2px 10px',
+            fontSize: '12px',
+          }}
+        >
+          День {dayNumber}
+        </span>
+      </div>
+
       {/* Tab navigation */}
       <div className="flex gap-2 mb-6 w-full max-w-sm">
         {(['morning', 'meals', 'evening'] as DailyTab[]).map(t => (
@@ -432,6 +449,7 @@ export function DailyScreen() {
           </button>
         ))}
       </div>
+
 
       <div className="w-full max-w-sm">
         {tab === 'morning' && (
