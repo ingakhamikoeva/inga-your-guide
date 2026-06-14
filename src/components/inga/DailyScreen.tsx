@@ -454,6 +454,84 @@ export function DailyScreen() {
       <div className="w-full max-w-sm">
         {tab === 'morning' && (
           <div className="space-y-4 animate-fade-in-up">
+            {showFoodSurvey && (
+              <div className="space-y-4">
+                <div className="inga-bubble flex gap-3 items-start">
+                  <img
+                    src={ingaPhoto}
+                    alt="Инга"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      border: '2px solid #FF6200',
+                      objectFit: 'cover',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div className="text-sm">
+                    <p>
+                      <span className="font-semibold">{profile.name || 'Привет'}</span>, прежде чем начнём — скажи, что ты точно не хочешь убирать из меню?
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">Выбери всё что любишь — я покажу лёгкую версию.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {FOOD_PREFERENCE_OPTIONS.map(opt => {
+                    const active = selectedFoods.includes(opt.label);
+                    return (
+                      <button
+                        key={opt.label}
+                        onClick={() => toggleFood(opt.label)}
+                        className="text-left p-3 rounded-2xl text-sm font-medium transition-colors flex items-start gap-2"
+                        style={{
+                          background: active ? '#FFF1E0' : '#FFFFFF',
+                          border: active ? '2px solid #FF6200' : '1px solid #EFE6DC',
+                        }}
+                      >
+                        <span className="text-lg leading-none">{opt.emoji}</span>
+                        <span className="leading-tight">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={handleSubmitFoodSurvey}
+                  disabled={selectedFoods.length === 0}
+                  className="inga-btn-primary w-full disabled:opacity-50"
+                >
+                  Показать лёгкие версии →
+                </button>
+              </div>
+            )}
+
+            {foodSurveyAnswered && (
+              <div className="inga-bubble flex gap-3 items-start animate-fade-in-up">
+                <img
+                  src={ingaPhoto}
+                  alt="Инга"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    border: '2px solid #FF6200',
+                    objectFit: 'cover',
+                    flexShrink: 0,
+                  }}
+                />
+                <p className="text-sm">{ingaResponse}</p>
+              </div>
+            )}
+
+            {foodSurveyAnswered && showMorningCheckin && (
+              <p className="text-center text-xs text-muted-foreground italic py-2">
+                — А теперь — утренний чек-ин —
+              </p>
+            )}
+
+            {showCheckinFields && (<>
             <h3 className="text-xl font-bold">Доброе утро! ☀️</h3>
             <div>
               <label className="block text-sm font-medium mb-1">Вес сегодня (кг)</label>
@@ -503,8 +581,10 @@ export function DailyScreen() {
                 Перейти к питанию →
               </button>
             )}
+            </>)}
           </div>
         )}
+
 
         {tab === 'meals' && (
           <div className="space-y-4 animate-fade-in-up">
