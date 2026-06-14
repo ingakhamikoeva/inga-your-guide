@@ -202,16 +202,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Determine resume step based on data completeness
     const resume = (() => {
       if (!merged.name) return 'survey-name';
-      if (!merged.gender || !merged.age || !merged.height || !merged.weight) return 'survey-data';
-      if (!merged.weightGainReasons?.length) return 'survey-reasons';
-      if (!merged.emotionalTrigger) return 'survey-emotions';
-      if (!calc) return 'calculations';
-      if (!merged.goalWeight) return 'goal-weight';
-      if (merged.waist === undefined || merged.hips === undefined) return 'measurements';
-      if (!merged.paceChoice) return 'pace-choice';
+      if (!merged.goalWeight) return 'goal';
+      if (!merged.motivation?.length) return 'why';
+      if (!merged.age || !merged.height || !merged.weight) return 'survey-data';
       if (!merged.trackingMethod) return 'tracking-method';
-      if (!merged.foodTestAnswers?.length) return 'food-test-intro';
-      if (!merged.foodProfile?.pattern) return 'food-test-result';
       return 'daily';
     })() as AppStep;
 
