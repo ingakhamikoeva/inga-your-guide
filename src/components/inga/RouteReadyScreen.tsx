@@ -15,8 +15,18 @@ export function RouteReadyScreen() {
       (profile.weight || (profile as any).current_weight_kg || 70) -
       ((profile as any).goal_weight_kg || profile.goalWeight || 65)
     )), 1);
-  const monthsX = Math.ceil(goalKg / 4);
-  const monthsY = Math.ceil(goalKg / 3);
+
+  const roundHalf = (n: number) => Math.round(n * 2) / 2;
+  const X = Math.max(roundHalf(goalKg / 3.5), 0.5);
+  const Y = Math.max(roundHalf(goalKg / 2.5), 1);
+
+  const fmt = (n: number) =>
+    n % 1 === 0 ? String(n) : n.toFixed(1).replace('.', ',');
+
+  const monthWord = Y >= 5 ? 'месяцев' : Y === 1 ? 'месяц' : 'месяца';
+  const monthsText = X === Y
+    ? `~${fmt(X)} ${monthWord}`
+    : `~${fmt(X)}–${fmt(Y)} ${monthWord}`;
 
   const calorieTarget = (profile as any).calorie_target as number | undefined;
 
@@ -85,7 +95,7 @@ export function RouteReadyScreen() {
               Цель
             </div>
             <div className="text-sm font-semibold" style={{ color: '#5C4A3D' }}>
-              −{goalKg} кг · ~{monthsX}–{monthsY} {monthWord(monthsY)}
+              −{goalKg} кг · {monthsText}
             </div>
           </div>
         </div>
