@@ -37,10 +37,12 @@ export function GoalScreen() {
     : 'На сколько кг ты хочешь похудеть?';
 
   const handleNext = () => {
-    const goalKg = sliderValue;
-    const currentWeight = profile.weight ?? 70;
-    const goalWeight = currentWeight - goalKg;
-    updateProfile({ goalWeight: Math.max(goalWeight, 45) });
+    const currentWeight = profile.weight || (profile as any).current_weight_kg || 70;
+    const targetWeight = Math.max(currentWeight - sliderValue, 45);
+    updateProfile({
+      goal_weight_kg: targetWeight,
+      goalWeight: targetWeight,
+    } as any);
     setStep('why');
   };
 
