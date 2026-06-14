@@ -16,8 +16,9 @@ export function RouteReadyScreen() {
 
   const name = profile.name?.trim() || '';
 
-  const rawDiff = (profile.weight || 70) - (profile.goalWeight || 65);
-  const goalKg = Math.max(Math.abs(Math.round(rawDiff)), 1);
+  const currentWeight = profile.weight || (profile as any).current_weight_kg || 70;
+  const targetWeight = (profile as any).goal_weight_kg || profile.goalWeight || (currentWeight - 5);
+  const goalKg = Math.max(Math.abs(Math.round(currentWeight - targetWeight)), 1);
   const monthsX = Math.ceil(goalKg / 4);
   const monthsY = Math.ceil(goalKg / 3);
 
