@@ -53,6 +53,9 @@ export function DailyScreen() {
   const [planText, setPlanText] = useState('');
   const [planSavedMessage, setPlanSavedMessage] = useState(false);
   const [yesterdayPlan, setYesterdayPlan] = useState<string | null>(null);
+  const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
+  const [foodSurveyAnswered, setFoodSurveyAnswered] = useState(false);
+  const [showMorningCheckin, setShowMorningCheckin] = useState(false);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
