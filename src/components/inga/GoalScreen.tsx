@@ -3,12 +3,14 @@ import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 import { Slider } from '@/components/ui/slider';
 
-function monthWord(n: number): string {
-  const lastTwo = n % 100;
-  if (lastTwo >= 11 && lastTwo <= 19) return 'месяцев';
-  const last = n % 10;
-  if (last === 1) return 'месяц';
-  if (last >= 2 && last <= 4) return 'месяца';
+const roundHalf = (n: number) => Math.round(n * 2) / 2;
+
+const fmt = (n: number) =>
+  n % 1 === 0 ? String(n) : n.toFixed(1).replace('.', ',');
+
+function monthWordForY(y: number): string {
+  if (y === 1) return 'месяц';
+  if (y < 5) return 'месяца';
   return 'месяцев';
 }
 
@@ -17,8 +19,17 @@ export function GoalScreen() {
   const [value, setValue] = useState<number[]>([10]);
 
   const sliderValue = value[0];
-  const monthsMin = Math.ceil(sliderValue / 4);
-  const monthsMax = Math.ceil(sliderValue / 3);
+
+  const rawX = roundHalf(sliderValue / 3.5);
+  const rawY = roundHalf(sliderValue / 2.5);
+
+  const X = Math.max(rawX, 0.5);
+  const Y = Math.max(rawY, 1);
+
+  const estimateText =
+    X === Y
+      ? `около ${fmt(X)} ${monthWordForY(Y)}`
+      : `${fmt(X)}–${fmt(Y)} ${monthWordForY(Y)}`;
 
   const name = profile.name?.trim();
   const bubbleText = name
@@ -29,7 +40,7 @@ export function GoalScreen() {
     const goalKg = sliderValue;
     const currentWeight = profile.weight ?? 70;
     const goalWeight = currentWeight - goalKg;
-    updateProfile({ goalWeight: Math.max(goalWeight, 45) });
+    updateProfile({ goalWeight Loss: Math.max(goalWeight, 45) });
     setStep('why');
   };
 
@@ -118,7 +129,7 @@ export function GoalScreen() {
           color: '#5C4A3D',
         }}
       >
-        Это примерно {monthsMin}–{monthsMax} {monthWord(monthsMax)} с методом «Лёгкая замена». Мягко и без срывов.
+        Это примерно {estimateText} с методом «Лёгкая замена». Мягко и без срывов.
       </div>
 
       {/* CTA */}
