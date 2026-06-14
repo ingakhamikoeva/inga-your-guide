@@ -12,6 +12,18 @@ import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
 import { FixationCompleteModal } from './FixationCompleteModal';
 import { hasReachedGoal, corridorStatus } from '@/lib/soft-swap';
+import ingaPhoto from '@/assets/inga-photo.jpg';
+
+const FOOD_PREFERENCE_OPTIONS = [
+  { emoji: '🥞', label: 'Блины и сырники' },
+  { emoji: '🍰', label: 'Десерты' },
+  { emoji: '🥐', label: 'Несладкая выпечка' },
+  { emoji: '🍝', label: 'Паста и каши' },
+  { emoji: '🥗', label: 'Салаты с майонезом' },
+  { emoji: '🍖', label: 'Жирные вторые блюда' },
+  { emoji: '🌙', label: 'Вечерние перекусы' },
+  { emoji: '🧃', label: 'Сладкие напитки' },
+];
 
 const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 
@@ -41,10 +53,42 @@ export function DailyScreen() {
   const [planText, setPlanText] = useState('');
   const [planSavedMessage, setPlanSavedMessage] = useState(false);
   const [yesterdayPlan, setYesterdayPlan] = useState<string | null>(null);
+  const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
+  const [foodSurveyAnswered, setFoodSurveyAnswered] = useState(false);
+  const [showMorningCheckin, setShowMorningCheckin] = useState(false);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  // Russian date string: "Пятница, 13 июня"
+  const dateLabel = (() => {
+    const raw = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  })();
+  const dayNumber = (dailyReports?.length ?? 0) + 1;
+
+  const showFoodSurvey = !foodSurveyAnswered && (!profile.food_preferences || profile.food_preferences.length === 0);
+  const showCheckinFields = !showFoodSurvey || showMorningCheckin;
+
+  const toggleFood = (label: string) => {
+    setSelectedFoods(prev => prev.includes(label) ? prev.filter(x => x !== label) : [...prev, label]);
+  };
+
+  const handleSubmitFoodSurvey = () => {
+    if (selectedFoods.length === 0) return;
+    updateProfile({ food_preferences: selectedFoods });
+    setFoodSurveyAnswered(true);
+    setTimeout(() => setShowMorningCheckin(true), 600);
+  };
+
+  const ingaResponse = (() => {
+    const first = selectedFoods[0] ?? '';
+    const n = selectedFoods.length;
+    if (n <= 2) return `Поняла, запомнила! 🧡 У меня есть рецепт для «${first}». Покажу сегодня — ты удивишься, насколько это просто.`;
+    if (n <= 4) return `Хороший список! 🧡 Начнём с «${first}» — покажу сегодня. Остальное разберём по одному в день.`;
+    return `Ты любишь поесть со вкусом — это прекрасно! 😄 Всё это можно оставить. Начнём с «${first}» — уже сегодня.`;
+  })();
 
   // Detect "sweet trigger" from weight gain reasons
   const sweetTrigger = (profile.weightGainReasons ?? []).some(r =>
@@ -376,6 +420,23 @@ export function DailyScreen() {
       {showFixationDone && (
         <FixationCompleteModal sex={profile.gender} onContinue={handleEnterMaintenance} />
       )}
+      {/* Header: date + day badge */}
+      <div className="w-full max-w-sm flex items-center justify-between mb-4">
+        <span className="text-sm text-muted-foreground">{dateLabel}</span>
+        <span
+          style={{
+            background: '#FAEEDA',
+            color: '#FF6200',
+            fontWeight: 600,
+            borderRadius: '20px',
+            padding: '2px 10px',
+            fontSize: '12px',
+          }}
+        >
+          День {dayNumber}
+        </span>
+      </div>
+
       {/* Tab navigation */}
       <div className="flex gap-2 mb-6 w-full max-w-sm">
         {(['morning', 'meals', 'evening'] as DailyTab[]).map(t => (
@@ -389,9 +450,88 @@ export function DailyScreen() {
         ))}
       </div>
 
+
       <div className="w-full max-w-sm">
         {tab === 'morning' && (
           <div className="space-y-4 animate-fade-in-up">
+            {showFoodSurvey && (
+              <div className="space-y-4">
+                <div className="inga-bubble flex gap-3 items-start">
+                  <img
+                    src={ingaPhoto}
+                    alt="Инга"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      border: '2px solid #FF6200',
+                      objectFit: 'cover',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div className="text-sm">
+                    <p>
+                      <span className="font-semibold">{profile.name || 'Привет'}</span>, прежде чем начнём — скажи, что ты точно не хочешь убирать из меню?
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">Выбери всё что любишь — я покажу лёгкую версию.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {FOOD_PREFERENCE_OPTIONS.map(opt => {
+                    const active = selectedFoods.includes(opt.label);
+                    return (
+                      <button
+                        key={opt.label}
+                        onClick={() => toggleFood(opt.label)}
+                        className="text-left p-3 rounded-2xl text-sm font-medium transition-colors flex items-start gap-2"
+                        style={{
+                          background: active ? '#FFF1E0' : '#FFFFFF',
+                          border: active ? '2px solid #FF6200' : '1px solid #EFE6DC',
+                        }}
+                      >
+                        <span className="text-lg leading-none">{opt.emoji}</span>
+                        <span className="leading-tight">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={handleSubmitFoodSurvey}
+                  disabled={selectedFoods.length === 0}
+                  className="inga-btn-primary w-full disabled:opacity-50"
+                >
+                  Показать лёгкие версии →
+                </button>
+              </div>
+            )}
+
+            {foodSurveyAnswered && (
+              <div className="inga-bubble flex gap-3 items-start animate-fade-in-up">
+                <img
+                  src={ingaPhoto}
+                  alt="Инга"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    border: '2px solid #FF6200',
+                    objectFit: 'cover',
+                    flexShrink: 0,
+                  }}
+                />
+                <p className="text-sm">{ingaResponse}</p>
+              </div>
+            )}
+
+            {foodSurveyAnswered && showMorningCheckin && (
+              <p className="text-center text-xs text-muted-foreground italic py-2">
+                — А теперь — утренний чек-ин —
+              </p>
+            )}
+
+            {showCheckinFields && (<>
             <h3 className="text-xl font-bold">Доброе утро! ☀️</h3>
             <div>
               <label className="block text-sm font-medium mb-1">Вес сегодня (кг)</label>
@@ -441,8 +581,10 @@ export function DailyScreen() {
                 Перейти к питанию →
               </button>
             )}
+            </>)}
           </div>
         )}
+
 
         {tab === 'meals' && (
           <div className="space-y-4 animate-fade-in-up">

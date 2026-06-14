@@ -15,6 +15,7 @@ export interface UserProfile {
   motivation: string[];
   foodTestAnswers: number[];
   kgToLose?: number;
+  food_preferences?: string[];
   foodProfile?: FoodProfile;
   // Weight-stage tracking
   currentStage?: 'loss' | 'fixation' | 'maintenance';
