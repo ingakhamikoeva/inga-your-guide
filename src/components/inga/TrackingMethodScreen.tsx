@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 import palmMethod from '@/assets/palm-method.png';
@@ -23,8 +23,10 @@ export function TrackingMethodScreen() {
     borderRadius: '16px',
   });
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   return (
-    <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0' }}>
+    <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
       {/* Progress bar */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -140,7 +142,7 @@ export function TrackingMethodScreen() {
           <p className="text-sm mb-3" style={{ color: '#6B5B4E' }}>
             Измеряешь порции руками — ориентир всегда с тобой
           </p>
-          <img src={palmMethod} alt="Метод ладони" className="w-full rounded-lg" />
+          <img src={palmMethod} alt="Метод ладони" className="w-full rounded-lg" style={{ maxWidth: '280px', width: '100%', display: 'block', margin: '0 auto' }} />
           <p className="text-xs italic mt-3" style={{ color: '#9B8B7E' }}>
             Подходит, если часто ешь вне дома
           </p>

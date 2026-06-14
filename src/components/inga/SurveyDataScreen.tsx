@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Slider } from '@/components/ui/slider';
 import ingaPhoto from '@/assets/inga-photo.jpg';
@@ -45,8 +45,10 @@ export function SurveyDataScreen() {
 
   const fmt = (n: number) => n.toLocaleString('ru-RU').replace(/,/g, ' ');
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   return (
-    <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0' }}>
+    <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
       {/* Progress bar with back button */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -142,10 +144,9 @@ export function SurveyDataScreen() {
 
         <button
           onClick={handleNext}
-          disabled={!canProceed}
-          className="inga-btn-primary w-full mt-6 disabled:opacity-40"
+          className="inga-btn-primary w-full mt-6"
         >
-          Рассчитать →
+          Дальше →
         </button>
       </div>
     </div>

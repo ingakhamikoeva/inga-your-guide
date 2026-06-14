@@ -19,7 +19,7 @@ export function SurveyNameScreen() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+    <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up" style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
       {/* Progress bar: 7 dashes */}
       <div className="w-full max-w-sm flex gap-1.5 mb-8">
         {Array.from({ length: 7 }).map((_, i) => (
