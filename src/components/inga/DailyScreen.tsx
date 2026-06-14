@@ -121,7 +121,10 @@ export function DailyScreen() {
       setMorningAnalysis(result);
       // Stage transition checks
       const stage = profile.currentStage ?? 'loss';
-      if (stage === 'loss' && hasReachedGoal(w, profile.goalWeight) && !profile.goalReachedAt) {
+      const currentWeight = w;
+      const targetWeight = profile.goal_weight_kg || profile.goalWeight || 0;
+      const isGoalReached = targetWeight > 0 && currentWeight <= targetWeight && currentWeight > 0;
+      if (stage === 'loss' && isGoalReached && !profile.goalReachedAt) {
         setShowGoalReached(true);
       } else if (
         stage === 'fixation' &&
