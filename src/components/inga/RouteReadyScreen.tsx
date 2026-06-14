@@ -2,14 +2,8 @@ import { useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
-function monthWord(n: number): string {
-  const lastTwo = n % 100;
-  if (lastTwo >= 11 && lastTwo <= 19) return 'месяцев';
-  const last = n % 10;
-  if (last === 1) return 'месяц';
-  if (last >= 2 && last <= 4) return 'месяца';
-  return 'месяцев';
-}
+
+
 
 export function RouteReadyScreen() {
   const { profile, setStep } = useApp();
