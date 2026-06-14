@@ -8,6 +8,8 @@ export interface UserProfile {
   weightGainReasons: string[];
   emotionalTrigger: string;
   goalWeight: number;
+  goal_weight_kg?: number;
+  current_weight_kg?: number;
   waist: number;
   hips: number;
   paceChoice: 'fast' | 'slow';
