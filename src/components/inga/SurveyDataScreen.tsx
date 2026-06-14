@@ -32,10 +32,17 @@ export function SurveyDataScreen() {
   const canProceed = ageN > 0 && heightN > 0 && weightN > 0;
 
   const handleNext = () => {
+    const enteredWeight = weightN || profile.weight || 70;
+    const kgToLose = profile.kgToLose || 5;
+    const correctGoalWeight = Math.max(enteredWeight - kgToLose, 45);
+
     updateProfile({
       age: ageN,
       height: heightN,
-      weight: weightN,
+      weight: enteredWeight,
+      current_weight_kg: enteredWeight,
+      goal_weight_kg: correctGoalWeight,
+      goalWeight: correctGoalWeight,
       stepsPerDay: steps,
       gender: sex,
       ...({ calorie_target: deficit } as any),
