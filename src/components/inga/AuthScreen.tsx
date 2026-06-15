@@ -8,7 +8,7 @@ import logoImg from '@/assets/logo.png';
 type AuthMode = 'login' | 'signup';
 
 export function AuthScreen() {
-  const { setStep } = useApp();
+  const { setStep, hydrateFromDb } = useApp();
   const [mode, setMode] = useState<AuthMode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +63,8 @@ export function AuthScreen() {
           password,
         });
         if (signInError) throw signInError;
-        setStep('survey-name' as AppStep);
+        await hydrateFromDb();
+        // hydrateFromDb уже вызывает setStep внутри себя
       }
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');
