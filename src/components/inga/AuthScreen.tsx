@@ -8,7 +8,7 @@ import logoImg from '@/assets/logo.png';
 type AuthMode = 'login' | 'signup';
 
 export function AuthScreen() {
-  const { setStep } = useApp();
+  const { setStep, hydrateFromDb } = useApp();
   const [mode, setMode] = useState<AuthMode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
