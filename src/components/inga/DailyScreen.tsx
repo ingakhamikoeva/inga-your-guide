@@ -38,6 +38,12 @@ export function DailyScreen() {
   const [steps, setSteps] = useState('');
   const [mealText, setMealText] = useState('');
   const [meals, setMeals] = useState<string[]>([]);
+  type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean };
+  const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
+  const [waterCount, setWaterCount] = useState(0);
+  const [showMealInput, setShowMealInput] = useState(false);
+  const [showEveningInput, setShowEveningInput] = useState(false);
+  const [eveningText, setEveningText] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
@@ -184,11 +190,48 @@ export function DailyScreen() {
     return d > 0 ? `+${d} кг` : `${d} кг`;
   };
 
+  const mealNameByHour = (h: number) => {
+    if (h >= 6 && h < 10) return 'Завтрак';
+    if (h >= 10 && h < 12) return 'Перекус';
+    if (h >= 12 && h < 15) return 'Обед';
+    if (h >= 15 && h < 18) return 'Полдник';
+    if (h >= 18 && h < 21) return 'Ужин';
+    return 'Поздний перекус';
+  };
+
+  const addMealEntry = (text: string, isEvening = false) => {
+    const t = text.trim();
+    if (!t) return;
+    const now = new Date();
+    const hh = now.getHours().toString().padStart(2, '0');
+    const mm = now.getMinutes().toString().padStart(2, '0');
+    const time = `${hh}:${mm}`;
+    const name = isEvening ? 'Вечерний перекус' : mealNameByHour(now.getHours());
+    setMeals(prev => [...prev, t]);
+    setMealMeta(prev => [...prev, {
+      protein: false, carbs: false, fiber: false, sweet: false,
+      time, name, isEvening,
+    }]);
+  };
+
   const handleAddMeal = () => {
     if (mealText.trim()) {
-      setMeals(prev => [...prev, mealText.trim()]);
+      addMealEntry(mealText.trim(), false);
       setMealText('');
+      setShowMealInput(false);
     }
+  };
+
+  const handleAddEveningMeal = () => {
+    if (eveningText.trim()) {
+      addMealEntry(eveningText.trim(), true);
+      setEveningText('');
+      setShowEveningInput(false);
+    }
+  };
+
+  const toggleMealFlag = (i: number, key: 'protein' | 'carbs' | 'fiber' | 'sweet') => {
+    setMealMeta(prev => prev.map((m, idx) => idx === i ? { ...m, [key]: !m[key] } : m));
   };
 
   const handleSaveEvening = () => {
@@ -589,136 +632,193 @@ export function DailyScreen() {
         )}
 
 
-        {tab === 'meals' && (
-          <div className="space-y-4 animate-fade-in-up">
-            <DailySummaryCard
-              meals={meals}
-              date={today}
-              calorieTarget={calculations?.totalCalories ?? null}
-              goalWeightKg={profile.goalWeight}
-            />
-            <h3 className="text-xl font-bold">{getText('Что ты ела сегодня?', 'Что ты ел сегодня?', profile.gender)}</h3>
-            <p className="text-sm text-muted-foreground">Запиши каждый приём пищи</p>
+        {tab === 'meals' && (() => {
+          const totalMeals = mealMeta.length;
+          const proteinMeals = mealMeta.filter(m => m.protein).length;
+          const carbsMeals = mealMeta.filter(m => m.carbs).length;
+          const fiberMeals = mealMeta.filter(m => m.fiber).length;
+          const proteinGrams = proteinMeals * 23;
+          const proteinTarget = Math.round((profile.weight || 80) * 1.5);
+          const carbsTarget = Math.max(3, totalMeals || 3);
+          const fiberTarget = Math.max(3, totalMeals || 3);
+          const pct = (v: number, t: number) => Math.min(100, Math.round((v / Math.max(1, t)) * 100));
 
-            {yesterdayPlan && (
-              <div className="inga-bubble text-sm space-y-1">
-                <p className="text-muted-foreground">
-                  Вчера ты {getText('планировала', 'планировал', profile.gender)} на сегодня:
-                </p>
-                <p className="font-medium whitespace-pre-wrap">{yesterdayPlan}</p>
-                <p className="text-xs text-muted-foreground italic">
-                  Можно идти по плану или изменить его по ситуации.
-                </p>
+          const ingaMsg = (() => {
+            if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до сильного голода 🧡';
+            if (proteinMeals === 0) return 'Не вижу белка сегодня. Добавь мясо, рыбу, яйца или творог к следующему приёму.';
+            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки сегодня. Добавь овощи или ягоды к следующему приёму 🥦';
+            return 'Отличная структура сегодня! Так держать 🧡';
+          })();
+
+          const regular = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => !m.isEvening);
+          const evening = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => m.isEvening);
+
+          const removeMeal = (idx: number) => {
+            setMeals(prev => prev.filter((_, k) => k !== idx));
+            setMealMeta(prev => prev.filter((_, k) => k !== idx));
+          };
+
+          const pillStyle = (active: boolean, kind: 'protein' | 'carbs' | 'fiber') => {
+            if (!active) return { background: '#F7F2EE', color: '#8A7A70', border: '1px solid #E5DDD8' };
+            if (kind === 'protein') return { background: '#F9EDEA', color: '#CF7B5A', border: '1px solid #CF7B5A' };
+            if (kind === 'carbs') return { background: '#FAF4E5', color: '#C49A3E', border: '1px solid #C49A3E' };
+            return { background: '#EDF5F0', color: '#5E9E72', border: '1px solid #5E9E72' };
+          };
+
+          const MealCard = ({ m, hideCarbs = false }: { m: typeof regular[number]; hideCarbs?: boolean }) => (
+            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <span className="font-semibold text-sm">{m.name} · {m.time}</span>
+                <button onClick={() => removeMeal(m.i)} className="text-xs opacity-50 hover:opacity-100" aria-label="Удалить">🗑</button>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">{m.desc}</p>
+              <div className="flex flex-wrap gap-2 mb-2">
+                <button onClick={() => toggleMealFlag(m.i, 'protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
+                  {m.protein ? '✓' : '+'} Белок
+                </button>
+                {!hideCarbs && (
+                  <button onClick={() => toggleMealFlag(m.i, 'carbs')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.carbs, 'carbs')}>
+                    {m.carbs ? '✓' : '+'} Углеводы
+                  </button>
+                )}
+                <button onClick={() => toggleMealFlag(m.i, 'fiber')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.fiber, 'fiber')}>
+                  {m.fiber ? '✓' : '+'} Клетчатка
+                </button>
+              </div>
+              {!m.isEvening && (
+                <button
+                  onClick={() => toggleMealFlag(m.i, 'sweet')}
+                  className="text-xs font-medium"
+                  style={{ color: m.sweet ? '#CF7B5A' : '#8A7A70' }}
+                >
+                  🍰 {m.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
+                </button>
+              )}
+            </div>
+          );
+
+          return (
+          <div className="space-y-4 animate-fade-in-up">
+            {/* Water tracker */}
+            <div className="bg-white flex items-center gap-2" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: '10px 14px' }}>
+              <span className="text-sm font-medium">💧 Вода</span>
+              <div className="flex gap-1 flex-1 justify-center">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <button key={i} onClick={() => setWaterCount(i + 1 === waterCount ? i : i + 1)} className="text-lg leading-none" aria-label={`Стакан ${i + 1}`}>
+                    {i < waterCount ? '🥛' : <span style={{ opacity: 0.3 }}>🥛</span>}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setWaterCount(c => c + 1)} className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
+              <span className="text-sm font-semibold tabular-nums">{waterCount}/6</span>
+            </div>
+
+            {/* Nutrition structure */}
+            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
+              <p className="text-xs font-bold tracking-wide mb-3" style={{ color: '#8A7A70' }}>СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
+              {[
+                { icon: '🥩', label: 'Белок', val: `~${proteinGrams}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
+                { icon: '🌾', label: 'Углеводы', val: `${carbsMeals}/${carbsTarget}`, color: '#C49A3E', pct: pct(carbsMeals, carbsTarget) },
+                { icon: '🥦', label: 'Клетчатка', val: `${fiberMeals}/${fiberTarget}`, color: '#5E9E72', pct: pct(fiberMeals, fiberTarget) },
+              ].map(row => (
+                <div key={row.label} className="flex items-center gap-3 py-1.5">
+                  <span className="text-base">{row.icon}</span>
+                  <span className="text-sm w-20">{row.label}</span>
+                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
+                    <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
+                  </div>
+                  <span className="text-xs tabular-nums w-12 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Inga smart card */}
+            <div className="inga-bubble flex gap-3 items-start">
+              <img src={ingaPhoto} alt="Инга" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              <p className="text-sm">{ingaMsg}</p>
+            </div>
+
+            {/* Add meal */}
+            {!showMealInput ? (
+              <button onClick={() => setShowMealInput(true)} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
+                + Добавить приём пищи
+              </button>
+            ) : (
+              <div className="bg-white space-y-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
+                <div className="flex gap-2">
+                  <input
+                    value={mealText}
+                    onChange={e => setMealText(e.target.value)}
+                    autoFocus
+                    className="inga-input flex-1"
+                    placeholder="Что ела?"
+                    onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
+                  />
+                  <VoiceInput
+                    onConfirm={(text) => addMealEntry(text, false)}
+                    onEdit={(text) => setMealText(text)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleAddMeal} className="inga-btn-primary flex-1">Добавить</button>
+                  <button onClick={() => { setShowMealInput(false); setMealText(''); }} className="inga-btn-secondary flex-1">Отмена</button>
+                </div>
               </div>
             )}
 
-            {meals.map((m, i) => {
-              const isEditing = editingIndex === i;
-              const isConfirmingDelete = confirmDeleteIndex === i;
-              return (
-                <div key={i} className="inga-card text-sm space-y-2">
-                  {isEditing ? (
-                    <>
-                      <input
-                        value={editingText}
-                        onChange={e => setEditingText(e.target.value)}
-                        autoFocus
-                        className="inga-input"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && editingText.trim()) {
-                            setMeals(prev => prev.map((mm, idx) => idx === i ? editingText.trim() : mm));
-                            setEditingIndex(null);
-                          }
-                          if (e.key === 'Escape') setEditingIndex(null);
-                        }}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            if (!editingText.trim()) return;
-                            setMeals(prev => prev.map((mm, idx) => idx === i ? editingText.trim() : mm));
-                            setEditingIndex(null);
-                          }}
-                          className="inga-btn-primary text-xs py-1.5 px-3 flex-1"
-                        >
-                          Сохранить
-                        </button>
-                        <button
-                          onClick={() => setEditingIndex(null)}
-                          className="inga-btn-secondary text-xs py-1.5 px-3 flex-1"
-                        >
-                          Отмена
-                        </button>
-                      </div>
-                      <p className="text-xs text-muted-foreground italic">Анализ дня обновится после сохранения.</p>
-                    </>
-                  ) : isConfirmingDelete ? (
-                    <>
-                      <p>Удалить этот приём пищи?</p>
-                      <p className="text-xs text-muted-foreground italic">«{m}»</p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setMeals(prev => prev.filter((_, idx) => idx !== i));
-                            setConfirmDeleteIndex(null);
-                          }}
-                          className="inga-btn-primary text-xs py-1.5 px-3 flex-1"
-                        >
-                          Да, удалить
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteIndex(null)}
-                          className="inga-btn-secondary text-xs py-1.5 px-3 flex-1"
-                        >
-                          Отмена
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="flex-1">✅ {m}</span>
-                      <div className="flex gap-1 shrink-0">
-                        <button
-                          onClick={() => { setEditingIndex(i); setEditingText(m); setConfirmDeleteIndex(null); }}
-                          className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                          aria-label="Изменить"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => { setConfirmDeleteIndex(i); setEditingIndex(null); }}
-                          className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                          aria-label="Удалить"
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {/* Regular meal cards */}
+            {regular.map(m => <MealCard key={m.i} m={m} />)}
 
-            <div className="flex gap-2">
-              <input
-                value={mealText}
-                onChange={e => setMealText(e.target.value)}
-                className="inga-input flex-1"
-                placeholder="Овсянка с ягодами..."
-                onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
-              />
-              <VoiceInput
-                onConfirm={(text) => setMeals(prev => [...prev, text])}
-                onEdit={(text) => setMealText(text)}
-              />
-              <button onClick={handleAddMeal} className="inga-btn-primary px-4">+</button>
+            {/* Evening divider */}
+            <div className="flex items-center gap-2 py-1">
+              <div className="flex-1 h-px" style={{ background: '#E5DDD8' }} />
+              <span style={{ fontSize: 10, color: '#C0B0A8', letterSpacing: '0.1em' }}>вечер</span>
+              <div className="flex-1 h-px" style={{ background: '#E5DDD8' }} />
             </div>
 
-            <button onClick={() => setTab('evening')} className="inga-btn-secondary w-full">
-              Перейти к вечернему итогу →
-            </button>
+            {/* Evening snack card */}
+            <div style={{ background: '#F4F0F9', border: '1.5px solid #C9B8E8', borderRadius: 14, padding: 14 }}>
+              <p className="font-semibold text-sm mb-1" style={{ color: '#4A3580' }}>🌙 Вечерний перекус</p>
+              <p className="text-xs mb-3" style={{ color: '#4A3580', opacity: 0.85 }}>
+                Только белок + клетчатка, без жира и углеводов. Можно есть даже на ночь.
+              </p>
+              {evening.map(m => <div key={m.i} className="mb-2"><MealCard m={m} hideCarbs /></div>)}
+              {!showEveningInput ? (
+                <button
+                  onClick={() => setShowEveningInput(true)}
+                  className="text-sm font-medium px-4 py-2 rounded-xl"
+                  style={{ background: '#4A3580', color: '#fff' }}
+                >
+                  + Записать
+                </button>
+              ) : (
+                <div className="bg-white space-y-2 mt-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
+                  <div className="flex gap-2">
+                    <input
+                      value={eveningText}
+                      onChange={e => setEveningText(e.target.value)}
+                      autoFocus
+                      className="inga-input flex-1"
+                      placeholder="Что ела?"
+                      onKeyDown={e => e.key === 'Enter' && handleAddEveningMeal()}
+                    />
+                    <VoiceInput
+                      onConfirm={(text) => addMealEntry(text, true)}
+                      onEdit={(text) => setEveningText(text)}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleAddEveningMeal} className="flex-1 py-2 rounded-xl text-sm font-medium" style={{ background: '#4A3580', color: '#fff' }}>Добавить</button>
+                    <button onClick={() => { setShowEveningInput(false); setEveningText(''); }} className="inga-btn-secondary flex-1">Отмена</button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+          );
+        })()}
+
+
 
         {tab === 'evening' && (
           <div className="space-y-4 animate-fade-in-up">
