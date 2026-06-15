@@ -63,7 +63,8 @@ export function AuthScreen() {
           password,
         });
         if (signInError) throw signInError;
-        setStep('survey-name' as AppStep);
+        await hydrateFromDb();
+        // hydrateFromDb уже вызывает setStep внутри себя
       }
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');
