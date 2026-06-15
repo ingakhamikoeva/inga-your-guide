@@ -68,7 +68,7 @@ export function DailyScreen() {
   })();
   const dayNumber = (dailyReports?.length ?? 0) + 1;
 
-  const showFoodSurvey = !foodSurveyAnswered && (!profile.food_preferences || profile.food_preferences.length === 0);
+  const showFoodSurvey = !foodSurveyAnswered && (!profile.food_preferences || profile.food_preferences.length === 0) && weeklyData.length === 0;
   const showCheckinFields = !showFoodSurvey || showMorningCheckin;
 
   const toggleFood = (label: string) => {
