@@ -199,13 +199,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     if (dbCheckins.length > 0) setWeeklyData(dbCheckins);
 
-    // Determine resume step based on data completeness
+    // Determine resume step based on data completeness.
+    // NB: motivation/kgToLose are not persisted in DB, so we must NOT gate
+    // resume on them — otherwise every returning user on a fresh device
+    // gets bounced back to the "why" screen.
     const resume = (() => {
       if (!merged.name) return 'survey-name';
       if (merged.trackingMethod) return 'daily';
-      if (!merged.goal_weight_kg && !merged.goalWeight) return 'goal';
+      const hasGoal = !!(merged.goal_weight_kg || merged.goalWeight);
+      const hasSurveyData = !!(merged.age && merged.height && merged.weight);
+      // If the user already has goal + full survey data saved in DB,
+      // onboarding is effectively done — only the tracking method is missing.
+      if (hasGoal && hasSurveyData) return 'tracking-method';
+      if (!hasGoal) return 'goal';
       if (!merged.motivation?.length) return 'why';
-      if (!merged.age || !merged.height || !merged.weight) return 'survey-data';
+      if (!hasSurveyData) return 'survey-data';
       return 'tracking-method';
     })() as AppStep;
 
