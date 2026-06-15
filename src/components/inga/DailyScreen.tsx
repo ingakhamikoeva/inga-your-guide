@@ -190,11 +190,48 @@ export function DailyScreen() {
     return d > 0 ? `+${d} кг` : `${d} кг`;
   };
 
+  const mealNameByHour = (h: number) => {
+    if (h >= 6 && h < 10) return 'Завтрак';
+    if (h >= 10 && h < 12) return 'Перекус';
+    if (h >= 12 && h < 15) return 'Обед';
+    if (h >= 15 && h < 18) return 'Полдник';
+    if (h >= 18 && h < 21) return 'Ужин';
+    return 'Поздний перекус';
+  };
+
+  const addMealEntry = (text: string, isEvening = false) => {
+    const t = text.trim();
+    if (!t) return;
+    const now = new Date();
+    const hh = now.getHours().toString().padStart(2, '0');
+    const mm = now.getMinutes().toString().padStart(2, '0');
+    const time = `${hh}:${mm}`;
+    const name = isEvening ? 'Вечерний перекус' : mealNameByHour(now.getHours());
+    setMeals(prev => [...prev, t]);
+    setMealMeta(prev => [...prev, {
+      protein: false, carbs: false, fiber: false, sweet: false,
+      time, name, isEvening,
+    }]);
+  };
+
   const handleAddMeal = () => {
     if (mealText.trim()) {
-      setMeals(prev => [...prev, mealText.trim()]);
+      addMealEntry(mealText.trim(), false);
       setMealText('');
+      setShowMealInput(false);
     }
+  };
+
+  const handleAddEveningMeal = () => {
+    if (eveningText.trim()) {
+      addMealEntry(eveningText.trim(), true);
+      setEveningText('');
+      setShowEveningInput(false);
+    }
+  };
+
+  const toggleMealFlag = (i: number, key: 'protein' | 'carbs' | 'fiber' | 'sweet') => {
+    setMealMeta(prev => prev.map((m, idx) => idx === i ? { ...m, [key]: !m[key] } : m));
   };
 
   const handleSaveEvening = () => {
