@@ -38,6 +38,12 @@ export function DailyScreen() {
   const [steps, setSteps] = useState('');
   const [mealText, setMealText] = useState('');
   const [meals, setMeals] = useState<string[]>([]);
+  type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean };
+  const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
+  const [waterCount, setWaterCount] = useState(0);
+  const [showMealInput, setShowMealInput] = useState(false);
+  const [showEveningInput, setShowEveningInput] = useState(false);
+  const [eveningText, setEveningText] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
