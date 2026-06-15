@@ -199,6 +199,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     if (dbCheckins.length > 0) setWeeklyData(dbCheckins);
 
+    // Пользователь с чек-инами уже прошёл онбординг
+    if (dbCheckins.length > 0) {
+      setStep('daily');
+      return 'daily';
+    }
+
+
     // Determine resume step based on data completeness.
     // NB: motivation/kgToLose are not persisted in DB, so we must NOT gate
     // resume on them — otherwise every returning user on a fresh device
