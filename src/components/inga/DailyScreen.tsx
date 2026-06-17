@@ -45,6 +45,8 @@ export function DailyScreen() {
   };
   const [mealTime, setMealTime] = useState<string>(nowHHMM());
   const [editingTimeIdx, setEditingTimeIdx] = useState<number | null>(null);
+  const [editingProteinIdx, setEditingProteinIdx] = useState<number | null>(null);
+  const [editingProteinValue, setEditingProteinValue] = useState('');
   const [meals, setMeals] = useState<string[]>([]);
   type ProteinPortion = 'small' | 'palm' | 'large';
   type MealMeta = {
