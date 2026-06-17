@@ -37,6 +37,12 @@ export function DailyScreen() {
   const [sleep, setSleep] = useState('');
   const [steps, setSteps] = useState('');
   const [mealText, setMealText] = useState('');
+  const nowHHMM = () => {
+    const n = new Date();
+    return `${n.getHours().toString().padStart(2, '0')}:${n.getMinutes().toString().padStart(2, '0')}`;
+  };
+  const [mealTime, setMealTime] = useState<string>(nowHHMM());
+  const [editingTimeIdx, setEditingTimeIdx] = useState<number | null>(null);
   const [meals, setMeals] = useState<string[]>([]);
   type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean };
   const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
@@ -196,17 +202,19 @@ export function DailyScreen() {
     if (h >= 12 && h < 15) return 'Обед';
     if (h >= 15 && h < 18) return 'Полдник';
     if (h >= 18 && h < 21) return 'Ужин';
-    return 'Поздний перекус';
+    return 'Вечерний перекус';
   };
 
-  const addMealEntry = (text: string, isEvening = false) => {
+  const mealNameByTime = (time: string) => {
+    const h = parseInt(time.split(':')[0] || '0', 10);
+    return mealNameByHour(h);
+  };
+
+  const addMealEntry = (text: string, isEvening = false, timeOverride?: string) => {
     const t = text.trim();
     if (!t) return;
-    const now = new Date();
-    const hh = now.getHours().toString().padStart(2, '0');
-    const mm = now.getMinutes().toString().padStart(2, '0');
-    const time = `${hh}:${mm}`;
-    const name = isEvening ? 'Вечерний перекус' : mealNameByHour(now.getHours());
+    const time = timeOverride || nowHHMM();
+    const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
     setMeals(prev => [...prev, t]);
     setMealMeta(prev => [...prev, {
       protein: false, carbs: false, fiber: false, sweet: false,
@@ -216,8 +224,9 @@ export function DailyScreen() {
 
   const handleAddMeal = () => {
     if (mealText.trim()) {
-      addMealEntry(mealText.trim(), false);
+      addMealEntry(mealText.trim(), false, mealTime);
       setMealText('');
+      setMealTime(nowHHMM());
       setShowMealInput(false);
     }
   };
@@ -228,6 +237,13 @@ export function DailyScreen() {
       setEveningText('');
       setShowEveningInput(false);
     }
+  };
+
+  const updateMealTime = (i: number, newTime: string) => {
+    if (!newTime) return;
+    setMealMeta(prev => prev.map((m, idx) => idx === i
+      ? { ...m, time: newTime, name: m.isEvening ? 'Вечерний перекус' : mealNameByTime(newTime) }
+      : m));
   };
 
   const toggleMealFlag = (i: number, key: 'protein' | 'carbs' | 'fiber' | 'sweet') => {
@@ -668,7 +684,48 @@ export function DailyScreen() {
           const MealCard = ({ m, hideCarbs = false }: { m: typeof regular[number]; hideCarbs?: boolean }) => (
             <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
               <div className="flex items-start justify-between gap-2 mb-1">
-                <span className="font-semibold text-sm">{m.name} · {m.time}</span>
+                <span className="font-semibold text-sm flex items-center gap-1">
+                  <span>{m.name}</span>
+                  <span style={{ color: '#8A7A70' }}>·</span>
+                  {editingTimeIdx === m.i ? (
+                    <input
+                      type="time"
+                      autoFocus
+                      value={m.time}
+                      onChange={e => updateMealTime(m.i, e.target.value)}
+                      onBlur={() => setEditingTimeIdx(null)}
+                      onKeyDown={e => { if (e.key === 'Enter') setEditingTimeIdx(null); }}
+                      className="meal-time-input"
+                      style={{
+                        color: '#6A5A50',
+                        background: 'transparent',
+                        border: '1px solid #FF6200',
+                        borderRadius: 6,
+                        padding: '1px 4px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        outline: 'none',
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditingTimeIdx(m.i)}
+                      style={{
+                        color: '#6A5A50',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '1px 4px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      aria-label="Изменить время"
+                    >
+                      {m.time}
+                    </button>
+                  )}
+                </span>
                 <button onClick={() => removeMeal(m.i)} className="text-xs opacity-50 hover:opacity-100" aria-label="Удалить">🗑</button>
               </div>
               <p className="text-sm text-muted-foreground mb-3">{m.desc}</p>
@@ -740,11 +797,32 @@ export function DailyScreen() {
 
             {/* Add meal */}
             {!showMealInput ? (
-              <button onClick={() => setShowMealInput(true)} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
+              <button onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
                 + Добавить приём пищи
               </button>
             ) : (
               <div className="bg-white space-y-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={mealTime}
+                    onChange={e => setMealTime(e.target.value)}
+                    className="meal-time-input"
+                    style={{
+                      color: '#6A5A50',
+                      background: '#FAF5F0',
+                      border: '1px solid transparent',
+                      borderRadius: 8,
+                      padding: '4px 8px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      outline: 'none',
+                    }}
+                    onFocus={e => (e.currentTarget.style.border = '1px solid #FF6200')}
+                    onBlur={e => (e.currentTarget.style.border = '1px solid transparent')}
+                  />
+                  <span className="text-xs" style={{ color: '#8A7A70' }}>{mealNameByTime(mealTime)}</span>
+                </div>
                 <div className="flex gap-2">
                   <input
                     value={mealText}
@@ -755,7 +833,7 @@ export function DailyScreen() {
                     onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
                   />
                   <VoiceInput
-                    onConfirm={(text) => addMealEntry(text, false)}
+                    onConfirm={(text) => addMealEntry(text, false, mealTime)}
                     onEdit={(text) => setMealText(text)}
                   />
                 </div>
