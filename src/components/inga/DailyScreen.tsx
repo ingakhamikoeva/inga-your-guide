@@ -919,7 +919,7 @@ export function DailyScreen() {
                     <span className="text-xs tabular-nums w-24 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
                   </div>
                   {row.label === 'Белок' && (
-                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>приблизительно, по методу ладони</p>
+                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>оценка по описанию блюд</p>
                   )}
                 </div>
               ))}
