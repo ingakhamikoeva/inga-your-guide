@@ -9,6 +9,7 @@ import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
 import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
+import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
 import { FixationCompleteModal } from './FixationCompleteModal';
@@ -44,9 +45,15 @@ export function DailyScreen() {
   };
   const [mealTime, setMealTime] = useState<string>(nowHHMM());
   const [editingTimeIdx, setEditingTimeIdx] = useState<number | null>(null);
+  const [editingProteinIdx, setEditingProteinIdx] = useState<number | null>(null);
+  const [editingProteinValue, setEditingProteinValue] = useState('');
   const [meals, setMeals] = useState<string[]>([]);
   type ProteinPortion = 'small' | 'palm' | 'large';
-  type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean; proteinPortion: ProteinPortion };
+  type MealMeta = {
+    protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean;
+    time: string; name: string; isEvening: boolean; proteinPortion: ProteinPortion;
+    proteinAi: number | null; proteinLoading: boolean; proteinManual: boolean;
+  };
   const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
   const [waterCount, setWaterCount] = useState(0);
   const [showMealInput, setShowMealInput] = useState(false);
@@ -217,10 +224,26 @@ export function DailyScreen() {
     if (!t) return;
     const time = timeOverride || nowHHMM();
     const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
-    setMeals(prev => [...prev, t]);
+    setMeals(prev => {
+      const newIdx = prev.length;
+      // kick off AI estimation
+      resolveMealNutrition(t)
+        .then(res => {
+          setMealMeta(curr => curr.map((mm, k) => k === newIdx
+            ? { ...mm, proteinAi: Math.round(res.protein_g || 0), proteinLoading: false }
+            : mm));
+        })
+        .catch(() => {
+          setMealMeta(curr => curr.map((mm, k) => k === newIdx
+            ? { ...mm, proteinLoading: false }
+            : mm));
+        });
+      return [...prev, t];
+    });
     setMealMeta(prev => [...prev, {
       protein: false, carbs: false, fiber: false, sweet: false,
       time, name, isEvening, proteinPortion: 'palm',
+      proteinAi: null, proteinLoading: true, proteinManual: false,
     }]);
   };
 
@@ -652,21 +675,29 @@ export function DailyScreen() {
 
         {tab === 'meals' && (() => {
           const totalMeals = mealMeta.length;
-          const proteinMeals = mealMeta.filter(m => m.protein).length;
           const carbsMeals = mealMeta.filter(m => m.carbs).length;
           const fiberMeals = mealMeta.filter(m => m.fiber).length;
           const portionGrams: Record<ProteinPortion, number> = { small: 15, palm: 25, large: 40 };
-          const proteinGrams = mealMeta.reduce((sum, m) => sum + (m.protein ? portionGrams[m.proteinPortion] : 0), 0);
+          const proteinGrams = mealMeta.reduce(
+            (sum, m) => sum + (m.proteinAi ?? (m.protein ? portionGrams[m.proteinPortion] : 0)),
+            0
+          );
+          const anyProteinLoading = mealMeta.some(m => m.proteinLoading);
           const proteinTarget = Math.round((profile.weight || 80) * 1.5);
           const carbsTarget = Math.max(3, totalMeals || 3);
           const fiberTarget = Math.max(3, totalMeals || 3);
           const pct = (v: number, t: number) => Math.min(100, Math.round((v / Math.max(1, t)) * 100));
+          const userName = profile.name || 'Друг';
 
           const ingaMsg = (() => {
-            if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до сильного голода 🧡';
-            if (proteinGrams < proteinTarget * 0.7) return 'Белка пока маловато. Добавь нежирный белок в следующий приём — мясо, рыбу, яичный белок или творог.';
-            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки сегодня. Добавь овощи или ягоды к следующему приёму 🥦';
-            return 'Отличная структура сегодня! Так держать 🧡';
+            if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до голода 🧡';
+            if (waterCount < 4) return `${userName}, выпей ещё воды — пока только ${waterCount} из 6 стаканов 💧`;
+            if (proteinGrams < proteinTarget * 0.6) return 'Белка маловато сегодня. Добавь мясо, рыбу, яичный белок или творог к следующему приёму.';
+            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки. Добавь овощи или ягоды к следующему приёму 🥦';
+            if (waterCount >= 5 && proteinGrams >= proteinTarget * 0.8 && fiberMeals / totalMeals >= 0.6) {
+              return 'Хороший день — структура держится. Продолжай в том же духе 🧡';
+            }
+            return 'Структура дня складывается. Не забывай про воду, белок и клетчатку 🧡';
           })();
 
           const regular = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => !m.isEvening);
@@ -679,6 +710,17 @@ export function DailyScreen() {
 
           const setMealPortion = (idx: number, portion: ProteinPortion) => {
             setMealMeta(prev => prev.map((m, k) => k === idx ? { ...m, proteinPortion: portion } : m));
+          };
+
+          const saveManualProtein = (idx: number, value: string) => {
+            const n = parseInt(value, 10);
+            if (!isNaN(n) && n >= 0 && n < 500) {
+              setMealMeta(prev => prev.map((mm, k) => k === idx
+                ? { ...mm, proteinAi: n, proteinLoading: false, proteinManual: true }
+                : mm));
+            }
+            setEditingProteinIdx(null);
+            setEditingProteinValue('');
           };
 
           const pillStyle = (active: boolean, kind: 'protein' | 'carbs' | 'fiber') => {
@@ -742,7 +784,54 @@ export function DailyScreen() {
                   <Trash2 size={20} />
                 </button>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">{m.desc}</p>
+              <p className="text-sm text-muted-foreground mb-1">{m.desc}</p>
+              <div className="flex items-center gap-1.5 mb-3 text-[11px]" style={{ color: '#8A7A70' }}>
+                {editingProteinIdx === m.i ? (
+                  <>
+                    <input
+                      type="number"
+                      min={0}
+                      max={300}
+                      autoFocus
+                      value={editingProteinValue}
+                      onChange={e => setEditingProteinValue(e.target.value)}
+                      onBlur={() => saveManualProtein(m.i, editingProteinValue)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveManualProtein(m.i, editingProteinValue); }}
+                      style={{
+                        width: 50, color: '#6A5A50', background: 'transparent',
+                        border: '1px solid #CF7B5A', borderRadius: 6, padding: '1px 4px',
+                        fontSize: 11, outline: 'none',
+                      }}
+                    />
+                    <span>г белка</span>
+                  </>
+                ) : m.proteinLoading ? (
+                  <span>... оценка белка</span>
+                ) : m.proteinAi !== null ? (
+                  <>
+                    <span>~{m.proteinAi}г белка{m.proteinManual ? '' : ''}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingProteinIdx(m.i);
+                        setEditingProteinValue(String(m.proteinAi ?? ''));
+                      }}
+                      aria-label="Скорректировать белок"
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11 }}
+                    >
+                      ✏️
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setEditingProteinIdx(m.i); setEditingProteinValue(''); }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#8A7A70' }}
+                  >
+                    + указать белок ✏️
+                  </button>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 <button onClick={() => toggleMealFlag(m.i, 'protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
                   {m.protein ? '✓' : '+'} Белок
@@ -816,7 +905,7 @@ export function DailyScreen() {
             <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
               <p className="text-xs font-bold tracking-wide mb-3" style={{ color: '#8A7A70' }}>СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
               {[
-                { icon: '🥩', label: 'Белок', val: `~${proteinGrams}г из ${proteinTarget}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
+                { icon: '🥩', label: 'Белок', val: anyProteinLoading ? `...` : `~${proteinGrams}г из ${proteinTarget}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
                 { icon: '🌾', label: 'Углеводы', val: `${carbsMeals}/${carbsTarget}`, color: '#C49A3E', pct: pct(carbsMeals, carbsTarget) },
                 { icon: '🥦', label: 'Клетчатка', val: `${fiberMeals}/${fiberTarget}`, color: '#5E9E72', pct: pct(fiberMeals, fiberTarget) },
               ].map(row => (
@@ -830,7 +919,7 @@ export function DailyScreen() {
                     <span className="text-xs tabular-nums w-24 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
                   </div>
                   {row.label === 'Белок' && (
-                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>приблизительно, по методу ладони</p>
+                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>оценка по описанию блюд</p>
                   )}
                 </div>
               ))}
