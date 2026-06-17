@@ -34,7 +34,16 @@ type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
   const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
-  const [tab, setTab] = useState<DailyTab>('morning');
+  const [tab, setTab] = useState<DailyTab>(() => {
+    try {
+      const savedDate = localStorage.getItem('dailyActiveTabDate');
+      const savedTab = localStorage.getItem('dailyActiveTab') as DailyTab | null;
+      if (savedDate === today && savedTab && ['morning', 'meals', 'evening'].includes(savedTab)) {
+        return savedTab;
+      }
+    } catch {}
+    return 'morning';
+  });
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
   const [steps, setSteps] = useState('');
