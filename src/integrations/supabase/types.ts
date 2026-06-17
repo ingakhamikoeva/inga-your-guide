@@ -428,6 +428,7 @@ export type Database = {
           input_type: Database["public"]["Enums"]["input_type"]
           log_id: string
           meal_tag: Database["public"]["Enums"]["meal_tag"]
+          meta: Json
           photo_url: string | null
           raw_text: string | null
           user_id: string
@@ -438,6 +439,7 @@ export type Database = {
           input_type?: Database["public"]["Enums"]["input_type"]
           log_id?: string
           meal_tag?: Database["public"]["Enums"]["meal_tag"]
+          meta?: Json
           photo_url?: string | null
           raw_text?: string | null
           user_id: string
@@ -448,6 +450,7 @@ export type Database = {
           input_type?: Database["public"]["Enums"]["input_type"]
           log_id?: string
           meal_tag?: Database["public"]["Enums"]["meal_tag"]
+          meta?: Json
           photo_url?: string | null
           raw_text?: string | null
           user_id?: string
