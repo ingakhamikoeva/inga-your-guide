@@ -677,6 +677,10 @@ export function DailyScreen() {
             setMealMeta(prev => prev.filter((_, k) => k !== idx));
           };
 
+          const setMealPortion = (idx: number, portion: ProteinPortion) => {
+            setMealMeta(prev => prev.map((m, k) => k === idx ? { ...m, proteinPortion: portion } : m));
+          };
+
           const pillStyle = (active: boolean, kind: 'protein' | 'carbs' | 'fiber') => {
             if (!active) return { background: '#F7F2EE', color: '#8A7A70', border: '1px solid #E5DDD8' };
             if (kind === 'protein') return { background: '#F9EDEA', color: '#CF7B5A', border: '1px solid #CF7B5A' };
