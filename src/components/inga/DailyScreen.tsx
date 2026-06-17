@@ -8,7 +8,7 @@ import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
-import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
+import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, type MealTag } from '@/lib/db';
 import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
@@ -59,6 +59,7 @@ export function DailyScreen() {
   const [meals, setMeals] = useState<string[]>([]);
   type ProteinPortion = 'small' | 'palm' | 'large';
   type MealMeta = {
+    id?: string;
     protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean;
     time: string; name: string; isEvening: boolean; proteinPortion: ProteinPortion;
     proteinAi: number | null; proteinLoading: boolean; proteinManual: boolean;
