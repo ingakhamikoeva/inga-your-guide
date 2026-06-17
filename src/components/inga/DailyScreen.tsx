@@ -848,24 +848,26 @@ export function DailyScreen() {
           const evening = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => m.isEvening);
 
           const removeMeal = (idx: number) => {
+            const target = mealMeta[idx];
+            if (target?.id) deleteFoodLog(target.id).catch(() => {});
             setMeals(prev => prev.filter((_, k) => k !== idx));
             setMealMeta(prev => prev.filter((_, k) => k !== idx));
           };
 
           const setMealPortion = (idx: number, portion: ProteinPortion) => {
-            setMealMeta(prev => prev.map((m, k) => k === idx ? { ...m, proteinPortion: portion } : m));
+            persistMetaPatch(idx, { proteinPortion: portion });
           };
 
           const saveManualProtein = (idx: number, value: string) => {
             const n = parseInt(value, 10);
             if (!isNaN(n) && n >= 0 && n < 500) {
-              setMealMeta(prev => prev.map((mm, k) => k === idx
-                ? { ...mm, proteinAi: n, proteinLoading: false, proteinManual: true }
-                : mm));
+              persistMetaPatch(idx, { proteinAi: n, proteinLoading: false, proteinManual: true });
             }
             setEditingProteinIdx(null);
             setEditingProteinValue('');
           };
+
+
 
           const pillStyle = (active: boolean, kind: 'protein' | 'carbs' | 'fiber') => {
             if (!active) return { background: '#F7F2EE', color: '#8A7A70', border: '1px solid #E5DDD8' };
