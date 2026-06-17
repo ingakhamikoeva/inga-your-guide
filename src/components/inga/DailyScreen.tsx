@@ -659,7 +659,7 @@ export function DailyScreen() {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-6 py-10 pb-[70px] animate-fade-in-up" style={{ maxWidth: 480, margin: '0 auto', width: '100%' }}>
+    <div className="flex flex-col items-center min-h-screen px-6 py-10 pb-[80px] animate-fade-in-up" style={{ maxWidth: 480, margin: '0 auto', width: '100%' }}>
       {showGoalReached && (
         <GoalReachedModal sex={profile.gender} onContinue={handleEnterFixation} />
       )}
@@ -1270,20 +1270,20 @@ export function DailyScreen() {
       {/* Fixed bottom chat panel */}
       <button
         onClick={() => setStep('chat')}
-        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[10px] border-t border-[#EDE5DF] bg-white"
-        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%' }}
+        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[14px] border-t border-[#EDE5DF] bg-white"
+        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)' }}
       >
         <img
           src={ingaPhoto}
           alt="Инга"
-          className="w-8 h-8 rounded-full flex-shrink-0"
+          className="w-[38px] h-[38px] rounded-full flex-shrink-0"
           style={{ border: '2px solid #FAEEDA' }}
         />
         <div className="flex-1 text-left">
-          <p className="text-[13px] font-semibold" style={{ color: '#2C1A0E' }}>
+          <p className="text-[14px] font-semibold" style={{ color: '#2C1A0E' }}>
             Поговорим?
           </p>
-          <p className="text-[11px]" style={{ color: '#A89080' }}>
+          <p className="text-[12px]" style={{ color: '#A89080' }}>
             Задай вопрос или расскажи, как проходит день
           </p>
         </div>
