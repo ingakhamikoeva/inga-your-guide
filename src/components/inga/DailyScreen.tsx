@@ -45,7 +45,8 @@ export function DailyScreen() {
   const [mealTime, setMealTime] = useState<string>(nowHHMM());
   const [editingTimeIdx, setEditingTimeIdx] = useState<number | null>(null);
   const [meals, setMeals] = useState<string[]>([]);
-  type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean };
+  type ProteinPortion = 'small' | 'palm' | 'large';
+  type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean; proteinPortion: ProteinPortion };
   const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
   const [waterCount, setWaterCount] = useState(0);
   const [showMealInput, setShowMealInput] = useState(false);
