@@ -497,6 +497,10 @@ export function DailyScreen() {
               setShowPlanning(false);
               setPlanText('');
               setPlanSavedMessage(false);
+              try {
+                localStorage.removeItem('dailyActiveTab');
+                localStorage.removeItem('dailyActiveTabDate');
+              } catch {}
             }}
             className="inga-btn-secondary flex-1"
           >
