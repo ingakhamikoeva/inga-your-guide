@@ -34,7 +34,16 @@ type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
   const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
-  const [tab, setTab] = useState<DailyTab>('morning');
+  const [tab, setTab] = useState<DailyTab>(() => {
+    try {
+      const savedDate = localStorage.getItem('dailyActiveTabDate');
+      const savedTab = localStorage.getItem('dailyActiveTab') as DailyTab | null;
+      if (savedDate === today && savedTab && ['morning', 'meals', 'evening'].includes(savedTab)) {
+        return savedTab;
+      }
+    } catch {}
+    return 'morning';
+  });
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
   const [steps, setSteps] = useState('');
@@ -81,6 +90,14 @@ export function DailyScreen() {
 
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  // Persist active tab (and current date) so reloading restores it, but reset on a new day
+  useEffect(() => {
+    try {
+      localStorage.setItem('dailyActiveTab', tab);
+      localStorage.setItem('dailyActiveTabDate', today);
+    } catch {}
+  }, [tab, today]);
 
   // Russian date string: "Пятница, 13 июня"
   const dateLabel = (() => {
@@ -480,6 +497,10 @@ export function DailyScreen() {
               setShowPlanning(false);
               setPlanText('');
               setPlanSavedMessage(false);
+              try {
+                localStorage.removeItem('dailyActiveTab');
+                localStorage.removeItem('dailyActiveTabDate');
+              } catch {}
             }}
             className="inga-btn-secondary flex-1"
           >
