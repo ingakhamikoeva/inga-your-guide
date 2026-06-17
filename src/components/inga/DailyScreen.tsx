@@ -500,7 +500,7 @@ export function DailyScreen() {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+    <div className="flex flex-col items-center min-h-screen px-6 py-10 pb-[70px] animate-fade-in-up">
       {showGoalReached && (
         <GoalReachedModal sex={profile.gender} onContinue={handleEnterFixation} />
       )}
