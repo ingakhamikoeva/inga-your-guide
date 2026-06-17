@@ -459,16 +459,33 @@ export function DailyScreen() {
       setAwardedMedal(summary.nextMedal);
     }
 
-    // Show meal-planning intro after the FIRST completed day, only once.
-    const introShown = (() => {
-      try { return localStorage.getItem(PLANNING_INTRO_KEY) === 'true'; } catch { return false; }
-    })();
-    const completedDaysBefore = dailyReports.filter(r => r.date !== today).length;
-    if (!introShown && completedDaysBefore === 0) {
-      setShowPlanning(true);
-    } else {
-      setSaved(true);
-    }
+    setSaved(true);
+  };
+
+  const startNewDay = () => {
+    setSaved(false);
+    setShowPlanning(false);
+    setPlanText('');
+    setPlanSavedMessage(false);
+    setTab('morning');
+    setMeals([]);
+    setMealMeta([]);
+    setMealText('');
+    setWeight('');
+    setSleep('');
+    setSteps('');
+    setEmotion('');
+    setHunger(3);
+    setHardest('');
+    setDayWin('');
+    setSweetPoint('');
+    setWaterCount(0);
+    setMorningAnalysis(null);
+    setAwardedMedal(null);
+    try {
+      localStorage.removeItem('dailyActiveTab');
+      localStorage.removeItem('dailyActiveTabDate');
+    } catch {}
   };
 
   const finishPlanning = () => {
