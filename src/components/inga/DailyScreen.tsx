@@ -655,7 +655,8 @@ export function DailyScreen() {
           const proteinMeals = mealMeta.filter(m => m.protein).length;
           const carbsMeals = mealMeta.filter(m => m.carbs).length;
           const fiberMeals = mealMeta.filter(m => m.fiber).length;
-          const proteinGrams = proteinMeals * 23;
+          const portionGrams: Record<ProteinPortion, number> = { small: 15, palm: 25, large: 40 };
+          const proteinGrams = mealMeta.reduce((sum, m) => sum + (m.protein ? portionGrams[m.proteinPortion] : 0), 0);
           const proteinTarget = Math.round((profile.weight || 80) * 1.5);
           const carbsTarget = Math.max(3, totalMeals || 3);
           const fiberTarget = Math.max(3, totalMeals || 3);
@@ -663,7 +664,7 @@ export function DailyScreen() {
 
           const ingaMsg = (() => {
             if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до сильного голода 🧡';
-            if (proteinMeals === 0) return 'Не вижу белка сегодня. Добавь мясо, рыбу, яйца или творог к следующему приёму.';
+            if (proteinGrams < proteinTarget * 0.7) return 'Белка пока маловато. Добавь нежирный белок в следующий приём — мясо, рыбу, яичный белок или творог.';
             if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки сегодня. Добавь овощи или ягоды к следующему приёму 🥦';
             return 'Отличная структура сегодня! Так держать 🧡';
           })();
