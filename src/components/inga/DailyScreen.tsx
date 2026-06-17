@@ -459,116 +459,151 @@ export function DailyScreen() {
       setAwardedMedal(summary.nextMedal);
     }
 
-    // Show meal-planning intro after the FIRST completed day, only once.
-    const introShown = (() => {
-      try { return localStorage.getItem(PLANNING_INTRO_KEY) === 'true'; } catch { return false; }
-    })();
-    const completedDaysBefore = dailyReports.filter(r => r.date !== today).length;
-    if (!introShown && completedDaysBefore === 0) {
-      setShowPlanning(true);
-    } else {
-      setSaved(true);
-    }
-  };
-
-  const finishPlanning = () => {
-    try { localStorage.setItem(PLANNING_INTRO_KEY, 'true'); } catch {}
-    setShowPlanning(false);
-    setPlanSavedMessage(false);
     setSaved(true);
   };
 
-  const handleSavePlan = async () => {
-    const text = planText.trim();
-    if (!text) {
-      finishPlanning();
-      return;
-    }
+  const startNewDay = () => {
+    setSaved(false);
+    setShowPlanning(false);
+    setPlanText('');
+    setPlanSavedMessage(false);
+    setTab('morning');
+    setMeals([]);
+    setMealMeta([]);
+    setMealText('');
+    setWeight('');
+    setSleep('');
+    setSteps('');
+    setEmotion('');
+    setHunger(3);
+    setHardest('');
+    setDayWin('');
+    setSweetPoint('');
+    setWaterCount(0);
+    setMorningAnalysis(null);
+    setAwardedMedal(null);
     try {
-      await saveMealPlan(tomorrow, text);
+      localStorage.removeItem('dailyActiveTab');
+      localStorage.removeItem('dailyActiveTabDate');
     } catch {}
-    setPlanSavedMessage(true);
   };
 
 
+
   if (showPlanning) {
-    const plannedVerb = getText('планировала', 'планировал', profile.gender);
     return (
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
         <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
-          {!planSavedMessage ? (
-            <>
-              <h2 className="text-xl font-bold">План на завтра</h2>
-              <p className="text-sm text-muted-foreground">
-                Знаешь, что сильно помогает не срываться? Планирование еды накануне.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Постарайся вечером заранее подумать, что ты будешь есть завтра: завтрак, обед, ужин и перекусы. Так ты не остаёшься {getText('одна', 'один', profile.gender)} на один с голодом и случайной едой.
-              </p>
+          <h2 className="text-xl font-bold">План на завтра</h2>
+          <p className="text-sm text-muted-foreground">
+            Знаешь, что сильно помогает не срываться? Планирование еды накануне.
+            Постарайся сегодня вечером заранее продумать, что ты будешь есть завтра
+            на завтрак, обед, ужин и перекусы. Так ты не {getText('останешься одна', 'останешься один', profile.gender)} на один с голодом и случайной едой.
+          </p>
 
-              <div className="inga-card">
-                <p className="font-semibold mb-2 text-sm">Как планировать</p>
-                <p className="text-sm text-muted-foreground mb-1">В каждый основной приём пищи добавь:</p>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• нежирный белок</li>
-                  <li>• клетчатку / овощи</li>
-                  <li>• сложные углеводы</li>
-                  {sweetTrigger && <li>• сладкую точку после основного приёма пищи</li>}
-                </ul>
-                {sweetTrigger && (
-                  <p className="text-xs text-muted-foreground italic mt-2">
-                    Сладкая точка — не отдельный перекус и не перед сном. Лучше после завтрака, обеда или дневного приёма пищи.
-                  </p>
-                )}
-              </div>
+          <div className="inga-card">
+            <p className="font-semibold mb-2 text-sm">Как планировать</p>
+            <p className="text-sm text-muted-foreground">
+              Запланируй, что у тебя будет в качестве белка, клетчатки и углеводов
+              в каждом приёме пищи, включая перекусы.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Также подумай, что ты будешь есть на Сладкую точку:
+              десерт до 100 ккал/100 г или ягоды/фрукты.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Можешь даже заранее заказать необходимые продукты или положить
+              их в корзину, если покупаешь онлайн.
+            </p>
+          </div>
 
-              <p className="text-sm text-muted-foreground">
-                Не нужно расписывать идеально. Достаточно набросать основу — так завтра будет проще держать ритм.
-              </p>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Хочешь коротко записать план на завтра?</label>
-                <textarea
-                  value={planText}
-                  onChange={e => setPlanText(e.target.value)}
-                  className="inga-input min-h-[96px] resize-none"
-                  placeholder="Например: завтрак — омлет и овощи, обед — курица с гречкой, ужин — рыба с салатом"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <button onClick={handleSavePlan} className="inga-btn-primary flex-1">
-                  Сохранить план
-                </button>
-                <button onClick={finishPlanning} className="inga-btn-secondary flex-1">
-                  Пропустить
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-base">
-                Отлично. Завтра у тебя уже есть опора — это сильно упрощает день.
-              </p>
-              <button onClick={finishPlanning} className="inga-btn-primary w-full">
-                Продолжить →
-              </button>
-            </>
-          )}
+          <button onClick={startNewDay} className="inga-btn-primary w-full">
+            Продумала, начнём новый день →
+          </button>
         </div>
       </div>
     );
   }
 
   if (saved) {
+    // Achievement calculations
+    const mealCount = mealMeta.length;
+    const proteinCount = mealMeta.filter(m => m.protein).length;
+    const fiberCount = mealMeta.filter(m => m.fiber).length;
+    const eveningSnack = mealMeta.some(m => m.isEvening);
+    const proteinPct = mealCount > 0 ? proteinCount / mealCount : 0;
+    const fiberPct = mealCount > 0 ? fiberCount / mealCount : 0;
+
+    const waterOk = waterCount >= 6;
+    const proteinOk = proteinPct >= 0.8;
+    const fiberOk = fiberPct >= 0.6;
+    const sweetOk = sweetPoint === 'yes';
+    const perfect = waterOk && proteinOk && fiberOk;
+
+    const achievements: { icon: string; label: string }[] = [];
+    if (waterOk) achievements.push({ icon: '💧', label: 'Вода' });
+    if (proteinOk) achievements.push({ icon: '🥩', label: 'Белок' });
+    if (fiberOk) achievements.push({ icon: '🥦', label: 'Клетчатка' });
+    if (sweetOk) achievements.push({ icon: '🍰', label: 'Сладкая точка' });
+    if (eveningSnack) achievements.push({ icon: '🌙', label: 'Вечерний перекус' });
+
+    const userName = hasName(profile.name) ? profile.name : '';
+    const greeting = userName ? `${userName}, ` : '';
+
+    let ingaMessage: string;
+    if (perfect) {
+      ingaMessage = `${greeting}сегодня ты ${getText('держала', 'держал', profile.gender)} структуру весь день. Это именно то, что меняет привычки 🧡`;
+    } else {
+      const wins: string[] = [];
+      if (proteinOk) wins.push('план по белку');
+      if (fiberOk) wins.push('клетчатку');
+      if (waterOk) wins.push('норму воды');
+      if (sweetOk) wins.push('сладкую точку');
+      const improvements: string[] = [];
+      if (!fiberOk) improvements.push('добавь больше клетчатки — свежие овощи к каждому приёму пищи');
+      else if (!proteinOk) improvements.push('добавь белок в каждый приём пищи');
+      else if (!waterOk) improvements.push('выпей побольше воды — хотя бы 6 стаканов');
+      else improvements.push('продолжай в том же духе 🧡');
+
+      if (wins.length > 0) {
+        ingaMessage = `Ты ${getText('отлично выполнила', 'отлично выполнил', profile.gender)} ${wins.slice(0, 2).join(' и ')}! Завтра ${improvements[0]}.`;
+      } else {
+        ingaMessage = `${greeting}завтра ${improvements[0]}. Один маленький шаг — и день уже другой 🧡`;
+      }
+    }
+
     return (
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
         <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
-          <p className="text-lg font-semibold">
-            {analysis.obstacles.length >= 2 && hasName(profile.name)
-              ? withName(profile.name, 'день был непростой. Давай не усложнять — завтра вернёмся в ритм с одного простого шага.')
-              : 'Я посмотрела твой день.'}
-          </p>
+          <h2 className="text-xl font-bold text-center">День завершён ✨</h2>
+
+          {perfect && (
+            <div className="inga-card border-primary/40 bg-primary/5 text-center">
+              <div className="text-5xl mb-2">🌟</div>
+              <p className="font-semibold text-primary">Идеальный день!</p>
+            </div>
+          )}
+
+          {achievements.length > 0 && (
+            <div>
+              <p className="font-semibold mb-2 text-sm">Твои достижения</p>
+              <div className="flex flex-wrap gap-2">
+                {achievements.map(a => (
+                  <div
+                    key={a.label}
+                    className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm"
+                  >
+                    <span>{a.icon}</span>
+                    <span className="font-medium">{a.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="inga-card">
+            <p className="text-sm">{ingaMessage}</p>
+          </div>
 
           {awardedMedal && (
             <div className="inga-card border-primary/40 bg-primary/5">
@@ -583,86 +618,20 @@ export function DailyScreen() {
             </div>
           )}
 
-          {analysis.good.length > 0 && (
-            <div>
-              <p className="font-semibold mb-1">Что было хорошо</p>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {analysis.good.map(item => <li key={item}>• {item}</li>)}
-              </ul>
-            </div>
-          )}
-
-          <div>
-            <p className="font-semibold mb-1">Что мешает снижению веса</p>
-            {analysis.obstacles.length > 0 ? (
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {analysis.obstacles.map(item => <li key={item}>• {item}</li>)}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">Я не вижу явных моментов, которые сильно мешали бы цели сегодня.</p>
-            )}
-            <p className="text-sm text-muted-foreground mt-2">{analysis.conclusion}</p>
-          </div>
-
-          {analysis.swaps.length > 0 && (
-            <div>
-              <p className="font-semibold mb-1">Мягкие замены на завтра</p>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                {analysis.swaps.map(s => (
-                  <li key={s.from}>• <span className="font-medium text-foreground">{s.from}</span> → {s.to} <span className="opacity-70">({s.why})</span></li>
-                ))}
-              </ul>
-              <p className="text-xs text-muted-foreground mt-2 italic">Не убираем любимое — просто заменяем на вариант, который лучше подходит цели.</p>
-            </div>
-          )}
-
-          <div>
-            <p className="font-semibold mb-1">Что сделать завтра</p>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              {analysis.steps.map(item => <li key={item}>• {item}</li>)}
-            </ul>
-          </div>
-        </div>
-        <div className="flex gap-3 w-full max-w-sm">
           <button
             onClick={() => {
-              setSaved(false);
-              setTab('morning');
-              setMeals([]);
-              setMealText('');
-              setWeight('');
-              setSleep('');
-              setSteps('');
-              setEmotion('');
-              setHunger(3);
-              setHardest('');
-              setMorningAnalysis(null);
-              setAwardedMedal(null);
-              setShowPlanning(false);
-              setPlanText('');
-              setPlanSavedMessage(false);
-              try {
-                localStorage.removeItem('dailyActiveTab');
-                localStorage.removeItem('dailyActiveTabDate');
-              } catch {}
+              try { localStorage.setItem(PLANNING_INTRO_KEY, 'true'); } catch {}
+              setShowPlanning(true);
             }}
-            className="inga-btn-secondary flex-1"
+            className="inga-btn-primary w-full"
           >
-            Новый день
-          </button>
-          <button onClick={() => setStep('menu')} className="inga-btn-primary flex-1">
-            Меню
+            Спланировать завтра →
           </button>
         </div>
-        <button
-          onClick={() => setStep('chat')}
-          className="mt-3 w-full max-w-sm inga-btn-secondary"
-        >
-          💬 Обсудить с Ингой
-        </button>
       </div>
     );
   }
+
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 pb-[80px] animate-fade-in-up" style={{ maxWidth: 480, margin: '0 auto', width: '100%' }}>
