@@ -18,8 +18,9 @@ export async function saveUserProfile(profile: Partial<UserProfile>) {
   const body: Record<string, unknown> = {};
   const passthrough: (keyof UserProfile)[] = [
     'name','gender','age','height','weight','goalWeight','waist','hips',
-    'stepsPerDay','weightGainReasons','emotionalTrigger','currentStage',
-    'goalReachedAt','fixationStartedAt','maintenanceStartedAt',
+    'stepsPerDay','weightGainReasons','emotionalTrigger',
+    'motivation','kgToLose',
+    'currentStage','goalReachedAt','fixationStartedAt','maintenanceStartedAt',
     'equilibriumCalories','currentFixationCalories','fixationWeekNumber',
     'lastCalorieIncreaseAt',
   ];
