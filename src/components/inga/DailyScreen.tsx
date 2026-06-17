@@ -788,17 +788,22 @@ export function DailyScreen() {
             <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
               <p className="text-xs font-bold tracking-wide mb-3" style={{ color: '#8A7A70' }}>СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
               {[
-                { icon: '🥩', label: 'Белок', val: `~${proteinGrams}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
+                { icon: '🥩', label: 'Белок', val: `~${proteinGrams}г из ${proteinTarget}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
                 { icon: '🌾', label: 'Углеводы', val: `${carbsMeals}/${carbsTarget}`, color: '#C49A3E', pct: pct(carbsMeals, carbsTarget) },
                 { icon: '🥦', label: 'Клетчатка', val: `${fiberMeals}/${fiberTarget}`, color: '#5E9E72', pct: pct(fiberMeals, fiberTarget) },
               ].map(row => (
-                <div key={row.label} className="flex items-center gap-3 py-1.5">
-                  <span className="text-base">{row.icon}</span>
-                  <span className="text-sm w-20">{row.label}</span>
-                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
-                    <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
+                <div key={row.label}>
+                  <div className="flex items-center gap-3 py-1.5">
+                    <span className="text-base">{row.icon}</span>
+                    <span className="text-sm w-20">{row.label}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
+                      <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
+                    </div>
+                    <span className="text-xs tabular-nums w-24 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
                   </div>
-                  <span className="text-xs tabular-nums w-12 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
+                  {row.label === 'Белок' && (
+                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>приблизительно, по методу ладони</p>
+                  )}
                 </div>
               ))}
             </div>
