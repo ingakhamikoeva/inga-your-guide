@@ -673,21 +673,29 @@ export function DailyScreen() {
 
         {tab === 'meals' && (() => {
           const totalMeals = mealMeta.length;
-          const proteinMeals = mealMeta.filter(m => m.protein).length;
           const carbsMeals = mealMeta.filter(m => m.carbs).length;
           const fiberMeals = mealMeta.filter(m => m.fiber).length;
           const portionGrams: Record<ProteinPortion, number> = { small: 15, palm: 25, large: 40 };
-          const proteinGrams = mealMeta.reduce((sum, m) => sum + (m.protein ? portionGrams[m.proteinPortion] : 0), 0);
+          const proteinGrams = mealMeta.reduce(
+            (sum, m) => sum + (m.proteinAi ?? (m.protein ? portionGrams[m.proteinPortion] : 0)),
+            0
+          );
+          const anyProteinLoading = mealMeta.some(m => m.proteinLoading);
           const proteinTarget = Math.round((profile.weight || 80) * 1.5);
           const carbsTarget = Math.max(3, totalMeals || 3);
           const fiberTarget = Math.max(3, totalMeals || 3);
           const pct = (v: number, t: number) => Math.min(100, Math.round((v / Math.max(1, t)) * 100));
+          const userName = profile.name || 'Друг';
 
           const ingaMsg = (() => {
-            if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до сильного голода 🧡';
-            if (proteinGrams < proteinTarget * 0.7) return 'Белка пока маловато. Добавь нежирный белок в следующий приём — мясо, рыбу, яичный белок или творог.';
-            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки сегодня. Добавь овощи или ягоды к следующему приёму 🥦';
-            return 'Отличная структура сегодня! Так держать 🧡';
+            if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до голода 🧡';
+            if (waterCount < 4) return `${userName}, выпей ещё воды — пока только ${waterCount} из 6 стаканов 💧`;
+            if (proteinGrams < proteinTarget * 0.6) return 'Белка маловато сегодня. Добавь мясо, рыбу, яичный белок или творог к следующему приёму.';
+            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки. Добавь овощи или ягоды к следующему приёму 🥦';
+            if (waterCount >= 5 && proteinGrams >= proteinTarget * 0.8 && fiberMeals / totalMeals >= 0.6) {
+              return 'Хороший день — структура держится. Продолжай в том же духе 🧡';
+            }
+            return 'Структура дня складывается. Не забывай про воду, белок и клетчатку 🧡';
           })();
 
           const regular = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => !m.isEvening);
