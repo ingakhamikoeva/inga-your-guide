@@ -482,13 +482,7 @@ export function MenuScreen() {
   }
 
   if (section === 'profile') {
-    return (
-      <ProfileSection
-        onBack={() => setSection('main')}
-        profile={profile}
-        onSave={(name) => updateProfile({ name })}
-      />
-    );
+    return <ProfileSection onBack={() => setSection('main')} />;
   }
 
   return null;
