@@ -9,6 +9,7 @@ import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
 import { saveMealPlan, loadMealPlanForDate } from '@/lib/db';
+import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
 import { FixationCompleteModal } from './FixationCompleteModal';
