@@ -45,7 +45,8 @@ export function DailyScreen() {
   const [mealTime, setMealTime] = useState<string>(nowHHMM());
   const [editingTimeIdx, setEditingTimeIdx] = useState<number | null>(null);
   const [meals, setMeals] = useState<string[]>([]);
-  type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean };
+  type ProteinPortion = 'small' | 'palm' | 'large';
+  type MealMeta = { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean; time: string; name: string; isEvening: boolean; proteinPortion: ProteinPortion };
   const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
   const [waterCount, setWaterCount] = useState(0);
   const [showMealInput, setShowMealInput] = useState(false);
@@ -219,7 +220,7 @@ export function DailyScreen() {
     setMeals(prev => [...prev, t]);
     setMealMeta(prev => [...prev, {
       protein: false, carbs: false, fiber: false, sweet: false,
-      time, name, isEvening,
+      time, name, isEvening, proteinPortion: 'palm',
     }]);
   };
 
@@ -654,7 +655,8 @@ export function DailyScreen() {
           const proteinMeals = mealMeta.filter(m => m.protein).length;
           const carbsMeals = mealMeta.filter(m => m.carbs).length;
           const fiberMeals = mealMeta.filter(m => m.fiber).length;
-          const proteinGrams = proteinMeals * 23;
+          const portionGrams: Record<ProteinPortion, number> = { small: 15, palm: 25, large: 40 };
+          const proteinGrams = mealMeta.reduce((sum, m) => sum + (m.protein ? portionGrams[m.proteinPortion] : 0), 0);
           const proteinTarget = Math.round((profile.weight || 80) * 1.5);
           const carbsTarget = Math.max(3, totalMeals || 3);
           const fiberTarget = Math.max(3, totalMeals || 3);
@@ -662,7 +664,7 @@ export function DailyScreen() {
 
           const ingaMsg = (() => {
             if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до сильного голода 🧡';
-            if (proteinMeals === 0) return 'Не вижу белка сегодня. Добавь мясо, рыбу, яйца или творог к следующему приёму.';
+            if (proteinGrams < proteinTarget * 0.7) return 'Белка пока маловато. Добавь нежирный белок в следующий приём — мясо, рыбу, яичный белок или творог.';
             if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки сегодня. Добавь овощи или ягоды к следующему приёму 🥦';
             return 'Отличная структура сегодня! Так держать 🧡';
           })();
@@ -673,6 +675,10 @@ export function DailyScreen() {
           const removeMeal = (idx: number) => {
             setMeals(prev => prev.filter((_, k) => k !== idx));
             setMealMeta(prev => prev.filter((_, k) => k !== idx));
+          };
+
+          const setMealPortion = (idx: number, portion: ProteinPortion) => {
+            setMealMeta(prev => prev.map((m, k) => k === idx ? { ...m, proteinPortion: portion } : m));
           };
 
           const pillStyle = (active: boolean, kind: 'protein' | 'carbs' | 'fiber') => {
@@ -750,6 +756,34 @@ export function DailyScreen() {
                   {m.fiber ? '✓' : '+'} Клетчатка
                 </button>
               </div>
+              {m.protein && (
+                <div className="mb-2 pl-1">
+                  <p className="text-[11px] mb-1" style={{ color: '#8A7A70' }}>Сколько белка?</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      { key: 'small' as ProteinPortion, label: '🤏 Меньше ладони' },
+                      { key: 'palm' as ProteinPortion, label: '🤚 Ладонь' },
+                      { key: 'large' as ProteinPortion, label: '👐 Больше ладони' },
+                    ]).map(opt => {
+                      const active = m.proteinPortion === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => setMealPortion(m.i, opt.key)}
+                          className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                          style={{
+                            background: active ? '#F9EDEA' : '#F7F2EE',
+                            color: active ? '#CF7B5A' : '#8A7A70',
+                            border: active ? '1px solid #CF7B5A' : '1px solid #E5DDD8',
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {!m.isEvening && (
                 <button
                   onClick={() => toggleMealFlag(m.i, 'sweet')}
@@ -782,17 +816,22 @@ export function DailyScreen() {
             <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
               <p className="text-xs font-bold tracking-wide mb-3" style={{ color: '#8A7A70' }}>СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
               {[
-                { icon: '🥩', label: 'Белок', val: `~${proteinGrams}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
+                { icon: '🥩', label: 'Белок', val: `~${proteinGrams}г из ${proteinTarget}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
                 { icon: '🌾', label: 'Углеводы', val: `${carbsMeals}/${carbsTarget}`, color: '#C49A3E', pct: pct(carbsMeals, carbsTarget) },
                 { icon: '🥦', label: 'Клетчатка', val: `${fiberMeals}/${fiberTarget}`, color: '#5E9E72', pct: pct(fiberMeals, fiberTarget) },
               ].map(row => (
-                <div key={row.label} className="flex items-center gap-3 py-1.5">
-                  <span className="text-base">{row.icon}</span>
-                  <span className="text-sm w-20">{row.label}</span>
-                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
-                    <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
+                <div key={row.label}>
+                  <div className="flex items-center gap-3 py-1.5">
+                    <span className="text-base">{row.icon}</span>
+                    <span className="text-sm w-20">{row.label}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
+                      <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
+                    </div>
+                    <span className="text-xs tabular-nums w-24 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
                   </div>
-                  <span className="text-xs tabular-nums w-12 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
+                  {row.label === 'Белок' && (
+                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>приблизительно, по методу ладони</p>
+                  )}
                 </div>
               ))}
             </div>
