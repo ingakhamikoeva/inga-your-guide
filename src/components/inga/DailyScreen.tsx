@@ -797,11 +797,32 @@ export function DailyScreen() {
 
             {/* Add meal */}
             {!showMealInput ? (
-              <button onClick={() => setShowMealInput(true)} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
+              <button onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
                 + Добавить приём пищи
               </button>
             ) : (
               <div className="bg-white space-y-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={mealTime}
+                    onChange={e => setMealTime(e.target.value)}
+                    className="meal-time-input"
+                    style={{
+                      color: '#6A5A50',
+                      background: '#FAF5F0',
+                      border: '1px solid transparent',
+                      borderRadius: 8,
+                      padding: '4px 8px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      outline: 'none',
+                    }}
+                    onFocus={e => (e.currentTarget.style.border = '1px solid #FF6200')}
+                    onBlur={e => (e.currentTarget.style.border = '1px solid transparent')}
+                  />
+                  <span className="text-xs" style={{ color: '#8A7A70' }}>{mealNameByTime(mealTime)}</span>
+                </div>
                 <div className="flex gap-2">
                   <input
                     value={mealText}
@@ -812,7 +833,7 @@ export function DailyScreen() {
                     onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
                   />
                   <VoiceInput
-                    onConfirm={(text) => addMealEntry(text, false)}
+                    onConfirm={(text) => addMealEntry(text, false, mealTime)}
                     onEdit={(text) => setMealText(text)}
                   />
                 </div>
