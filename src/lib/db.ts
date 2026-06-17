@@ -143,11 +143,64 @@ export async function loadMealPlanForDate(dateFor: string): Promise<string | nul
 
 // ============ FOOD LOGS ============
 
+export type MealTag = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'unknown';
+
+export interface FoodLogRow {
+  log_id: string;
+  raw_text: string | null;
+  meal_tag: MealTag;
+  datetime: string;
+  meta: Record<string, unknown> | null;
+}
+
 export async function saveFoodLog(
   description: string,
-  mealTag: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'unknown' = 'unknown',
-) {
-  await apiFetch('/food-logs', { method: 'POST', body: { description, mealTag } });
+  mealTag: MealTag = 'unknown',
+  opts?: { datetime?: string; meta?: Record<string, unknown> },
+): Promise<FoodLogRow | null> {
+  try {
+    return await apiFetch<FoodLogRow>('/food-logs', {
+      method: 'POST',
+      body: {
+        description,
+        mealTag,
+        datetime: opts?.datetime ?? null,
+        meta: opts?.meta ?? null,
+      },
+    });
+  } catch (e) {
+    console.error('saveFoodLog failed', e);
+    return null;
+  }
+}
+
+export async function loadFoodLogs(date?: string): Promise<FoodLogRow[]> {
+  try {
+    const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+    return await apiFetch<FoodLogRow[]>(`/food-logs${qs}`);
+  } catch (e) {
+    console.error('loadFoodLogs failed', e);
+    return [];
+  }
+}
+
+export async function updateFoodLog(
+  id: string,
+  patch: { description?: string; mealTag?: MealTag; datetime?: string; meta?: Record<string, unknown> },
+): Promise<void> {
+  try {
+    await apiFetch(`/food-logs/${id}`, { method: 'PATCH', body: patch });
+  } catch (e) {
+    console.error('updateFoodLog failed', e);
+  }
+}
+
+export async function deleteFoodLog(id: string): Promise<void> {
+  try {
+    await apiFetch(`/food-logs/${id}`, { method: 'DELETE' });
+  } catch (e) {
+    console.error('deleteFoodLog failed', e);
+  }
 }
 
 // ============ CHAT EVENTS ============
