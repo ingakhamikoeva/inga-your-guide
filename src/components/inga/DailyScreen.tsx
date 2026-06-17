@@ -712,6 +712,17 @@ export function DailyScreen() {
             setMealMeta(prev => prev.map((m, k) => k === idx ? { ...m, proteinPortion: portion } : m));
           };
 
+          const saveManualProtein = (idx: number, value: string) => {
+            const n = parseInt(value, 10);
+            if (!isNaN(n) && n >= 0 && n < 500) {
+              setMealMeta(prev => prev.map((mm, k) => k === idx
+                ? { ...mm, proteinAi: n, proteinLoading: false, proteinManual: true }
+                : mm));
+            }
+            setEditingProteinIdx(null);
+            setEditingProteinValue('');
+          };
+
           const pillStyle = (active: boolean, kind: 'protein' | 'carbs' | 'fiber') => {
             if (!active) return { background: '#F7F2EE', color: '#8A7A70', border: '1px solid #E5DDD8' };
             if (kind === 'protein') return { background: '#F9EDEA', color: '#CF7B5A', border: '1px solid #CF7B5A' };
