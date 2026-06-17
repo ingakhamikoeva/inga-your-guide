@@ -221,10 +221,26 @@ export function DailyScreen() {
     if (!t) return;
     const time = timeOverride || nowHHMM();
     const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
-    setMeals(prev => [...prev, t]);
+    setMeals(prev => {
+      const newIdx = prev.length;
+      // kick off AI estimation
+      resolveMealNutrition(t)
+        .then(res => {
+          setMealMeta(curr => curr.map((mm, k) => k === newIdx
+            ? { ...mm, proteinAi: Math.round(res.protein_g || 0), proteinLoading: false }
+            : mm));
+        })
+        .catch(() => {
+          setMealMeta(curr => curr.map((mm, k) => k === newIdx
+            ? { ...mm, proteinLoading: false }
+            : mm));
+        });
+      return [...prev, t];
+    });
     setMealMeta(prev => [...prev, {
       protein: false, carbs: false, fiber: false, sweet: false,
       time, name, isEvening, proteinPortion: 'palm',
+      proteinAi: null, proteinLoading: true, proteinManual: false,
     }]);
   };
 
