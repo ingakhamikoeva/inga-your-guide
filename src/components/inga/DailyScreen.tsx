@@ -488,24 +488,6 @@ export function DailyScreen() {
     } catch {}
   };
 
-  const finishPlanning = () => {
-    try { localStorage.setItem(PLANNING_INTRO_KEY, 'true'); } catch {}
-    setShowPlanning(false);
-    setPlanSavedMessage(false);
-    setSaved(true);
-  };
-
-  const handleSavePlan = async () => {
-    const text = planText.trim();
-    if (!text) {
-      finishPlanning();
-      return;
-    }
-    try {
-      await saveMealPlan(tomorrow, text);
-    } catch {}
-    setPlanSavedMessage(true);
-  };
 
 
   if (showPlanning) {
