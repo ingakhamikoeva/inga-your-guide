@@ -1106,18 +1106,30 @@ export function DailyScreen() {
         Открыть меню
       </button>
 
-      {/* Floating chat button — anchored to app container on desktop, corner on mobile */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center">
-        <div className="relative w-full max-w-md">
-          <button
-            onClick={() => setStep('chat')}
-            aria-label="Открыть чат с Ингой"
-            className="pointer-events-auto absolute bottom-6 right-4 sm:right-2 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl hover:scale-105 transition-transform"
-          >
-            💬
-          </button>
+      {/* Fixed bottom chat panel */}
+      <button
+        onClick={() => setStep('chat')}
+        className="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-[10px] px-4 py-[10px] border-t border-[#EDE5DF] bg-white"
+        style={{ background: '#fff' }}
+      >
+        <img
+          src={ingaPhoto}
+          alt="Инга"
+          className="w-8 h-8 rounded-full flex-shrink-0"
+          style={{ border: '2px solid #FAEEDA' }}
+        />
+        <div className="flex-1 text-left">
+          <p className="text-[13px] font-semibold" style={{ color: '#2C1A0E' }}>
+            Поговорим?
+          </p>
+          <p className="text-[11px]" style={{ color: '#A89080' }}>
+            Задай вопрос или расскажи, как проходит день
+          </p>
         </div>
-      </div>
+        <span className="text-[18px]" style={{ color: '#FF6200' }}>
+          ›
+        </span>
+      </button>
     </div>
   );
 }
