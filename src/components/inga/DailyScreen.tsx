@@ -784,7 +784,54 @@ export function DailyScreen() {
                   <Trash2 size={20} />
                 </button>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">{m.desc}</p>
+              <p className="text-sm text-muted-foreground mb-1">{m.desc}</p>
+              <div className="flex items-center gap-1.5 mb-3 text-[11px]" style={{ color: '#8A7A70' }}>
+                {editingProteinIdx === m.i ? (
+                  <>
+                    <input
+                      type="number"
+                      min={0}
+                      max={300}
+                      autoFocus
+                      value={editingProteinValue}
+                      onChange={e => setEditingProteinValue(e.target.value)}
+                      onBlur={() => saveManualProtein(m.i, editingProteinValue)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveManualProtein(m.i, editingProteinValue); }}
+                      style={{
+                        width: 50, color: '#6A5A50', background: 'transparent',
+                        border: '1px solid #CF7B5A', borderRadius: 6, padding: '1px 4px',
+                        fontSize: 11, outline: 'none',
+                      }}
+                    />
+                    <span>г белка</span>
+                  </>
+                ) : m.proteinLoading ? (
+                  <span>... оценка белка</span>
+                ) : m.proteinAi !== null ? (
+                  <>
+                    <span>~{m.proteinAi}г белка{m.proteinManual ? '' : ''}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingProteinIdx(m.i);
+                        setEditingProteinValue(String(m.proteinAi ?? ''));
+                      }}
+                      aria-label="Скорректировать белок"
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11 }}
+                    >
+                      ✏️
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setEditingProteinIdx(m.i); setEditingProteinValue(''); }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#8A7A70' }}
+                  >
+                    + указать белок ✏️
+                  </button>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 <button onClick={() => toggleMealFlag(m.i, 'protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
                   {m.protein ? '✓' : '+'} Белок
