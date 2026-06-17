@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
@@ -726,7 +727,14 @@ export function DailyScreen() {
                     </button>
                   )}
                 </span>
-                <button onClick={() => removeMeal(m.i)} className="text-xs opacity-50 hover:opacity-100" aria-label="Удалить">🗑</button>
+                <button
+                  onClick={() => setConfirmDeleteIndex(m.i)}
+                  className="flex items-center justify-center"
+                  style={{ color: '#E53935' }}
+                  aria-label="Удалить"
+                >
+                  <Trash2 size={20} />
+                </button>
               </div>
               <p className="text-sm text-muted-foreground mb-3">{m.desc}</p>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -888,6 +896,28 @@ export function DailyScreen() {
                   <div className="flex gap-2">
                     <button onClick={handleAddEveningMeal} className="flex-1 py-2 rounded-xl text-sm font-medium" style={{ background: '#4A3580', color: '#fff' }}>Добавить</button>
                     <button onClick={() => { setShowEveningInput(false); setEveningText(''); }} className="inga-btn-secondary flex-1">Отмена</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Delete confirmation dialog */}
+              {confirmDeleteIndex !== null && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={() => setConfirmDeleteIndex(null)}>
+                  <div className="bg-card rounded-2xl p-5 w-full max-w-md shadow-xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                    <p className="text-base font-semibold mb-2">Удалить приём пищи?</p>
+                    <p className="text-sm text-muted-foreground mb-5">Это действие нельзя отменить.</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setConfirmDeleteIndex(null)} className="inga-btn-secondary flex-1 text-sm py-2">
+                        Отмена
+                      </button>
+                      <button
+                        onClick={() => { removeMeal(confirmDeleteIndex); setConfirmDeleteIndex(null); }}
+                        className="flex-1 text-sm py-2 rounded-xl font-medium"
+                        style={{ background: '#E53935', color: '#fff' }}
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
