@@ -756,6 +756,34 @@ export function DailyScreen() {
                   {m.fiber ? '✓' : '+'} Клетчатка
                 </button>
               </div>
+              {m.protein && (
+                <div className="mb-2 pl-1">
+                  <p className="text-[11px] mb-1" style={{ color: '#8A7A70' }}>Сколько белка?</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      { key: 'small' as ProteinPortion, label: '🤏 Меньше ладони' },
+                      { key: 'palm' as ProteinPortion, label: '🤚 Ладонь' },
+                      { key: 'large' as ProteinPortion, label: '👐 Больше ладони' },
+                    ]).map(opt => {
+                      const active = m.proteinPortion === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => setMealPortion(m.i, opt.key)}
+                          className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                          style={{
+                            background: active ? '#F9EDEA' : '#F7F2EE',
+                            color: active ? '#CF7B5A' : '#8A7A70',
+                            border: active ? '1px solid #CF7B5A' : '1px solid #E5DDD8',
+                          }}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {!m.isEvening && (
                 <button
                   onClick={() => toggleMealFlag(m.i, 'sweet')}
