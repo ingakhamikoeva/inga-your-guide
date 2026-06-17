@@ -202,17 +202,19 @@ export function DailyScreen() {
     if (h >= 12 && h < 15) return 'Обед';
     if (h >= 15 && h < 18) return 'Полдник';
     if (h >= 18 && h < 21) return 'Ужин';
-    return 'Поздний перекус';
+    return 'Вечерний перекус';
   };
 
-  const addMealEntry = (text: string, isEvening = false) => {
+  const mealNameByTime = (time: string) => {
+    const h = parseInt(time.split(':')[0] || '0', 10);
+    return mealNameByHour(h);
+  };
+
+  const addMealEntry = (text: string, isEvening = false, timeOverride?: string) => {
     const t = text.trim();
     if (!t) return;
-    const now = new Date();
-    const hh = now.getHours().toString().padStart(2, '0');
-    const mm = now.getMinutes().toString().padStart(2, '0');
-    const time = `${hh}:${mm}`;
-    const name = isEvening ? 'Вечерний перекус' : mealNameByHour(now.getHours());
+    const time = timeOverride || nowHHMM();
+    const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
     setMeals(prev => [...prev, t]);
     setMealMeta(prev => [...prev, {
       protein: false, carbs: false, fiber: false, sweet: false,
@@ -222,8 +224,9 @@ export function DailyScreen() {
 
   const handleAddMeal = () => {
     if (mealText.trim()) {
-      addMealEntry(mealText.trim(), false);
+      addMealEntry(mealText.trim(), false, mealTime);
       setMealText('');
+      setMealTime(nowHHMM());
       setShowMealInput(false);
     }
   };
@@ -234,6 +237,13 @@ export function DailyScreen() {
       setEveningText('');
       setShowEveningInput(false);
     }
+  };
+
+  const updateMealTime = (i: number, newTime: string) => {
+    if (!newTime) return;
+    setMealMeta(prev => prev.map((m, idx) => idx === i
+      ? { ...m, time: newTime, name: m.isEvening ? 'Вечерний перекус' : mealNameByTime(newTime) }
+      : m));
   };
 
   const toggleMealFlag = (i: number, key: 'protein' | 'carbs' | 'fiber' | 'sweet') => {
