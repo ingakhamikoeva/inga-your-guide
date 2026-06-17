@@ -220,7 +220,7 @@ export function DailyScreen() {
     setMeals(prev => [...prev, t]);
     setMealMeta(prev => [...prev, {
       protein: false, carbs: false, fiber: false, sweet: false,
-      time, name, isEvening,
+      time, name, isEvening, proteinPortion: 'palm',
     }]);
   };
 
