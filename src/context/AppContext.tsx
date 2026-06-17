@@ -128,9 +128,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         saveFoodLog(m.description, m.type).catch(() => {});
       });
     }
-    if (report.eveningEmotion || report.hungerLevel || report.hardestPart) {
-      saveEveningReflection(report.date, report.eveningEmotion, report.hungerLevel, report.hardestPart).catch(() => {});
+    if (report.eveningEmotion || report.hungerLevel || report.hardestPart || report.dayWin || report.sweetPointDone !== undefined) {
+      saveEveningReflection(report.date, report.eveningEmotion, report.hungerLevel, report.hardestPart, report.sweetPointDone ?? null, report.dayWin).catch(() => {});
     }
+
   }, []);
 
   const addWeightEntry = useCallback((date: string, weight: number) => {

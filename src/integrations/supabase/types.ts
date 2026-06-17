@@ -343,28 +343,34 @@ export type Database = {
         Row: {
           created_at: string
           date: string
+          day_win: string | null
           emotion: string | null
           hardest_part: string | null
           hunger_level: number | null
           reflection_id: string
+          sweet_point_done: boolean | null
           user_id: string
         }
         Insert: {
           created_at?: string
           date: string
+          day_win?: string | null
           emotion?: string | null
           hardest_part?: string | null
           hunger_level?: number | null
           reflection_id?: string
+          sweet_point_done?: boolean | null
           user_id: string
         }
         Update: {
           created_at?: string
           date?: string
+          day_win?: string | null
           emotion?: string | null
           hardest_part?: string | null
           hunger_level?: number | null
           reflection_id?: string
+          sweet_point_done?: boolean | null
           user_id?: string
         }
         Relationships: [

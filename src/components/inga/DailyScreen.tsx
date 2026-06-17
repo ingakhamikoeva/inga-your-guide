@@ -75,6 +75,9 @@ export function DailyScreen() {
   const [emotion, setEmotion] = useState('');
   const [hunger, setHunger] = useState(3);
   const [hardest, setHardest] = useState('');
+  const [dayWin, setDayWin] = useState('');
+  const [sweetPoint, setSweetPoint] = useState<'yes' | 'no' | ''>('');
+
   const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [awardedMedal, setAwardedMedal] = useState<Medal | null>(null);
@@ -440,6 +443,9 @@ export function DailyScreen() {
       eveningEmotion: emotion,
       hungerLevel: hunger,
       hardestPart: hardest,
+      dayWin: dayWin.trim() || undefined,
+      sweetPointDone: sweetPoint === '' ? null : sweetPoint === 'yes',
+
     };
     addDailyReport(report);
     const summary = buildGamificationSummary(
@@ -1252,9 +1258,43 @@ export function DailyScreen() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Что было самым сложным?</label>
+              <label className="block text-sm font-medium mb-1">Что сегодня получилось? 🌟</label>
+              <input
+                value={dayWin}
+                onChange={e => setDayWin(e.target.value)}
+                className="inga-input"
+                placeholder="Выпила норму воды, съела норму белка, не сорвалась вечером..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Была ли сладкая точка сегодня?</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSweetPoint('yes')}
+                  className={sweetPoint === 'yes' ? 'inga-chip-active' : 'inga-chip-inactive'}
+                >
+                  🍰 Да, была
+                </button>
+                <button
+                  onClick={() => setSweetPoint('no')}
+                  className={sweetPoint === 'no' ? 'inga-chip-active' : 'inga-chip-inactive'}
+                >
+                  Нет
+                </button>
+              </div>
+              {sweetPoint === 'no' && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Запланируй на завтра — это помогает не срываться
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Что далось с трудом?</label>
               <input value={hardest} onChange={e => setHardest(e.target.value)} className="inga-input" placeholder="Вечером хотелось сладкого..." />
             </div>
+
 
             <button onClick={handleSaveEvening} className="inga-btn-primary w-full">
               Завершить день ✨

@@ -6,13 +6,25 @@ const r = Router();
 r.use(requireAuth);
 
 r.put("/:date", async (req, res) => {
-  const { emotion = null, hungerLevel = null, hardestPart = null } = req.body || {};
+  const {
+    emotion = null,
+    hungerLevel = null,
+    hardestPart = null,
+    sweetPointDone = null,
+    dayWin = null,
+  } = req.body || {};
   try {
     await upsert(
       "public.evening_reflections",
       ["user_id", "date"],
       [req.userId, req.params.date],
-      { emotion, hunger_level: hungerLevel, hardest_part: hardestPart }
+      {
+        emotion,
+        hunger_level: hungerLevel,
+        hardest_part: hardestPart,
+        sweet_point_done: sweetPointDone,
+        day_win: dayWin,
+      }
     );
     res.json({ ok: true });
   } catch (e) {

@@ -60,7 +60,10 @@ export interface DailyReport {
   eveningEmotion?: string;
   hungerLevel?: number;
   hardestPart?: string;
+  sweetPointDone?: boolean | null;
+  dayWin?: string;
 }
+
 
 export type MedalType = 'movement' | 'stable' | 'strong' | 'consistency';
 

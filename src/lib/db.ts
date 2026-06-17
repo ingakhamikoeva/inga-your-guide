@@ -219,6 +219,8 @@ export async function saveEveningReflection(
   emotion?: string,
   hungerLevel?: number,
   hardestPart?: string,
+  sweetPointDone?: boolean | null,
+  dayWin?: string,
 ) {
   await apiFetch(`/reflections/${date}`, {
     method: 'PUT',
@@ -226,9 +228,12 @@ export async function saveEveningReflection(
       emotion: emotion ?? null,
       hungerLevel: hungerLevel ?? null,
       hardestPart: hardestPart ?? null,
+      sweetPointDone: sweetPointDone ?? null,
+      dayWin: dayWin ?? null,
     },
   });
 }
+
 
 // ============ USER EVENTS ============
 
