@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import type { UserProfile } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play } from 'lucide-react';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
