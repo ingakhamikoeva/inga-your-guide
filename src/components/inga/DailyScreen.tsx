@@ -237,19 +237,70 @@ export function DailyScreen() {
     return mealNameByHour(h);
   };
 
+  const mealTagFromName = (name: string): MealTag => {
+    if (name === 'Завтрак') return 'breakfast';
+    if (name === 'Обед') return 'lunch';
+    if (name === 'Ужин') return 'dinner';
+    return 'snack';
+  };
+
+  // Build an ISO datetime for today + HH:MM
+  const timeToIso = (time: string): string => {
+    const [hh, mm] = time.split(':').map(n => parseInt(n, 10));
+    const d = new Date();
+    d.setHours(hh || 0, mm || 0, 0, 0);
+    return d.toISOString();
+  };
+
+  // Persisted patch helper — fire-and-forget by id
+  const persistMetaPatch = (idx: number, partial: Partial<MealMeta>) => {
+    setMealMeta(prev => {
+      const next = prev.map((m, k) => k === idx ? { ...m, ...partial } : m);
+      const m = next[idx];
+      if (m?.id) {
+        const metaPayload = {
+          protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
+          isEvening: m.isEvening, proteinPortion: m.proteinPortion,
+          proteinAi: m.proteinAi, proteinManual: m.proteinManual,
+        };
+        updateFoodLog(m.id, {
+          mealTag: mealTagFromName(m.name),
+          datetime: timeToIso(m.time),
+          meta: metaPayload,
+        }).catch(() => {});
+      }
+      return next;
+    });
+  };
+
   const addMealEntry = (text: string, isEvening = false, timeOverride?: string) => {
     const t = text.trim();
     if (!t) return;
     const time = timeOverride || nowHHMM();
     const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
+    let newIdx = -1;
     setMeals(prev => {
-      const newIdx = prev.length;
+      newIdx = prev.length;
       // kick off AI estimation
       resolveMealNutrition(t)
         .then(res => {
-          setMealMeta(curr => curr.map((mm, k) => k === newIdx
-            ? { ...mm, proteinAi: Math.round(res.protein_g || 0), proteinLoading: false }
-            : mm));
+          const grams = Math.round(res.protein_g || 0);
+          setMealMeta(curr => {
+            const next = curr.map((mm, k) => k === newIdx
+              ? { ...mm, proteinAi: grams, proteinLoading: false }
+              : mm);
+            const m = next[newIdx];
+            if (m?.id) {
+              updateFoodLog(m.id, {
+                meta: {
+                  protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
+                  isEvening: m.isEvening, proteinPortion: m.proteinPortion,
+                  proteinAi: m.proteinAi, proteinManual: m.proteinManual,
+                },
+              }).catch(() => {});
+            }
+            return next;
+          });
         })
         .catch(() => {
           setMealMeta(curr => curr.map((mm, k) => k === newIdx
@@ -258,11 +309,27 @@ export function DailyScreen() {
         });
       return [...prev, t];
     });
-    setMealMeta(prev => [...prev, {
+    const meta: MealMeta = {
       protein: false, carbs: false, fiber: false, sweet: false,
       time, name, isEvening, proteinPortion: 'palm',
       proteinAi: null, proteinLoading: true, proteinManual: false,
-    }]);
+    };
+    setMealMeta(prev => [...prev, meta]);
+
+    // Fire-and-forget DB save; backfill id on the row when it returns.
+    saveFoodLog(t, mealTagFromName(name), {
+      datetime: timeToIso(time),
+      meta: {
+        protein: false, carbs: false, fiber: false, sweet: false,
+        isEvening, proteinPortion: 'palm',
+        proteinAi: null, proteinManual: false,
+      },
+    })
+      .then(row => {
+        if (!row?.log_id) return;
+        setMealMeta(curr => curr.map((mm, k) => k === newIdx ? { ...mm, id: row.log_id } : mm));
+      })
+      .catch(() => {});
   };
 
   const handleAddMeal = () => {
@@ -284,13 +351,23 @@ export function DailyScreen() {
 
   const updateMealTime = (i: number, newTime: string) => {
     if (!newTime) return;
-    setMealMeta(prev => prev.map((m, idx) => idx === i
-      ? { ...m, time: newTime, name: m.isEvening ? 'Вечерний перекус' : mealNameByTime(newTime) }
-      : m));
+    setMealMeta(prev => {
+      const next = prev.map((m, idx) => idx === i
+        ? { ...m, time: newTime, name: m.isEvening ? 'Вечерний перекус' : mealNameByTime(newTime) }
+        : m);
+      const m = next[i];
+      if (m?.id) {
+        updateFoodLog(m.id, {
+          mealTag: mealTagFromName(m.name),
+          datetime: timeToIso(newTime),
+        }).catch(() => {});
+      }
+      return next;
+    });
   };
 
   const toggleMealFlag = (i: number, key: 'protein' | 'carbs' | 'fiber' | 'sweet') => {
-    setMealMeta(prev => prev.map((m, idx) => idx === i ? { ...m, [key]: !m[key] } : m));
+    persistMetaPatch(i, { [key]: !mealMeta[i]?.[key] } as Partial<MealMeta>);
   };
 
   const handleSaveEvening = () => {
