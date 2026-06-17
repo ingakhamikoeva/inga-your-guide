@@ -1109,8 +1109,8 @@ export function DailyScreen() {
       {/* Fixed bottom chat panel */}
       <button
         onClick={() => setStep('chat')}
-        className="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-[10px] px-4 py-[10px] border-t border-[#EDE5DF] bg-white"
-        style={{ background: '#fff' }}
+        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[10px] border-t border-[#EDE5DF] bg-white"
+        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%' }}
       >
         <img
           src={ingaPhoto}
