@@ -372,7 +372,22 @@ export function DailyScreen() {
     })
       .then(row => {
         if (!row?.log_id) return;
-        setMealMeta(curr => curr.map((mm, k) => k === newIdx ? { ...mm, id: row.log_id } : mm));
+        setMealMeta(curr => {
+          const next = curr.map((mm, k) => k === newIdx ? { ...mm, id: row.log_id } : mm);
+          const m = next[newIdx];
+          if (m) {
+            // Backfill any meta changes (e.g. AI protein estimate) that
+            // landed before the DB row was persisted.
+            updateFoodLog(row.log_id, {
+              meta: {
+                protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
+                isEvening: m.isEvening, proteinPortion: m.proteinPortion,
+                proteinAi: m.proteinAi, proteinManual: m.proteinManual,
+              },
+            }).catch(() => {});
+          }
+          return next;
+        });
       })
       .catch(() => {});
   };
