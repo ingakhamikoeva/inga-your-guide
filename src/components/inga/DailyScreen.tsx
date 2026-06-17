@@ -91,6 +91,14 @@ export function DailyScreen() {
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
+  // Persist active tab (and current date) so reloading restores it, but reset on a new day
+  useEffect(() => {
+    try {
+      localStorage.setItem('dailyActiveTab', tab);
+      localStorage.setItem('dailyActiveTabDate', today);
+    } catch {}
+  }, [tab, today]);
+
   // Russian date string: "Пятница, 13 июня"
   const dateLabel = (() => {
     const raw = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
