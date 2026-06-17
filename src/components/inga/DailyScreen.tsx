@@ -684,7 +684,48 @@ export function DailyScreen() {
           const MealCard = ({ m, hideCarbs = false }: { m: typeof regular[number]; hideCarbs?: boolean }) => (
             <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
               <div className="flex items-start justify-between gap-2 mb-1">
-                <span className="font-semibold text-sm">{m.name} · {m.time}</span>
+                <span className="font-semibold text-sm flex items-center gap-1">
+                  <span>{m.name}</span>
+                  <span style={{ color: '#8A7A70' }}>·</span>
+                  {editingTimeIdx === m.i ? (
+                    <input
+                      type="time"
+                      autoFocus
+                      value={m.time}
+                      onChange={e => updateMealTime(m.i, e.target.value)}
+                      onBlur={() => setEditingTimeIdx(null)}
+                      onKeyDown={e => { if (e.key === 'Enter') setEditingTimeIdx(null); }}
+                      className="meal-time-input"
+                      style={{
+                        color: '#6A5A50',
+                        background: 'transparent',
+                        border: '1px solid #FF6200',
+                        borderRadius: 6,
+                        padding: '1px 4px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        outline: 'none',
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditingTimeIdx(m.i)}
+                      style={{
+                        color: '#6A5A50',
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '1px 4px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      aria-label="Изменить время"
+                    >
+                      {m.time}
+                    </button>
+                  )}
+                </span>
                 <button onClick={() => removeMeal(m.i)} className="text-xs opacity-50 hover:opacity-100" aria-label="Удалить">🗑</button>
               </div>
               <p className="text-sm text-muted-foreground mb-3">{m.desc}</p>
