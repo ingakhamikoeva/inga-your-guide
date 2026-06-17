@@ -488,36 +488,152 @@ export function MenuScreen() {
   return null;
 }
 
-function ProfileSection({
-  onBack,
-  profile,
-  onSave,
-}: {
-  onBack: () => void;
-  profile: ReturnType<typeof useApp>['profile'];
-  onSave: (name: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(profile.name ?? '');
-  const [savedFlash, setSavedFlash] = useState(false);
+function ProfileSection({ onBack }: { onBack: () => void }) {
+  const { profile, calculations, updateProfile, setStep } = useApp();
 
-  const handleSave = () => {
-    onSave(cleanName(name));
-    setEditing(false);
-    setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 1500);
+  // ---------- name ----------
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState(profile.name ?? '');
+
+  // ---------- edit field state ----------
+  type EditField = null | 'age' | 'height' | 'weight' | 'goal' | 'waist' | 'hips';
+  const [editField, setEditField] = useState<EditField>(null);
+  const [draft, setDraft] = useState('');
+
+  // ---------- photo & measurements-updated meta (client-side persistence) ----------
+  const PHOTO_KEY = 'inga-profile-photo';
+  const MEAS_KEY = 'inga-measurements-updated';
+  const [photo, setPhoto] = useState<{ dataUrl: string; uploadedAt: string } | null>(() => {
+    try { const raw = localStorage.getItem(PHOTO_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+  });
+  const [measUpdated, setMeasUpdated] = useState<string | null>(() => {
+    try { return localStorage.getItem(MEAS_KEY); } catch { return null; }
+  });
+
+  // ---------- sign-out ----------
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  const handleSaveName = () => {
+    updateProfile({ name: cleanName(name) });
+    setEditingName(false);
   };
 
-  const rows: Array<{ label: string; value: string }> = [
-    { label: 'Пол', value: profile.gender === 'female' ? 'Женский' : profile.gender === 'male' ? 'Мужской' : '—' },
-    { label: 'Возраст', value: profile.age ? `${profile.age} лет` : '—' },
-    { label: 'Рост', value: profile.height ? `${profile.height} см` : '—' },
-    { label: 'Текущий вес', value: profile.weight ? `${profile.weight} кг` : '—' },
-    { label: 'Цель', value: profile.goalWeight ? `${profile.goalWeight} кг` : '—' },
-    { label: 'Метод учёта', value: trackingMethodLabels[profile.trackingMethod] ?? '—' },
-    { label: 'Темп снижения', value: paceLabels[profile.paceChoice] ?? '—' },
-    { label: 'Пищевой профиль', value: profile.foodProfile?.pattern ?? '—' },
-  ];
+  const startEdit = (field: Exclude<EditField, null>, current: number | undefined) => {
+    setDraft(current ? String(current) : '');
+    setEditField(field);
+  };
+
+  const commitEdit = () => {
+    if (!editField) return;
+    const num = parseFloat(draft.replace(',', '.'));
+    if (!Number.isFinite(num) || num <= 0) { setEditField(null); return; }
+    const patch: Partial<UserProfile> = {};
+    switch (editField) {
+      case 'age': patch.age = Math.round(num); break;
+      case 'height': patch.height = Math.round(num); break;
+      case 'weight':
+        patch.weight = num;
+        (patch as any).current_weight_kg = num;
+        break;
+      case 'goal':
+        patch.goalWeight = num;
+        (patch as any).goal_weight_kg = num;
+        break;
+      case 'waist':
+        patch.waist = num;
+        try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
+        break;
+      case 'hips':
+        patch.hips = num;
+        try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
+        break;
+    }
+    updateProfile(patch);
+    setEditField(null);
+  };
+
+  const setGender = (g: 'female' | 'male') => {
+    if (profile.gender !== g) updateProfile({ gender: g });
+  };
+
+  const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = { dataUrl: String(reader.result), uploadedAt: new Date().toISOString() };
+      try { localStorage.setItem(PHOTO_KEY, JSON.stringify(data)); } catch {}
+      setPhoto(data);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const doSignOut = async () => {
+    try { const { auth } = await import('@/lib/auth'); await auth.signOut(); } catch {}
+    setConfirmSignOut(false);
+    setStep('auth');
+  };
+
+  // ---------- derived ----------
+  const startWeight =
+    (profile as any).start_weight_kg ??
+    (profile as any).current_weight_kg ??
+    profile.weight;
+  const currentWeight = profile.weight;
+  const goalWeight = profile.goalWeight ?? (profile as any).goal_weight_kg;
+
+  let progressPct = 0;
+  let lostKg = 0;
+  let toLoseKg = 0;
+  if (startWeight && currentWeight && goalWeight && startWeight > goalWeight) {
+    lostKg = +(startWeight - currentWeight).toFixed(1);
+    toLoseKg = +(startWeight - goalWeight).toFixed(1);
+    progressPct = Math.max(0, Math.min(100, (lostKg / toLoseKg) * 100));
+  }
+
+  const methodLabel =
+    profile.trackingMethod === 'palm' ? 'Ладонь' : 'Тарелка';
+  const calorieTarget =
+    (profile as any).calorie_target ?? calculations?.totalCalories ?? null;
+
+  const fmtDate = (iso: string | null) => {
+    if (!iso) return null;
+    try {
+      return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+    } catch { return null; }
+  };
+
+  // ---------- small reusable row ----------
+  const EditableRow = ({
+    label, value, suffix, field,
+  }: { label: string; value: number | undefined; suffix: string; field: Exclude<EditField, null> }) => {
+    const isEditing = editField === field;
+    return (
+      <div className="flex items-center justify-between gap-3 py-2.5">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        {isEditing ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditField(null); }}
+              className="w-20 text-right border border-border rounded-lg px-2 py-1 text-sm bg-background"
+            />
+            <span className="text-sm text-muted-foreground">{suffix}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{value ? `${value} ${suffix}` : 'не указано'}</span>
+            <button onClick={() => startEdit(field, value)} className="text-xs text-primary underline">Изменить</button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
@@ -525,12 +641,13 @@ function ProfileSection({
         <button onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
         <h2 className="text-2xl font-bold mb-5">Профиль</h2>
 
+        {/* 1. Имя */}
         <div className="inga-card space-y-3 mb-3">
           <div className="text-sm text-muted-foreground">Имя</div>
-          {!editing ? (
+          {!editingName ? (
             <div className="flex items-center justify-between gap-3">
               <div className="text-xl font-semibold">{cleanName(profile.name) || 'Не указано'}</div>
-              <button onClick={() => { setName(profile.name ?? ''); setEditing(true); }} className="inga-btn-secondary">
+              <button onClick={() => { setName(profile.name ?? ''); setEditingName(true); }} className="inga-btn-secondary">
                 Изменить
               </button>
             </div>
@@ -539,33 +656,142 @@ function ProfileSection({
               <input
                 type="text"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 maxLength={40}
                 autoFocus
                 className="inga-input"
                 placeholder="Твоё имя"
               />
               <div className="flex gap-2">
-                <button onClick={handleSave} className="inga-btn-primary flex-1">Сохранить</button>
-                <button onClick={() => setEditing(false)} className="inga-btn-secondary flex-1">Отмена</button>
+                <button onClick={handleSaveName} className="inga-btn-primary flex-1">Сохранить</button>
+                <button onClick={() => setEditingName(false)} className="inga-btn-secondary flex-1">Отмена</button>
               </div>
             </div>
           )}
-          {savedFlash && <p className="text-xs text-primary">Сохранено</p>}
         </div>
 
-        <div className="inga-card divide-y divide-border">
-          {rows.map(row => (
-            <div key={row.label} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-              <span className="text-sm text-muted-foreground">{row.label}</span>
-              <span className="text-sm font-medium">{row.value}</span>
+        {/* 2. Личные данные */}
+        <div className="inga-card mb-3">
+          <div className="text-sm text-muted-foreground mb-2">Личные данные</div>
+
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-sm text-muted-foreground">Пол</span>
+            <div className="inline-flex rounded-full border border-border overflow-hidden">
+              <button
+                onClick={() => setGender('female')}
+                className={`px-3 py-1 text-xs ${profile.gender === 'female' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground'}`}
+              >Женский</button>
+              <button
+                onClick={() => setGender('male')}
+                className={`px-3 py-1 text-xs ${profile.gender === 'male' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground'}`}
+              >Мужской</button>
             </div>
-          ))}
+          </div>
+
+          <div className="border-t border-border" />
+          <EditableRow label="Возраст" value={profile.age} suffix="лет" field="age" />
+          <div className="border-t border-border" />
+          <EditableRow label="Рост" value={profile.height} suffix="см" field="height" />
         </div>
 
-        <p className="text-xs text-muted-foreground text-center mt-4">
-          Изменение основных данных будет доступно в настройках профиля.
-        </p>
+        {/* 3. Прогресс в весе */}
+        <div className="inga-card mb-3">
+          <div className="text-sm text-muted-foreground mb-2">Прогресс в весе</div>
+
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-sm text-muted-foreground">Начальный вес</span>
+            <span className="text-sm font-medium">{startWeight ? `${startWeight} кг` : 'не указано'}</span>
+          </div>
+          <div className="border-t border-border" />
+          <EditableRow label="Текущий вес" value={currentWeight} suffix="кг" field="weight" />
+          <div className="border-t border-border" />
+          <EditableRow label="Цель" value={goalWeight} suffix="кг" field="goal" />
+
+          {progressPct > 0 && (
+            <div className="mt-3">
+              <div className="h-2 w-full rounded-full bg-border overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${progressPct}%`, backgroundColor: '#FF6200' }}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5">
+                Уже минус {lostKg} кг из {toLoseKg} кг · {Math.round(progressPct)}% пути
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4. Замеры */}
+        <div className="inga-card mb-3">
+          <div className="text-sm text-muted-foreground mb-2">Замеры (обновляй раз в неделю)</div>
+          <EditableRow label="Талия" value={profile.waist} suffix="см" field="waist" />
+          <div className="border-t border-border" />
+          <EditableRow label="Бёдра" value={profile.hips} suffix="см" field="hips" />
+          {measUpdated && (
+            <div className="text-[11px] text-muted-foreground mt-2">Обновлено: {fmtDate(measUpdated)}</div>
+          )}
+        </div>
+
+        {/* 5. Метод */}
+        <div className="inga-card mb-3">
+          <div className="text-sm text-muted-foreground mb-2">Метод</div>
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-sm text-muted-foreground">Метод</span>
+            <span className="text-sm font-medium">{methodLabel}</span>
+          </div>
+          <div className="border-t border-border" />
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-sm text-muted-foreground">Норма</span>
+            <span className="text-sm font-medium">{calorieTarget ? `${calorieTarget} ккал/день` : '—'}</span>
+          </div>
+        </div>
+
+        {/* 6. Фото */}
+        <div className="inga-card mb-6">
+          <div className="text-sm text-muted-foreground mb-2">Фото</div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            {photo ? (
+              <>
+                <img src={photo.dataUrl} alt="Профиль" className="w-14 h-14 rounded-xl object-cover border border-border" />
+                <span className="inga-btn-secondary">Обновить</span>
+              </>
+            ) : (
+              <span className="inga-btn-secondary">📷 Добавить фото</span>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={onPhotoChange} />
+          </label>
+          {photo?.uploadedAt && (
+            <div className="text-[11px] text-muted-foreground mt-2">Загружено: {fmtDate(photo.uploadedAt)}</div>
+          )}
+        </div>
+
+        {/* 8. Выйти из аккаунта */}
+        {!confirmSignOut ? (
+          <button
+            onClick={() => setConfirmSignOut(true)}
+            className="w-full rounded-2xl py-3 text-sm font-medium transition-colors"
+            style={{ backgroundColor: 'transparent', border: '1px solid #E5DDD8', color: '#6A5A50' }}
+          >
+            Выйти из аккаунта
+          </button>
+        ) : (
+          <div className="rounded-2xl p-4" style={{ border: '1px solid #E5DDD8' }}>
+            <div className="text-sm font-medium mb-3 text-center" style={{ color: '#6A5A50' }}>Выйти из аккаунта?</div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmSignOut(false)}
+                className="flex-1 rounded-xl py-2 text-sm"
+                style={{ backgroundColor: 'transparent', border: '1px solid #E5DDD8', color: '#6A5A50' }}
+              >Отмена</button>
+              <button
+                onClick={doSignOut}
+                className="flex-1 rounded-xl py-2 text-sm font-medium"
+                style={{ backgroundColor: '#6A5A50', color: '#FFF5E6' }}
+              >Выйти</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
