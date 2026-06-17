@@ -139,6 +139,51 @@ export function DailyScreen() {
     loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
   }, [today]);
 
+  // Load today's persisted food logs on mount.
+  useEffect(() => {
+    let cancelled = false;
+    loadFoodLogs(today).then(rows => {
+      if (cancelled || !rows?.length) return;
+      const texts: string[] = [];
+      const metas: MealMeta[] = [];
+      for (const r of rows) {
+        const m = (r.meta ?? {}) as Record<string, unknown>;
+        const d = new Date(r.datetime);
+        const hh = d.getHours().toString().padStart(2, '0');
+        const mm = d.getMinutes().toString().padStart(2, '0');
+        const time = `${hh}:${mm}`;
+        const isEvening = Boolean(m.isEvening);
+        const name = isEvening ? 'Вечерний перекус' : (() => {
+          const h = d.getHours();
+          if (h >= 6 && h < 10) return 'Завтрак';
+          if (h >= 10 && h < 12) return 'Перекус';
+          if (h >= 12 && h < 15) return 'Обед';
+          if (h >= 15 && h < 18) return 'Полдник';
+          if (h >= 18 && h < 21) return 'Ужин';
+          return 'Вечерний перекус';
+        })();
+        texts.push(r.raw_text ?? '');
+        metas.push({
+          id: r.log_id,
+          protein: Boolean(m.protein),
+          carbs: Boolean(m.carbs),
+          fiber: Boolean(m.fiber),
+          sweet: Boolean(m.sweet),
+          time, name, isEvening,
+          proteinPortion: (m.proteinPortion as ProteinPortion) ?? 'palm',
+          proteinAi: typeof m.proteinAi === 'number' ? (m.proteinAi as number) : null,
+          proteinLoading: false,
+          proteinManual: Boolean(m.proteinManual),
+        });
+      }
+      setMeals(texts);
+      setMealMeta(metas);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [today]);
+
+
+
 
   const handleSaveMorning = () => {
     if (weight) {
