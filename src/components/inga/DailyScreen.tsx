@@ -8,7 +8,7 @@ import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
-import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadTodayCheckin, type MealTag } from '@/lib/db';
+import { saveMealPlan, loadMealPlanForDate, saveDailyCheckin, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadTodayCheckin, type MealTag } from '@/lib/db';
 import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
@@ -33,6 +33,8 @@ const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
@@ -91,9 +93,6 @@ export function DailyScreen() {
   const [foodSurveyAnswered, setFoodSurveyAnswered] = useState(false);
   const [showMorningCheckin, setShowMorningCheckin] = useState(false);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
-
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
   // Persist active tab (and current date) so reloading restores it, but reset on a new day
   useEffect(() => {
