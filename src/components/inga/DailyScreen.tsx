@@ -287,14 +287,22 @@ export function DailyScreen() {
   useEffect(() => {
     if (tab !== 'meals') return;
     let cancelled = false;
-    const stored = readStoredMeals();
-    if (stored.texts.length > 0) {
-      setMeals(stored.texts);
-      setMealMeta(stored.metas);
-      return;
-    }
+    try {
+      if (localStorage.getItem(mealsStorageKey()) !== null) {
+        const stored = readStoredMeals();
+        setMeals(stored.texts);
+        setMealMeta(stored.metas);
+        return;
+      }
+    } catch {}
     loadFoodLogs(today).then(rows => {
-      if (cancelled || !rows?.length) return;
+      if (cancelled) return;
+      if (!rows?.length) {
+        setMeals([]);
+        setMealMeta([]);
+        writeStoredMeals([], []);
+        return;
+      }
       const texts: string[] = [];
       const metas: MealMeta[] = [];
       for (const r of rows) {
