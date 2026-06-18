@@ -112,6 +112,148 @@ export function DailyScreen() {
   const showFoodSurvey = !foodSurveyAnswered && (!profile.food_preferences || profile.food_preferences.length === 0) && weeklyData.length === 0;
   const showCheckinFields = !showFoodSurvey || showMorningCheckin;
 
+  type StoredMeal = {
+    id?: string;
+    text?: string;
+    raw_text?: string;
+    description?: string;
+    protein?: boolean;
+    carbs?: boolean;
+    fiber?: boolean;
+    sweet?: boolean;
+    time?: string;
+    name?: string;
+    isEvening?: boolean;
+    proteinPortion?: ProteinPortion;
+    proteinAi?: number | null;
+    proteinLoading?: boolean;
+    proteinManual?: boolean;
+  };
+
+  const morningStorageKey = () => `morning_${new Date().toDateString()}`;
+  const mealsStorageKey = () => `meals_${new Date().toDateString()}`;
+
+  const storedMealNameByTime = (time: string, isEvening = false) => {
+    if (isEvening) return 'Вечерний перекус';
+    const h = parseInt(time.split(':')[0] || '0', 10);
+    if (h >= 6 && h < 10) return 'Завтрак';
+    if (h >= 10 && h < 12) return 'Перекус';
+    if (h >= 12 && h < 15) return 'Обед';
+    if (h >= 15 && h < 18) return 'Полдник';
+    if (h >= 18 && h < 21) return 'Ужин';
+    return 'Вечерний перекус';
+  };
+
+  const createMealMeta = (time: string, name: string, isEvening = false, proteinLoading = false): MealMeta => ({
+    protein: false,
+    carbs: false,
+    fiber: false,
+    sweet: false,
+    time,
+    name,
+    isEvening,
+    proteinPortion: 'palm',
+    proteinAi: null,
+    proteinLoading,
+    proteinManual: false,
+  });
+
+  const normalizeStoredMeal = (entry: unknown): { text: string; meta: MealMeta } | null => {
+    if (typeof entry === 'string') {
+      const time = nowHHMM();
+      return { text: entry, meta: createMealMeta(time, storedMealNameByTime(time)) };
+    }
+    if (!entry || typeof entry !== 'object') return null;
+    const item = entry as StoredMeal;
+    const text = item.text ?? item.raw_text ?? item.description ?? '';
+    if (!text) return null;
+    const time = item.time ?? nowHHMM();
+    const isEvening = Boolean(item.isEvening);
+    const name = item.name ?? storedMealNameByTime(time, isEvening);
+    const portion: ProteinPortion = item.proteinPortion === 'small' || item.proteinPortion === 'large' ? item.proteinPortion : 'palm';
+    return {
+      text,
+      meta: {
+        id: item.id,
+        protein: Boolean(item.protein),
+        carbs: Boolean(item.carbs),
+        fiber: Boolean(item.fiber),
+        sweet: Boolean(item.sweet),
+        time,
+        name,
+        isEvening,
+        proteinPortion: portion,
+        proteinAi: typeof item.proteinAi === 'number' ? item.proteinAi : null,
+        proteinLoading: false,
+        proteinManual: Boolean(item.proteinManual),
+      },
+    };
+  };
+
+  const serializeStoredMeal = (text: string, meta: MealMeta): StoredMeal => ({
+    id: meta.id,
+    text,
+    protein: meta.protein,
+    carbs: meta.carbs,
+    fiber: meta.fiber,
+    sweet: meta.sweet,
+    time: meta.time,
+    name: meta.name,
+    isEvening: meta.isEvening,
+    proteinPortion: meta.proteinPortion,
+    proteinAi: meta.proteinAi,
+    proteinLoading: false,
+    proteinManual: meta.proteinManual,
+  });
+
+  const readStoredMeals = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
+      if (!Array.isArray(parsed)) return { texts: [] as string[], metas: [] as MealMeta[] };
+      const normalized = parsed.map(normalizeStoredMeal).filter(Boolean) as { text: string; meta: MealMeta }[];
+      return { texts: normalized.map(m => m.text), metas: normalized.map(m => m.meta) };
+    } catch {
+      return { texts: [] as string[], metas: [] as MealMeta[] };
+    }
+  };
+
+  const writeStoredMeals = (texts: string[], metas: MealMeta[]) => {
+    try {
+      localStorage.setItem(mealsStorageKey(), JSON.stringify(texts.map((text, i) => {
+        const fallbackTime = nowHHMM();
+        return serializeStoredMeal(text, metas[i] ?? createMealMeta(fallbackTime, storedMealNameByTime(fallbackTime)));
+      })));
+    } catch {}
+  };
+
+  const appendStoredMeal = (text: string, meta: MealMeta) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
+      const next = Array.isArray(existing) ? existing : [];
+      next.push(serializeStoredMeal(text, meta));
+      localStorage.setItem(mealsStorageKey(), JSON.stringify(next));
+    } catch {}
+  };
+
+  const updateStoredMeal = (idx: number, text: string | undefined, partial: Partial<MealMeta>) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
+      if (!Array.isArray(existing) || idx < 0 || idx >= existing.length) return;
+      const current = normalizeStoredMeal(existing[idx]);
+      if (!current) return;
+      existing[idx] = serializeStoredMeal(text ?? current.text, { ...current.meta, ...partial });
+      localStorage.setItem(mealsStorageKey(), JSON.stringify(existing));
+    } catch {}
+  };
+
+  const removeStoredMeal = (idx: number) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
+      if (!Array.isArray(existing)) return;
+      localStorage.setItem(mealsStorageKey(), JSON.stringify(existing.filter((_, i) => i !== idx)));
+    } catch {}
+  };
+
   const toggleFood = (label: string) => {
     setSelectedFoods(prev => prev.includes(label) ? prev.filter(x => x !== label) : [...prev, label]);
   };
