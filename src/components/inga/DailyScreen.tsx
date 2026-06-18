@@ -283,9 +283,16 @@ export function DailyScreen() {
     loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
   }, [today]);
 
-  // Load today's persisted food logs on mount.
+  // Load today's meals from localStorage first so navigation never clears them.
   useEffect(() => {
+    if (tab !== 'meals') return;
     let cancelled = false;
+    const stored = readStoredMeals();
+    if (stored.texts.length > 0) {
+      setMeals(stored.texts);
+      setMealMeta(stored.metas);
+      return;
+    }
     loadFoodLogs(today).then(rows => {
       if (cancelled || !rows?.length) return;
       const texts: string[] = [];
@@ -322,13 +329,24 @@ export function DailyScreen() {
       }
       setMeals(texts);
       setMealMeta(metas);
+      writeStoredMeals(texts, metas);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [today]);
+  }, [tab, today]);
 
-  // Load today's morning check-in (weight/sleep/steps) so the form is not empty
-  // after the user navigates away (e.g. to Menu) and returns to DailyScreen.
+  // Load today's morning check-in from localStorage first so the form survives navigation.
   useEffect(() => {
+    if (tab !== 'morning') return;
+    try {
+      const saved = localStorage.getItem(morningStorageKey());
+      if (saved) {
+        const data = JSON.parse(saved);
+        setWeight(data.weight || '');
+        setSleep(data.sleep || '');
+        setSteps(data.steps || '');
+        return;
+      }
+    } catch {}
     let cancelled = false;
     loadTodayCheckin(today).then(c => {
       if (cancelled || !c) return;
@@ -337,12 +355,27 @@ export function DailyScreen() {
       if (c.stepsYesterday != null) setSteps(prev => prev || String(c.stepsYesterday));
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [today]);
+  }, [tab, today]);
 
 
 
 
   const handleSaveMorning = () => {
+    try {
+      localStorage.setItem(morningStorageKey(), JSON.stringify({
+        weight,
+        sleep,
+        steps,
+        savedAt: Date.now(),
+      }));
+    } catch {}
+    saveDailyCheckin(
+      today,
+      weight ? parseFloat(weight) : undefined,
+      sleep ? parseFloat(sleep) : undefined,
+      steps ? parseInt(steps) : undefined,
+    ).catch(() => {});
+
     if (weight) {
       const w = parseFloat(weight);
       addWeightEntry(today, w);
@@ -392,8 +425,8 @@ export function DailyScreen() {
       }
     } else {
       setMorningAnalysis(null);
-      setTab('meals');
     }
+    setTab('meals');
   };
 
   const handleEnterFixation = () => {
