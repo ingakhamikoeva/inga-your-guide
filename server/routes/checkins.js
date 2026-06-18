@@ -19,6 +19,30 @@ r.get("/", async (req, res) => {
   }
 });
 
+r.get("/:date", async (req, res) => {
+  const { date } = req.params;
+  try {
+    const q = await pool.query(
+      `SELECT date, weight_kg, sleep_hours, steps_yesterday
+         FROM public.daily_checkins
+        WHERE user_id = $1 AND date = $2
+        LIMIT 1`,
+      [req.userId, date]
+    );
+    if (!q.rows.length) return res.json(null);
+    const d = q.rows[0];
+    res.json({
+      date: d.date,
+      weight: d.weight_kg != null ? Number(d.weight_kg) : null,
+      sleepHours: d.sleep_hours != null ? Number(d.sleep_hours) : null,
+      stepsYesterday: d.steps_yesterday != null ? Number(d.steps_yesterday) : null,
+    });
+  } catch (e) {
+    console.error("GET /checkins/:date:", e);
+    res.status(500).json({ error: "load_failed" });
+  }
+});
+
 r.put("/:date", async (req, res) => {
   const { date } = req.params;
   const { weight = null, sleepHours = null, stepsYesterday = null } = req.body || {};

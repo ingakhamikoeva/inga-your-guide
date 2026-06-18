@@ -8,7 +8,7 @@ import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
-import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, type MealTag } from '@/lib/db';
+import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadTodayCheckin, type MealTag } from '@/lib/db';
 import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
@@ -181,6 +181,19 @@ export function DailyScreen() {
       }
       setMeals(texts);
       setMealMeta(metas);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [today]);
+
+  // Load today's morning check-in (weight/sleep/steps) so the form is not empty
+  // after the user navigates away (e.g. to Menu) and returns to DailyScreen.
+  useEffect(() => {
+    let cancelled = false;
+    loadTodayCheckin(today).then(c => {
+      if (cancelled || !c) return;
+      if (c.weight != null) setWeight(prev => prev || String(c.weight));
+      if (c.sleepHours != null) setSleep(prev => prev || String(c.sleepHours));
+      if (c.stepsYesterday != null) setSteps(prev => prev || String(c.stepsYesterday));
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [today]);
