@@ -504,6 +504,7 @@ export function DailyScreen() {
           meta: metaPayload,
         }).catch(() => {});
       }
+      writeStoredMeals(meals, next);
       return next;
     });
   };
@@ -513,7 +514,9 @@ export function DailyScreen() {
     if (!t) return;
     const time = timeOverride || nowHHMM();
     const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
+    const meta: MealMeta = createMealMeta(time, name, isEvening, true);
     let newIdx = -1;
+    appendStoredMeal(t, meta);
     setMeals(prev => {
       newIdx = prev.length;
       // kick off AI estimation
@@ -524,6 +527,7 @@ export function DailyScreen() {
             const next = curr.map((mm, k) => k === newIdx
               ? { ...mm, proteinAi: grams, proteinLoading: false }
               : mm);
+            updateStoredMeal(newIdx, t, { proteinAi: grams, proteinLoading: false });
             const m = next[newIdx];
             if (m?.id) {
               updateFoodLog(m.id, {
@@ -538,17 +542,13 @@ export function DailyScreen() {
           });
         })
         .catch(() => {
+          updateStoredMeal(newIdx, t, { proteinLoading: false });
           setMealMeta(curr => curr.map((mm, k) => k === newIdx
             ? { ...mm, proteinLoading: false }
             : mm));
         });
       return [...prev, t];
     });
-    const meta: MealMeta = {
-      protein: false, carbs: false, fiber: false, sweet: false,
-      time, name, isEvening, proteinPortion: 'palm',
-      proteinAi: null, proteinLoading: true, proteinManual: false,
-    };
     setMealMeta(prev => [...prev, meta]);
 
     // Fire-and-forget DB save; backfill id on the row when it returns.
@@ -565,6 +565,7 @@ export function DailyScreen() {
         setMealMeta(curr => {
           const next = curr.map((mm, k) => k === newIdx ? { ...mm, id: row.log_id } : mm);
           const m = next[newIdx];
+          if (m) updateStoredMeal(newIdx, t, { ...m, id: row.log_id });
           if (m) {
             // Backfill any meta changes (e.g. AI protein estimate) that
             // landed before the DB row was persisted.
@@ -606,6 +607,7 @@ export function DailyScreen() {
         ? { ...m, time: newTime, name: m.isEvening ? 'Вечерний перекус' : mealNameByTime(newTime) }
         : m);
       const m = next[i];
+      if (m) updateStoredMeal(i, meals[i], { time: newTime, name: m.name });
       if (m?.id) {
         updateFoodLog(m.id, {
           mealTag: mealTagFromName(m.name),
