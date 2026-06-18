@@ -127,6 +127,22 @@ export async function loadCheckins(): Promise<{ date: string; weight: number }[]
   }
 }
 
+export interface TodayCheckin {
+  date: string;
+  weight: number | null;
+  sleepHours: number | null;
+  stepsYesterday: number | null;
+}
+
+export async function loadTodayCheckin(date: string): Promise<TodayCheckin | null> {
+  try {
+    return await apiFetch<TodayCheckin | null>(`/checkins/${date}`);
+  } catch (e) {
+    console.error('loadTodayCheckin failed', e);
+    return null;
+  }
+}
+
 // ============ MEAL PLANS ============
 
 export async function saveMealPlan(dateFor: string, planText: string) {
