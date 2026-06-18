@@ -185,6 +185,19 @@ export function DailyScreen() {
     return () => { cancelled = true; };
   }, [today]);
 
+  // Load today's morning check-in (weight/sleep/steps) so the form is not empty
+  // after the user navigates away (e.g. to Menu) and returns to DailyScreen.
+  useEffect(() => {
+    let cancelled = false;
+    loadTodayCheckin(today).then(c => {
+      if (cancelled || !c) return;
+      if (c.weight != null) setWeight(prev => prev || String(c.weight));
+      if (c.sleepHours != null) setSleep(prev => prev || String(c.sleepHours));
+      if (c.stepsYesterday != null) setSteps(prev => prev || String(c.stepsYesterday));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [today]);
+
 
 
 
