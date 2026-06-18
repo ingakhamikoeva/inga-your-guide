@@ -1029,6 +1029,7 @@ export function DailyScreen() {
           const removeMeal = (idx: number) => {
             const target = mealMeta[idx];
             if (target?.id) deleteFoodLog(target.id).catch(() => {});
+            removeStoredMeal(idx);
             setMeals(prev => prev.filter((_, k) => k !== idx));
             setMealMeta(prev => prev.filter((_, k) => k !== idx));
           };
