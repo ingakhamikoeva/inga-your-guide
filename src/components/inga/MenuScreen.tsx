@@ -746,6 +746,17 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
             <span className="text-sm text-muted-foreground">Норма</span>
             <span className="text-sm font-medium">{calorieTarget ? `${calorieTarget} ккал/день` : '—'}</span>
           </div>
+          <div className="border-t border-border" />
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-sm text-muted-foreground">Для снижения</span>
+            <span className="text-sm font-medium">
+              {(profile as any).calorie_target
+                ? `${(profile as any).calorie_target} ккал/день`
+                : calorieTarget
+                  ? `${Math.round(calorieTarget * 0.75)} ккал/день`
+                  : '—'}
+            </span>
+          </div>
         </div>
 
         {/* 6. Фото */}
