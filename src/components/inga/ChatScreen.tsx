@@ -36,10 +36,6 @@ function extractChatEvent(text: string): { type: string; summary: string } | nul
   return m ? { type: m[1].trim(), summary: m[2].trim() } : null;
 }
 
-const CHAT_STORAGE_KEY = 'ingaChatHistory';
-const CHAT_DATE_KEY = 'ingaChatDate';
-const MAX_STORED_MESSAGES = 20;
-
 export function ChatScreen() {
   const { setStep, profile, calculations, dailyReports, weeklyData } = useApp();
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -56,37 +52,16 @@ export function ChatScreen() {
   const yesterdayReport = dailyReports.find(r => r.date === yesterday);
   const stage = detectStage(profile.weight, profile.goalWeight, profile.currentStage);
 
-  // Load chat history from localStorage on mount (today only)
   useEffect(() => {
-    try {
-      const savedDate = localStorage.getItem(CHAT_DATE_KEY);
-      const savedHistory = localStorage.getItem(CHAT_STORAGE_KEY);
-      if (savedDate === today && savedHistory) {
-        const parsed: Msg[] = JSON.parse(savedHistory);
-        if (parsed.length > 0) {
-          setMessages(parsed);
-          return;
-        }
-      }
-    } catch {}
-    // No history or new day — show greeting
-    setMessages([{
-      role: 'assistant',
-      content: hasName(profile.name)
-        ? withName(profile.name, 'я рядом 💛 Расскажи, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.')
-        : 'Я рядом 💛 Расскажи, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.',
-    }]);
+    if (messages.length === 0) {
+      setMessages([{
+        role: 'assistant',
+        content: hasName(profile.name)
+          ? withName(profile.name, 'я рядом 💛 Расскажи, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.')
+          : 'Я рядом 💛 Расскажи, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.',
+      }]);
+    }
   }, []);
-
-  // Save chat history to localStorage on every change (max 20 messages, today only)
-  useEffect(() => {
-    if (messages.length === 0) return;
-    try {
-      const toStore = messages.slice(-MAX_STORED_MESSAGES);
-      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toStore));
-      localStorage.setItem(CHAT_DATE_KEY, today);
-    } catch {}
-  }, [messages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -191,7 +166,14 @@ export function ChatScreen() {
       {/* Header */}
       <div className="border-b border-border bg-card shrink-0">
         <div className="mx-auto w-full max-w-[760px] flex items-center justify-between px-4 py-3">
-          <button onClick={() => setStep('daily')} className="text-base text-muted-foreground">← Назад</button>
+          <button onClick={() => {
+              try {
+                const today = new Date().toISOString().slice(0, 10);
+                localStorage.setItem('dailyActiveTab', 'meals');
+                localStorage.setItem('dailyActiveTabDate', today);
+              } catch {}
+              setStep('daily');
+            }} className="text-base text-muted-foreground">← Назад</button>
           <h2 className="font-semibold text-lg">Поговорим?</h2>
           <button onClick={() => setStep('menu')} className="text-base text-muted-foreground">Меню</button>
         </div>
