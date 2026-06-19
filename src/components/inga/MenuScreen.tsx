@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { UserProfile } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -49,21 +49,18 @@ const howToTopics = [
     content: 'Не запрещаем любимое — заменяем более калорийный вариант на более лёгкий. Сметана → греческий йогурт 2%, сливочное масло → масло через распылитель, сыр на перекус → творог 0%. Та же еда, меньше калорий, без срывов.',
   },
   {
-    title: 'Белки, углеводы, клетчатка, жиры',
-    content: 'Есть три способа учёта: по калориям, по методу ладони и по метаболической тарелке. Любой из них работает — главное выбрать тот, с которым тебе комфортно держаться долго.',
+    title: 'Питательные вещества',
+    content: '',
+    isNutrientsLesson: true,
   },
   {
     title: 'Объём еды',
     content: 'Голод — твой главный враг. Не допускай чувства голода. Ешь каждые 3–4 часа, 4–6 раз в день. Объём каждого приёма пищи — до 500 г вместе с напитком.',
   },
   {
-    title: 'Как считать: метод тарелки',
-    content: 'Половина тарелки — овощи, четверть — белок, четверть — сложные углеводы. Жиры дозируем отдельно. Такая тарелка даёт сытость и удерживает калорийность естественно.',
-  },
-  {
-    title: 'Как считать: метод ладоней',
-    content: 'Простой способ определить размер порции без весов и подсчёта калорий.',
-    isPalmMethod: true,
+    title: 'Как считать порции',
+    content: '',
+    isCountingGroup: true,
   },
   {
     title: 'Сладкая точка',
@@ -78,8 +75,14 @@ const howToTopics = [
     content: 'Планирование еды накануне сильно снижает риск срывов. Вечером прикинь, что съешь завтра — даже примерно. Это снимает напряжение и помогает не доводить себя до сильного голода.',
   },
   {
-    title: 'Как удержать результат',
-    content: 'После снижения веса важна фаза фиксации. Постепенно добавляем калории, продолжаем держать структуру тарелки и наблюдаем за весом в безопасном коридоре. Резкие возвраты к старому питанию — главная причина откатов.',
+    title: 'Фиксация результата',
+    content: 'Постепенно выйти из дефицита калорий. В течение 2–4 недель плавно увеличиваем калорийность — по 100–200 ккал в неделю. Продолжаем держать структуру тарелки и следим за весом. Цель — дать телу привыкнуть к новому весу без отката.',
+    isFixation: true,
+  },
+  {
+    title: 'Сохранение результата',
+    content: 'Удержать вес на всю жизнь. Колебания ±1–2 кг — это норма, не катастрофа. Возвращаемся к принципам метода при первых признаках набора. Главное — не возвращаться к старым привычкам резко.',
+    isMaintenance: true,
   },
 ];
 
@@ -196,10 +199,21 @@ export function MenuScreen() {
           <p className="text-sm text-muted-foreground mb-4">Метод и принципы — без жёстких ограничений и срывов.</p>
           <p className="text-xs text-muted-foreground italic mb-4">{describeStage(stage)}</p>
           <div className="space-y-2.5">
-            {effectiveTopics.map(topic => (
-              <details key={topic.title} className="inga-card group">
+            {effectiveTopics.map((topic, idx) => (
+              <React.Fragment key={topic.title}>
+                {((topic as any).isFixation) && (
+                  <div className="border-t border-border my-1" />
+                )}
+              <details className="inga-card group">
                 <summary className="font-semibold cursor-pointer flex items-center justify-between list-none">
-                  <span>{topic.title}</span>
+                  <div>
+                    <span>{topic.title}</span>
+                    {((topic as any).isFixation || (topic as any).isMaintenance) && (
+                      <p className="text-xs text-muted-foreground font-normal mt-0.5">
+                        {(topic as any).isFixation ? 'Постепенно выйти из дефицита калорий 🎯' : 'Удержать вес на всю жизнь 🎯'}
+                      </p>
+                    )}
+                  </div>
                   <ChevronRight size={18} className="text-muted-foreground transition-transform group-open:rotate-90" />
                 </summary>
                 {(topic as any).isPalmMethod ? (
@@ -264,10 +278,31 @@ export function MenuScreen() {
                       Метод ладони помогает не усложнять питание. Тебе не нужно каждый раз считать всё до грамма. Достаточно собрать тарелку так, чтобы в ней были: белок + углеводы + овощи + немного жиров. Так проще держать сытость, снижать вес и не жить в режиме вечных расчётов.
                     </p>
                   </div>
+                ) : (topic as any).isCountingGroup ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="rounded-xl border border-border p-3.5 flex items-center gap-3">
+                      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="11" cy="11" r="9.5" stroke="currentColor" strokeWidth="1.2"/>
+                        <line x1="11" y1="1.5" x2="11" y2="20.5" stroke="currentColor" strokeWidth="1.2"/>
+                        <line x1="11" y1="11" x2="20.5" y2="11" stroke="currentColor" strokeWidth="1.2"/>
+                        <path d="M11 1.5 A9.5 9.5 0 0 0 11 20.5" fill="#EDF5F0"/>
+                        <path d="M11 11 A9.5 9.5 0 0 1 20.5 11 A9.5 9.5 0 0 1 11 20.5 L11 11 Z" fill="#FFF4EE"/>
+                        <path d="M11 11 L20.5 11 A9.5 9.5 0 0 1 11 1.5 L11 11 Z" fill="#FAF4E5"/>
+                      </svg>
+                      <span className="text-sm font-medium">Метод тарелки</span>
+                    </div>
+                    <div className="rounded-xl border border-border p-3.5 flex items-center gap-3">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                      <span className="text-sm font-medium">Метод ладоней</span>
+                    </div>
+                  </div>
+                ) : (topic as any).isFixation || (topic as any).isMaintenance ? (
+                  <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{topic.content}</p>
                 ) : (
                   <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{topic.content}</p>
                 )}
               </details>
+              </React.Fragment>
             ))}
           </div>
         </div>
@@ -745,17 +780,6 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
           <div className="flex items-center justify-between gap-3 py-2.5">
             <span className="text-sm text-muted-foreground">Норма</span>
             <span className="text-sm font-medium">{calorieTarget ? `${calorieTarget} ккал/день` : '—'}</span>
-          </div>
-          <div className="border-t border-border" />
-          <div className="flex items-center justify-between gap-3 py-2.5">
-            <span className="text-sm text-muted-foreground">Для снижения</span>
-            <span className="text-sm font-medium">
-              {(profile as any).calorie_target
-                ? `${(profile as any).calorie_target} ккал/день`
-                : calorieTarget
-                  ? `${Math.round(calorieTarget * 0.75)} ккал/день`
-                  : '—'}
-            </span>
           </div>
         </div>
 
