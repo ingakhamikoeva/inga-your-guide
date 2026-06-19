@@ -34,11 +34,12 @@ type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
   const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
+  const todayInit = new Date().toISOString().slice(0, 10);
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
       const savedDate = localStorage.getItem('dailyActiveTabDate');
       const savedTab = localStorage.getItem('dailyActiveTab') as DailyTab | null;
-      if (savedDate === today && savedTab && ['morning', 'meals', 'evening'].includes(savedTab)) {
+      if (savedDate === todayInit && savedTab && ['morning', 'meals', 'evening'].includes(savedTab)) {
         return savedTab;
       }
     } catch {}
@@ -65,7 +66,17 @@ export function DailyScreen() {
     proteinAi: number | null; proteinLoading: boolean; proteinManual: boolean;
   };
   const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
-  const [waterCount, setWaterCount] = useState(0);
+  const [waterCount, setWaterCount] = useState<number>(() => {
+    try {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const savedDate = localStorage.getItem('waterDate');
+      const savedCount = localStorage.getItem('waterCount');
+      if (savedDate === todayStr && savedCount) {
+        return parseInt(savedCount, 10) || 0;
+      }
+    } catch {}
+    return 0;
+  });
   const [showMealInput, setShowMealInput] = useState(false);
   const [showEveningInput, setShowEveningInput] = useState(false);
   const [eveningText, setEveningText] = useState('');
@@ -142,6 +153,26 @@ export function DailyScreen() {
     loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
   }, [today]);
 
+  // Persist water count to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('waterCount', String(waterCount));
+      localStorage.setItem('waterDate', new Date().toISOString().slice(0, 10));
+    } catch {}
+  }, [waterCount]);
+
+  // If morning checkin already saved today → always go to meals tab
+  useEffect(() => {
+    const checkinToday = weeklyData.some(e => e.date === today);
+    if (checkinToday && tab === 'morning') {
+      try {
+        localStorage.setItem('dailyActiveTab', 'meals');
+        localStorage.setItem('dailyActiveTabDate', today);
+      } catch {}
+      setTab('meals');
+    }
+  }, [weeklyData, today]);
+
   // Load today's persisted food logs on mount.
   useEffect(() => {
     let cancelled = false;
@@ -206,12 +237,6 @@ export function DailyScreen() {
         profile.gender,
       );
       setMorningAnalysis(result);
-      // Switch to meals tab and persist so returning from Menu lands here
-      try {
-        localStorage.setItem('dailyActiveTab', 'meals');
-        localStorage.setItem('dailyActiveTabDate', today);
-      } catch {}
-      setTab('meals');
       // Stage transition checks
       const stage = profile.currentStage ?? 'loss';
       const currentWeight = w;
@@ -491,6 +516,8 @@ export function DailyScreen() {
     try {
       localStorage.removeItem('dailyActiveTab');
       localStorage.removeItem('dailyActiveTabDate');
+      localStorage.removeItem('waterCount');
+      localStorage.removeItem('waterDate');
     } catch {}
   };
 
