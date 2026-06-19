@@ -195,9 +195,7 @@ export function MenuScreen() {
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
           <BackButton />
-          <h2 className="text-2xl font-bold mb-2">Как похудеть</h2>
-          <p className="text-sm text-muted-foreground mb-4">Метод и принципы — без жёстких ограничений и срывов.</p>
-          <p className="text-xs text-muted-foreground italic mb-4">{describeStage(stage)}</p>
+          <h2 className="text-2xl font-bold mb-6">Как похудеть</h2>
           <div className="space-y-2.5">
             {effectiveTopics.map((topic, idx) => (
               <React.Fragment key={topic.title}>
@@ -278,22 +276,45 @@ export function MenuScreen() {
                       Метод ладони помогает не усложнять питание. Тебе не нужно каждый раз считать всё до грамма. Достаточно собрать тарелку так, чтобы в ней были: белок + углеводы + овощи + немного жиров. Так проще держать сытость, снижать вес и не жить в режиме вечных расчётов.
                     </p>
                   </div>
+                ) : (topic as any).isNutrientsLesson ? (
+                  <div className="mt-3 space-y-2">
+                    {[
+                      { color: '#FFF4EE', border: '#FF6200', icon: '🥩', title: 'Белок', textColor: '#7A3A00' },
+                      { color: '#FAF4E5', border: '#C49A3E', icon: '🌾', title: 'Углеводы', textColor: '#7A5A00' },
+                      { color: '#EDF5F0', border: '#5E9E72', icon: '🥦', title: 'Клетчатка', textColor: '#1E5A30' },
+                      { color: '#EEF2FF', border: '#6B7FCC', icon: '🫒', title: 'Жиры', textColor: '#2A3A7A' },
+                    ].map(item => (
+                      <div key={item.title} style={{ background: item.color, border: `0.5px solid ${item.border}`, borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 18 }}>{item.icon}</span>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: item.textColor }}>{item.title}</span>
+                        </div>
+                        <ChevronRight size={15} style={{ color: item.border }} />
+                      </div>
+                    ))}
+                  </div>
                 ) : (topic as any).isCountingGroup ? (
                   <div className="mt-3 space-y-2">
-                    <div className="rounded-xl border border-border p-3.5 flex items-center gap-3">
-                      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="11" cy="11" r="9.5" stroke="currentColor" strokeWidth="1.2"/>
-                        <line x1="11" y1="1.5" x2="11" y2="20.5" stroke="currentColor" strokeWidth="1.2"/>
-                        <line x1="11" y1="11" x2="20.5" y2="11" stroke="currentColor" strokeWidth="1.2"/>
-                        <path d="M11 1.5 A9.5 9.5 0 0 0 11 20.5" fill="#EDF5F0"/>
-                        <path d="M11 11 A9.5 9.5 0 0 1 20.5 11 A9.5 9.5 0 0 1 11 20.5 L11 11 Z" fill="#FFF4EE"/>
-                        <path d="M11 11 L20.5 11 A9.5 9.5 0 0 1 11 1.5 L11 11 Z" fill="#FAF4E5"/>
-                      </svg>
-                      <span className="text-sm font-medium">Метод тарелки</span>
+                    <div className="rounded-xl border border-border p-3.5 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="11" cy="11" r="9.5" stroke="#888" strokeWidth="1"/>
+                          <line x1="11" y1="1.5" x2="11" y2="20.5" stroke="#888" strokeWidth="1"/>
+                          <line x1="11" y1="11" x2="20.5" y2="11" stroke="#888" strokeWidth="1"/>
+                          <path d="M11 1.5 A9.5 9.5 0 0 0 11 20.5 Z" fill="#EDF5F0"/>
+                          <path d="M11 11 L20.5 11 A9.5 9.5 0 0 1 11 20.5 Z" fill="#FFF4EE"/>
+                          <path d="M11 1.5 A9.5 9.5 0 0 1 20.5 11 L11 11 Z" fill="#FAF4E5"/>
+                        </svg>
+                        <span className="text-sm font-medium">Метод тарелки</span>
+                      </div>
+                      <ChevronRight size={15} className="text-muted-foreground" />
                     </div>
-                    <div className="rounded-xl border border-border p-3.5 flex items-center gap-3">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
-                      <span className="text-sm font-medium">Метод ладоней</span>
+                    <div className="rounded-xl border border-border p-3.5 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span style={{ fontSize: 20 }}>✋</span>
+                        <span className="text-sm font-medium">Метод ладоней</span>
+                      </div>
+                      <ChevronRight size={15} className="text-muted-foreground" />
                     </div>
                   </div>
                 ) : (topic as any).isFixation || (topic as any).isMaintenance ? (
