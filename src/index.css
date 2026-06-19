@@ -121,7 +121,7 @@
   }
 
   .inga-bubble {
-    @apply bg-card rounded-2xl rounded-bl-sm p-4 shadow-sm max-w-[85%];
+    @apply bg-card rounded-[18px] rounded-bl-[4px] p-4 shadow-sm max-w-[85%];
   }
 
   .inga-input {
