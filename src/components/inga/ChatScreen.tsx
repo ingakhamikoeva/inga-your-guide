@@ -184,10 +184,10 @@ export function ChatScreen() {
         <div className="mx-auto w-full max-w-[760px] px-4 py-4 space-y-3 pb-6">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-[17px] leading-[1.5] ${
+              <div className={`max-w-[85%] px-4 py-3 rounded-[18px] whitespace-pre-wrap break-words text-[17px] leading-[1.5] ${
                 m.role === 'user'
-                  ? 'bg-primary text-primary-foreground rounded-br-sm'
-                  : 'bg-secondary text-secondary-foreground rounded-bl-sm'
+                  ? 'bg-primary text-primary-foreground rounded-br-[4px]'
+                  : 'bg-secondary text-secondary-foreground rounded-bl-[4px]'
               }`}>
                 {m.content || (loading && i === messages.length - 1 ? '...' : '')}
               </div>
