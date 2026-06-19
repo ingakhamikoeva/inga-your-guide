@@ -8,7 +8,7 @@ import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
-import { saveMealPlan, loadMealPlanForDate, saveDailyCheckin, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadTodayCheckin, type MealTag } from '@/lib/db';
+import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, type MealTag } from '@/lib/db';
 import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
@@ -33,8 +33,6 @@ const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
@@ -94,6 +92,9 @@ export function DailyScreen() {
   const [showMorningCheckin, setShowMorningCheckin] = useState(false);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
   // Persist active tab (and current date) so reloading restores it, but reset on a new day
   useEffect(() => {
     try {
@@ -111,148 +112,6 @@ export function DailyScreen() {
 
   const showFoodSurvey = !foodSurveyAnswered && (!profile.food_preferences || profile.food_preferences.length === 0) && weeklyData.length === 0;
   const showCheckinFields = !showFoodSurvey || showMorningCheckin;
-
-  type StoredMeal = {
-    id?: string;
-    text?: string;
-    raw_text?: string;
-    description?: string;
-    protein?: boolean;
-    carbs?: boolean;
-    fiber?: boolean;
-    sweet?: boolean;
-    time?: string;
-    name?: string;
-    isEvening?: boolean;
-    proteinPortion?: ProteinPortion;
-    proteinAi?: number | null;
-    proteinLoading?: boolean;
-    proteinManual?: boolean;
-  };
-
-  const morningStorageKey = () => `morning_${new Date().toDateString()}`;
-  const mealsStorageKey = () => `meals_${new Date().toDateString()}`;
-
-  const storedMealNameByTime = (time: string, isEvening = false) => {
-    if (isEvening) return 'Вечерний перекус';
-    const h = parseInt(time.split(':')[0] || '0', 10);
-    if (h >= 6 && h < 10) return 'Завтрак';
-    if (h >= 10 && h < 12) return 'Перекус';
-    if (h >= 12 && h < 15) return 'Обед';
-    if (h >= 15 && h < 18) return 'Полдник';
-    if (h >= 18 && h < 21) return 'Ужин';
-    return 'Вечерний перекус';
-  };
-
-  const createMealMeta = (time: string, name: string, isEvening = false, proteinLoading = false): MealMeta => ({
-    protein: false,
-    carbs: false,
-    fiber: false,
-    sweet: false,
-    time,
-    name,
-    isEvening,
-    proteinPortion: 'palm',
-    proteinAi: null,
-    proteinLoading,
-    proteinManual: false,
-  });
-
-  const normalizeStoredMeal = (entry: unknown): { text: string; meta: MealMeta } | null => {
-    if (typeof entry === 'string') {
-      const time = nowHHMM();
-      return { text: entry, meta: createMealMeta(time, storedMealNameByTime(time)) };
-    }
-    if (!entry || typeof entry !== 'object') return null;
-    const item = entry as StoredMeal;
-    const text = item.text ?? item.raw_text ?? item.description ?? '';
-    if (!text) return null;
-    const time = item.time ?? nowHHMM();
-    const isEvening = Boolean(item.isEvening);
-    const name = item.name ?? storedMealNameByTime(time, isEvening);
-    const portion: ProteinPortion = item.proteinPortion === 'small' || item.proteinPortion === 'large' ? item.proteinPortion : 'palm';
-    return {
-      text,
-      meta: {
-        id: item.id,
-        protein: Boolean(item.protein),
-        carbs: Boolean(item.carbs),
-        fiber: Boolean(item.fiber),
-        sweet: Boolean(item.sweet),
-        time,
-        name,
-        isEvening,
-        proteinPortion: portion,
-        proteinAi: typeof item.proteinAi === 'number' ? item.proteinAi : null,
-        proteinLoading: false,
-        proteinManual: Boolean(item.proteinManual),
-      },
-    };
-  };
-
-  const serializeStoredMeal = (text: string, meta: MealMeta): StoredMeal => ({
-    id: meta.id,
-    text,
-    protein: meta.protein,
-    carbs: meta.carbs,
-    fiber: meta.fiber,
-    sweet: meta.sweet,
-    time: meta.time,
-    name: meta.name,
-    isEvening: meta.isEvening,
-    proteinPortion: meta.proteinPortion,
-    proteinAi: meta.proteinAi,
-    proteinLoading: false,
-    proteinManual: meta.proteinManual,
-  });
-
-  const readStoredMeals = () => {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
-      if (!Array.isArray(parsed)) return { texts: [] as string[], metas: [] as MealMeta[] };
-      const normalized = parsed.map(normalizeStoredMeal).filter(Boolean) as { text: string; meta: MealMeta }[];
-      return { texts: normalized.map(m => m.text), metas: normalized.map(m => m.meta) };
-    } catch {
-      return { texts: [] as string[], metas: [] as MealMeta[] };
-    }
-  };
-
-  const writeStoredMeals = (texts: string[], metas: MealMeta[]) => {
-    try {
-      localStorage.setItem(mealsStorageKey(), JSON.stringify(texts.map((text, i) => {
-        const fallbackTime = nowHHMM();
-        return serializeStoredMeal(text, metas[i] ?? createMealMeta(fallbackTime, storedMealNameByTime(fallbackTime)));
-      })));
-    } catch {}
-  };
-
-  const appendStoredMeal = (text: string, meta: MealMeta) => {
-    try {
-      const existing = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
-      const next = Array.isArray(existing) ? existing : [];
-      next.push(serializeStoredMeal(text, meta));
-      localStorage.setItem(mealsStorageKey(), JSON.stringify(next));
-    } catch {}
-  };
-
-  const updateStoredMeal = (idx: number, text: string | undefined, partial: Partial<MealMeta>) => {
-    try {
-      const existing = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
-      if (!Array.isArray(existing) || idx < 0 || idx >= existing.length) return;
-      const current = normalizeStoredMeal(existing[idx]);
-      if (!current) return;
-      existing[idx] = serializeStoredMeal(text ?? current.text, { ...current.meta, ...partial });
-      localStorage.setItem(mealsStorageKey(), JSON.stringify(existing));
-    } catch {}
-  };
-
-  const removeStoredMeal = (idx: number) => {
-    try {
-      const existing = JSON.parse(localStorage.getItem(mealsStorageKey()) || '[]');
-      if (!Array.isArray(existing)) return;
-      localStorage.setItem(mealsStorageKey(), JSON.stringify(existing.filter((_, i) => i !== idx)));
-    } catch {}
-  };
 
   const toggleFood = (label: string) => {
     setSelectedFoods(prev => prev.includes(label) ? prev.filter(x => x !== label) : [...prev, label]);
@@ -283,26 +142,11 @@ export function DailyScreen() {
     loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
   }, [today]);
 
-  // Load today's meals from localStorage first so navigation never clears them.
+  // Load today's persisted food logs on mount.
   useEffect(() => {
-    if (tab !== 'meals') return;
     let cancelled = false;
-    try {
-      if (localStorage.getItem(mealsStorageKey()) !== null) {
-        const stored = readStoredMeals();
-        setMeals(stored.texts);
-        setMealMeta(stored.metas);
-        return;
-      }
-    } catch {}
     loadFoodLogs(today).then(rows => {
-      if (cancelled) return;
-      if (!rows?.length) {
-        setMeals([]);
-        setMealMeta([]);
-        writeStoredMeals([], []);
-        return;
-      }
+      if (cancelled || !rows?.length) return;
       const texts: string[] = [];
       const metas: MealMeta[] = [];
       for (const r of rows) {
@@ -337,53 +181,14 @@ export function DailyScreen() {
       }
       setMeals(texts);
       setMealMeta(metas);
-      writeStoredMeals(texts, metas);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [tab, today]);
-
-  // Load today's morning check-in from localStorage first so the form survives navigation.
-  useEffect(() => {
-    if (tab !== 'morning') return;
-    try {
-      const saved = localStorage.getItem(morningStorageKey());
-      if (saved) {
-        const data = JSON.parse(saved);
-        setWeight(data.weight || '');
-        setSleep(data.sleep || '');
-        setSteps(data.steps || '');
-        return;
-      }
-    } catch {}
-    let cancelled = false;
-    loadTodayCheckin(today).then(c => {
-      if (cancelled || !c) return;
-      if (c.weight != null) setWeight(prev => prev || String(c.weight));
-      if (c.sleepHours != null) setSleep(prev => prev || String(c.sleepHours));
-      if (c.stepsYesterday != null) setSteps(prev => prev || String(c.stepsYesterday));
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [tab, today]);
+  }, [today]);
 
 
 
 
   const handleSaveMorning = () => {
-    try {
-      localStorage.setItem(morningStorageKey(), JSON.stringify({
-        weight,
-        sleep,
-        steps,
-        savedAt: Date.now(),
-      }));
-    } catch {}
-    saveDailyCheckin(
-      today,
-      weight ? parseFloat(weight) : undefined,
-      sleep ? parseFloat(sleep) : undefined,
-      steps ? parseInt(steps) : undefined,
-    ).catch(() => {});
-
     if (weight) {
       const w = parseFloat(weight);
       addWeightEntry(today, w);
@@ -401,6 +206,12 @@ export function DailyScreen() {
         profile.gender,
       );
       setMorningAnalysis(result);
+      // Switch to meals tab and persist so returning from Menu lands here
+      try {
+        localStorage.setItem('dailyActiveTab', 'meals');
+        localStorage.setItem('dailyActiveTabDate', today);
+      } catch {}
+      setTab('meals');
       // Stage transition checks
       const stage = profile.currentStage ?? 'loss';
       const currentWeight = w;
@@ -433,8 +244,8 @@ export function DailyScreen() {
       }
     } else {
       setMorningAnalysis(null);
+      setTab('meals');
     }
-    setTab('meals');
   };
 
   const handleEnterFixation = () => {
@@ -512,7 +323,6 @@ export function DailyScreen() {
           meta: metaPayload,
         }).catch(() => {});
       }
-      writeStoredMeals(meals, next);
       return next;
     });
   };
@@ -522,9 +332,7 @@ export function DailyScreen() {
     if (!t) return;
     const time = timeOverride || nowHHMM();
     const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
-    const meta: MealMeta = createMealMeta(time, name, isEvening, true);
     let newIdx = -1;
-    appendStoredMeal(t, meta);
     setMeals(prev => {
       newIdx = prev.length;
       // kick off AI estimation
@@ -535,7 +343,6 @@ export function DailyScreen() {
             const next = curr.map((mm, k) => k === newIdx
               ? { ...mm, proteinAi: grams, proteinLoading: false }
               : mm);
-            updateStoredMeal(newIdx, t, { proteinAi: grams, proteinLoading: false });
             const m = next[newIdx];
             if (m?.id) {
               updateFoodLog(m.id, {
@@ -550,13 +357,17 @@ export function DailyScreen() {
           });
         })
         .catch(() => {
-          updateStoredMeal(newIdx, t, { proteinLoading: false });
           setMealMeta(curr => curr.map((mm, k) => k === newIdx
             ? { ...mm, proteinLoading: false }
             : mm));
         });
       return [...prev, t];
     });
+    const meta: MealMeta = {
+      protein: false, carbs: false, fiber: false, sweet: false,
+      time, name, isEvening, proteinPortion: 'palm',
+      proteinAi: null, proteinLoading: true, proteinManual: false,
+    };
     setMealMeta(prev => [...prev, meta]);
 
     // Fire-and-forget DB save; backfill id on the row when it returns.
@@ -573,7 +384,6 @@ export function DailyScreen() {
         setMealMeta(curr => {
           const next = curr.map((mm, k) => k === newIdx ? { ...mm, id: row.log_id } : mm);
           const m = next[newIdx];
-          if (m) updateStoredMeal(newIdx, t, { ...m, id: row.log_id });
           if (m) {
             // Backfill any meta changes (e.g. AI protein estimate) that
             // landed before the DB row was persisted.
@@ -615,7 +425,6 @@ export function DailyScreen() {
         ? { ...m, time: newTime, name: m.isEvening ? 'Вечерний перекус' : mealNameByTime(newTime) }
         : m);
       const m = next[i];
-      if (m) updateStoredMeal(i, meals[i], { time: newTime, name: m.name });
       if (m?.id) {
         updateFoodLog(m.id, {
           mealTag: mealTagFromName(m.name),
@@ -1037,7 +846,6 @@ export function DailyScreen() {
           const removeMeal = (idx: number) => {
             const target = mealMeta[idx];
             if (target?.id) deleteFoodLog(target.id).catch(() => {});
-            removeStoredMeal(idx);
             setMeals(prev => prev.filter((_, k) => k !== idx));
             setMealMeta(prev => prev.filter((_, k) => k !== idx));
           };
@@ -1478,7 +1286,7 @@ export function DailyScreen() {
       <button
         onClick={() => setStep('chat')}
         className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[14px] border-t border-[#EDE5DF] bg-white"
-        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)', borderRadius: '16px 16px 0 0' }}
+        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)' }}
       >
         <img
           src={ingaPhoto}
