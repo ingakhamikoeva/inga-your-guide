@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect , useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
@@ -35,6 +35,7 @@ type DailyTab = 'morning' | 'meals' | 'evening';
 export function DailyScreen() {
   const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
   const todayInit = new Date().toISOString().slice(0, 10);
+  const foodLoadedRef = useRef(false);
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
       const savedDate = localStorage.getItem('dailyActiveTabDate');
@@ -163,7 +164,7 @@ export function DailyScreen() {
 
   // If morning checkin already saved today → always go to meals tab
   useEffect(() => {
-    const checkinToday = weeklyData.some(e => e.date === today);
+    const checkinToday = weeklyData.some(e => e.date === today && e.weight != null);
     if (checkinToday && tab === 'morning') {
       try {
         localStorage.setItem('dailyActiveTab', 'meals');
@@ -175,9 +176,13 @@ export function DailyScreen() {
 
   // Load today's persisted food logs on mount.
   useEffect(() => {
+    console.log("[DEBUG] loadFoodLogs effect fired, foodLoadedRef=", foodLoadedRef.current);
     let cancelled = false;
     loadFoodLogs(today).then(rows => {
+      console.log("[DEBUG] got rows:", rows?.length);
       if (cancelled || !rows?.length) return;
+      if (foodLoadedRef.current) return;
+      foodLoadedRef.current = true;
       const texts: string[] = [];
       const metas: MealMeta[] = [];
       for (const r of rows) {
@@ -214,7 +219,7 @@ export function DailyScreen() {
       setMealMeta(metas);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [today]);
+  }, []);
 
 
 
@@ -495,6 +500,7 @@ export function DailyScreen() {
 
   const startNewDay = () => {
     setSaved(false);
+    foodLoadedRef.current = true;
     setShowPlanning(false);
     setPlanText('');
     setPlanSavedMessage(false);
