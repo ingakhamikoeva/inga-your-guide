@@ -465,7 +465,7 @@ export function MenuScreen() {
                 { label: '1 г углеводов', val: '4 ккал' },
                 { label: '1 г жира', val: '9 ккал' },
               ].map(row => (
-                <div key={row.label} className="flex justify-between text-xs">
+                <div key={row.label} className="flex gap-3 text-xs">
                   <span className="text-muted-foreground">{row.label}</span>
                   <span className="font-medium">{row.val}</span>
                 </div>
