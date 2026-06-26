@@ -272,8 +272,8 @@ export function MenuScreen() {
             <p className="text-sm font-semibold mb-2">Признаки дефицита белка</p>
             <div className="space-y-1">
               {['Сухость и дряблость кожи','Выпадение волос и ломкость ногтей','Отёчность','Синяки под глазами','Медленное заживление ран','Усталость и снижение иммунитета'].map(s => (
-                <div key={s} className="flex gap-2 items-start">
-                  <span className="text-primary shrink-0 mt-0.5">•</span>
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
                   <span className="text-xs text-muted-foreground">{s}</span>
                 </div>
               ))}
@@ -281,9 +281,249 @@ export function MenuScreen() {
           </div>
 
           {/* CTA */}
-          <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-8">
+          <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-4">
             <p className="text-sm font-semibold mb-1" style={{ color: '#FF6200' }}>Куриная грудка не отложится в жир, даже если съесть её ночью.</p>
             <p className="text-xs text-muted-foreground leading-relaxed">На переваривание белка организм тратит больше энергии, чем на переваривание углеводов и жиров. Белок даёт сытость, сохраняет мышцы и помогает терять именно жир.</p>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              И главное — белок можно получать не только из обычных продуктов, но и из ПП-сладостей! Меренговый рулет, ПП-зефир и ПП-мармелад — отличные варианты. Загляните в раздел с рецептами!
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Так вы худеете без голода, с удовольствием и при этом не теряете мышцы.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  if (section === 'how-to' && nutrientSection === 'Углеводы') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <div className="flex items-center gap-3 mb-5">
+            <span style={{ fontSize: 28 }}>🌾</span>
+            <h2 className="text-2xl font-bold">Углеводы</h2>
+          </div>
+
+          <div className="inga-card mb-4" style={{ background: '#FAF4E5', border: '1px solid #C49A3E' }}>
+            <p className="text-sm leading-relaxed" style={{ color: '#7A5A00' }}>
+              Марина ест «правильно»: каша на завтрак, суп с лапшой и хлебом в обед, макароны на ужин. Но не может понять, почему у неё постоянно отёки и растёт вес.
+            </p>
+            <p className="text-sm font-semibold mt-2" style={{ color: '#C49A3E' }}>В чём проблема? Углеводов слишком много — и все они быстрые.</p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Углеводы — это энергия, а не враг</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Мы не отказываемся от углеводов — они дают организму энергию. Но углеводы бывают разные, и это меняет всё.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Простые углеводы</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Быстро всасываются в кровь — никакой химической обработки не нужно. Сахар, мёд, выпечка из белой муки. После них глюкоза в крови резко скачет вверх.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Поджелудочная железа выбрасывает инсулин — «ключик», который открывает клетку и пускает глюкозу внутрь. Но если клетка перестаёт реагировать на инсулин — глюкоза не попадает в клетку и превращается в жир. Это называется инсулинорезистентность.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Сложные углеводы</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Крупы, овощи, бобовые. Организм расщепляет их медленно — глюкоза поступает плавно, инсулин в норме, сытость держится долго.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Важный нюанс: приготовленные овощи — это уже углевод. Условное правило: сырые овощи и те, что были в кипятке до 1 минуты — клетчатка. Более 1 минуты — углевод.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Фрукты тоже относим к углеводам — в них больше сахара, чем клетчатки.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Выбирайте цельные продукты</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              В цельнозерновых крупах — витамины группы Б, магний, селен, фосфор, клетчатка. В шлифованном зерне (например, белый рис) всё ценное теряется при обработке.
+            </p>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm font-semibold mb-2">Сколько нужно</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              60–100 г сложных углеводов в каждый приём пищи — но не на ночь.
+            </p>
+            <div className="mt-3 rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs text-muted-foreground">Если на глаз — это ¼ тарелки диаметром 20–22 см или горсть вашей ладони.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'how-to' && nutrientSection === 'Клетчатка') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <div className="flex items-center gap-3 mb-5">
+            <span style={{ fontSize: 28 }}>🥦</span>
+            <h2 className="text-2xl font-bold">Клетчатка</h2>
+          </div>
+
+          <div className="inga-card mb-4" style={{ background: '#EDF5F0', border: '1px solid #5E9E72' }}>
+            <p className="text-sm leading-relaxed" style={{ color: '#1E5A30' }}>
+              Клетчатка — это щётка для кишечника и еда для ваших полезных бактерий одновременно. Чем больше её в рационе, тем лучше работает всё остальное.
+            </p>
+            <p className="text-sm font-semibold mt-2" style={{ color: '#5E9E72' }}>
+              Большинство людей едят 10–15 г клетчатки в день при норме 30–50 г. Это вдвое меньше минимума. И именно поэтому мы часто голодны, у нас отёки и запоры.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Что такое клетчатка</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Все свежие овощи, грибы в любом виде, бобовые, цельнозерновые крупы, квашеная капуста, свекла.
+            </p>
+            <div className="mt-3 rounded-xl bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                <span className="font-medium">Нюанс со свеклой:</span> до 18:00 относим её к клетчатке, после 18:00 — к углеводам. В свекле много пектина (растворимой клетчатки), но она содержит и углеводы.
+              </p>
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-3">Что делает клетчатка</p>
+            <div className="space-y-2">
+              {[
+                'Замедляет усвоение еды — глюкоза не скачет',
+                'Снижает уровень холестерина',
+                'Выводит токсины, желчные кислоты, продукты обмена',
+                'Предотвращает запоры — удерживает влагу и улучшает моторику',
+                'Даёт чувство сытости — увеличивает объём пищи',
+                'Выводит лишнюю воду и натрий из организма',
+                'Снижает риск онкологических заболеваний кишечника',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-[#5E9E72]" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Сколько нужно</p>
+            <p className="text-sm text-muted-foreground">30–50 г клетчатки в день.</p>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm font-semibold mb-2">Как набрать норму</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              В каждый приём пищи добавляйте 100–150 г продуктов, богатых клетчаткой. На десерт — 100 г фруктов. Клетчатку можно добавлять в выпечку, отруби — в котлеты, отрубные шарики есть с супом вместо сухарей.
+            </p>
+            <div className="mt-3 rounded-xl bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground leading-relaxed italic">
+                Если раньше вы ели мало клетчатки — увеличивайте количество постепенно. Иначе организм может отреагировать вздутием и запорами.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'how-to' && nutrientSection === 'Жиры') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <div className="flex items-center gap-3 mb-5">
+            <span style={{ fontSize: 28 }}>🫒</span>
+            <h2 className="text-2xl font-bold">Жиры</h2>
+          </div>
+
+          <div className="inga-card mb-4" style={{ background: '#EEF2FF', border: '1px solid #6B7FCC' }}>
+            <p className="text-sm leading-relaxed" style={{ color: '#2A3A7A' }}>
+              Масло, орехи, авокадо, сыр — всё это полезно. Но 1 г жира = 9 ккал, тогда как 1 г белка или углеводов = 4 ккал.
+            </p>
+            <p className="text-sm font-semibold mt-2" style={{ color: '#6B7FCC' }}>Жиры не враги — просто на этапе похудения они главный рычаг экономии калорий.</p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-3">Почему жиры — главный фокус при похудении</p>
+            <div className="space-y-1 mb-3">
+              {[
+                { label: '1 г белка', val: '4 ккал' },
+                { label: '1 г углеводов', val: '4 ккал' },
+                { label: '1 г жира', val: '9 ккал' },
+              ].map(row => (
+                <div key={row.label} className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">{row.label}</span>
+                  <span className="font-medium">{row.val}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Снижая жиры, вы экономите калории в 2,25 раза эффективнее, чем сокращая белки или углеводы. Это главный рычаг на этапе активного жиросжигания.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-3">Но исключать жиры полностью — опасно</p>
+            <div className="space-y-2 mb-3">
+              {[
+                'Строят клеточные мембраны',
+                'Участвуют в синтезе гормонов, включая половые',
+                'Помогают усваивать витамины A, D, E, K',
+                'Поддерживают здоровый желчеотток',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-[#6B7FCC]" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs text-muted-foreground">Наш компромисс: оставляем минимум 10–20 г жира в день и поддерживаем организм Омега-3 и мультивитаминами.</p>
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-3">3 простых шага, чтобы сократить жиры</p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium mb-0.5">1. Распылитель вместо бутылки</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Пшикайте масло на сковороду и в салаты. Эффект тот же, калорий минимум.</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-0.5">2. Нежирные альтернативы</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Куриную ножку заменяем на грудку, жирную рыбу на треску/хек/минтай/горбушу, сметану на греческий йогурт 2%, творог выбираем 0%.</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-0.5">3. Временное табу на калорийные бомбы</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">На период активного снижения веса убираем: авокадо, жирные сыры, сало, орехи, яичные желтки. Это не навсегда — на этапе фиксации вы вернёте их в рацион.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm font-semibold mb-2">Подумайте прямо сейчас</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Как снизить калорийность ваших любимых блюд? Использовать распылитель для масла, подобрать альтернативу жирным ингредиентам, добавить больше овощей.
+            </p>
+            <div className="mt-3 rounded-xl bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground leading-relaxed italic">
+                На этапе активного снижения веса мы сознательно сводим жиры к минимуму. Их время придёт на этапе фиксации, когда будем плавно увеличивать калорийность рациона.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -386,8 +626,8 @@ export function MenuScreen() {
                     ].map(item => (
                       <button
                         key={item.title}
-                        onClick={() => item.title === 'Белок' ? setNutrientSection('Белок') : undefined}
-                        style={{ background: item.color, border: `0.5px solid ${item.border}`, borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: item.title === 'Белок' ? 'pointer' : 'default', opacity: item.title === 'Белок' ? 1 : 0.6 }}
+                        onClick={() => setNutrientSection(item.title)}
+                        style={{ background: item.color, border: `0.5px solid ${item.border}`, borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: 'pointer' }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontSize: 18 }}>{item.icon}</span>
