@@ -116,7 +116,8 @@ const paceLabels: Record<string, string> = {
 
 export function MenuScreen() {
   const { setStep, weeklyData, profile, dailyReports, medals, updateProfile } = useApp();
-  const [section, setSection] = useState<MenuSection>('main');
+  const [section, setSection] = useState<MenuSection>("main");
+  const [nutrientSection, setNutrientSection] = useState<string | null>(null);
   const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
 
   useEffect(() => {
@@ -189,6 +190,105 @@ export function MenuScreen() {
       ← Назад в меню
     </button>
   );
+
+  // ── Nutrient detail screen ─────────────────────────────────────────────
+  if (section === 'how-to' && nutrientSection === 'Белок') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <div className="flex items-center gap-3 mb-5">
+            <span style={{ fontSize: 28 }}>🥩</span>
+            <h2 className="text-2xl font-bold">Белок</h2>
+          </div>
+
+          {/* Hook */}
+          <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
+            <p className="text-sm leading-relaxed" style={{ color: '#7A3A00' }}>
+              Лене и Даше по 40. Вес одинаковый, телосложение похоже. Но Лена выглядит молодо и подтянуто, а у Даши — дряблый живот и усталый вид.
+            </p>
+            <p className="text-sm font-semibold mt-2" style={{ color: '#FF6200' }}>В чём разница? В белке.</p>
+          </div>
+
+          {/* Why protein matters */}
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Зачем нужен белок</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Слово «протеин» с греческого — «первый», «важнейший». Белок — это основной строительный материал для мышц, кожи, волос, ногтей, ферментов, гормонов, иммунных клеток.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              В организме нет запасов белка — он должен поступать с едой каждый день. Если белка не хватает, тело берёт его из мышц. Вес уходит, но уходит не жир.
+            </p>
+          </div>
+
+          {/* How much */}
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Сколько нужно</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Для снижения веса — минимум 1,2–1,5 г белка на 1 кг желаемого веса. Если хотите весить 60 кг: 60 × 1,5 = <span className="font-medium text-foreground">90 г белка в день</span>.
+            </p>
+            <div className="mt-3 rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs text-muted-foreground">Не нужно считать граммы. Просто ешьте богатую белком еду 4–6 раз в день, по 60–100 г за раз — и норма наберётся сама. Если на глаз — это ¼ тарелки диаметром 20–22 см или ваша ладонь без пальцев.</p>
+            </div>
+          </div>
+
+          {/* Daily plan */}
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-1">Спрашивайте себя перед каждым приёмом пищи: «Где мой протеин?»</p>
+            <p className="text-xs text-muted-foreground mb-3">Вот подсказки, как обогатить свой рацион белком:</p>
+            <div className="space-y-2">
+              {[
+                { time: 'Завтрак', examples: 'Омлет из белков, творог, греческий йогурт' },
+                { time: 'Обед', examples: 'Курица, рыба, нежирное мясо' },
+                { time: 'Перекус', examples: 'Высокобелковый творожок' },
+                { time: 'Ужин', examples: 'Грудка, рыба, субпродукты' },
+              ].map(item => (
+                <div key={item.time} className="flex gap-3 items-start">
+                  <span className="text-xs font-medium text-primary shrink-0 mt-0.5 w-16">{item.time}</span>
+                  <span className="text-xs text-muted-foreground">{item.examples}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Sources */}
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Лучшие источники во время похудения</p>
+            <p className="text-xs text-muted-foreground mb-2">Выбирайте нежирный белок — примерно до 130–150 ккал на 100 г:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {['Грудка курицы/индейки','Нежирная телятина','Нежирные сорта рыбы: минтай, треска, тунец, окунь','Морепродукты','Яичный белок','Творог 0%','Субпродукты'].map(s => (
+                <span key={s} className="text-xs px-2.5 py-1 rounded-full border border-border bg-background">{s}</span>
+              ))}
+            </div>
+            <div className="mt-3 rounded-xl bg-muted/50 p-3 space-y-1">
+              <p className="text-xs font-medium">Важно помнить:</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Крупы и бобовые относим к углеводам — в них 9 г белка и 20 г углеводов.</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Сыр — к жирам, на этапе снижения веса лучше заменить на творог.</p>
+            </div>
+          </div>
+
+          {/* Deficit signs */}
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Признаки дефицита белка</p>
+            <div className="space-y-1">
+              {['Сухость и дряблость кожи','Выпадение волос и ломкость ногтей','Отёчность','Синяки под глазами','Медленное заживление ран','Усталость и снижение иммунитета'].map(s => (
+                <div key={s} className="flex gap-2 items-start">
+                  <span className="text-primary shrink-0 mt-0.5">•</span>
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-8">
+            <p className="text-sm font-semibold mb-1" style={{ color: '#FF6200' }}>Куриная грудка не отложится в жир, даже если съесть её ночью.</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">На переваривание белка организм тратит больше энергии, чем на переваривание углеводов и жиров. Белок даёт сытость, сохраняет мышцы и помогает терять именно жир.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (section === 'how-to') {
     return (
@@ -284,13 +384,17 @@ export function MenuScreen() {
                       { color: '#EDF5F0', border: '#5E9E72', icon: '🥦', title: 'Клетчатка', textColor: '#1E5A30' },
                       { color: '#EEF2FF', border: '#6B7FCC', icon: '🫒', title: 'Жиры', textColor: '#2A3A7A' },
                     ].map(item => (
-                      <div key={item.title} style={{ background: item.color, border: `0.5px solid ${item.border}`, borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <button
+                        key={item.title}
+                        onClick={() => item.title === 'Белок' ? setNutrientSection('Белок') : undefined}
+                        style={{ background: item.color, border: `0.5px solid ${item.border}`, borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: item.title === 'Белок' ? 'pointer' : 'default', opacity: item.title === 'Белок' ? 1 : 0.6 }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontSize: 18 }}>{item.icon}</span>
                           <span style={{ fontSize: 14, fontWeight: 500, color: item.textColor }}>{item.title}</span>
                         </div>
                         <ChevronRight size={15} style={{ color: item.border }} />
-                      </div>
+                      </button>
                     ))}
                   </div>
                 ) : (topic as any).isCountingGroup ? (
