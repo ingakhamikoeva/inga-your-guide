@@ -77,6 +77,7 @@ const howToTopics = [
   {
     title: 'Как планировать питание',
     content: 'Планирование еды накануне сильно снижает риск срывов. Вечером прикинь, что съешь завтра — даже примерно. Это снимает напряжение и помогает не доводить себя до сильного голода.',
+    isPlanningLesson: true,
   },
   {
     title: 'Фиксация результата',
@@ -197,6 +198,77 @@ export function MenuScreen() {
 
   // ── Nutrient detail screen ─────────────────────────────────────────────
 
+
+
+  if (section === 'how-to' && nutrientSection === 'Планирование') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-5">Планирование питания</h2>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Знаете, что сильно помогает не срываться? Планирование еды накануне.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Постарайтесь вечером заранее подумать, что вы будете есть завтра: на завтрак, обед, ужин и перекусы. Так вы не останетесь один на один с голодом и случайной едой.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Как планировать</p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+              Запланируйте, что у вас будет источником:
+            </p>
+            <div className="space-y-1 mb-3">
+              {['нежирного белка', 'клетчатки', 'сложных углеводов'].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              И что вы будете есть на сладкую точку.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Не нужно расписывать детально. Достаточно набросать основу — так завтра будет проще держать ритм.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Идеальный холодильник</p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+              Идеально, если в вашем холодильнике всегда будут под рукой продукты, из которых вы сможете быстро собрать тарелку:
+            </p>
+            <div className="space-y-1">
+              {[
+                'Замороженое филе рыбы',
+                'Замаринованная грудка курицы или индейки',
+                'Творог или греческий йогурт 0–2%',
+                'Консервированный тунец',
+                'Листья салата и овощи',
+                'Консервированный горошек, кукуруза, фасоль — в качестве углеводов',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-start">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                  <span className="text-xs text-muted-foreground leading-relaxed">{s}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-3 italic">
+              Если вы любите сладкое, можете сварить пектиновое варенье на 2–3 дня вперёд.
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-8">
+            <p className="text-xs font-medium">Цель планирования: всегда иметь возможность поесть сытно и не довести себя до голода, если приготовленная еда внезапно закончилась.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (section === 'how-to' && nutrientSection === 'Сладкая') {
     return (
@@ -867,7 +939,7 @@ export function MenuScreen() {
                 {((topic as any).isFixation) && (
                   <div className="border-t border-border my-1" />
                 )}
-              {((topic as any).isMethodLesson || (topic as any).isVolumeLesson || (topic as any).isSweetLesson || (topic as any).isEveningLesson) ? (
+              {((topic as any).isMethodLesson || (topic as any).isVolumeLesson || (topic as any).isSweetLesson || (topic as any).isEveningLesson || (topic as any).isPlanningLesson) ? (
                 <div
                   className="inga-card cursor-pointer flex items-center justify-between"
                   onClick={() => {
@@ -875,6 +947,7 @@ export function MenuScreen() {
                     else if ((topic as any).isVolumeLesson) setNutrientSection('Объём');
                     else if ((topic as any).isSweetLesson) setNutrientSection('Сладкая');
                     else if ((topic as any).isEveningLesson) setNutrientSection('Вечерний');
+                    else if ((topic as any).isPlanningLesson) setNutrientSection('Планирование');
                   }}
                 >
                   <span className="font-semibold">{topic.title}</span>
