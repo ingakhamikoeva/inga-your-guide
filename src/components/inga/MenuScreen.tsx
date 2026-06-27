@@ -41,7 +41,7 @@ const palmMethodCards = [
   },
 ];
 
-type MenuSection = 'main' | 'how-to' | 'recipes' | 'audio' | 'progress' | 'profile' | 'consultation';
+type MenuSection = 'main' | 'how-to' | 'recipes' | 'audio' | 'progress' | 'profile' | 'consultation' | 'materials';
 
 const howToTopics = [
   {
@@ -147,9 +147,10 @@ export function MenuScreen() {
       { id: 'how-to' as const, icon: BookOpen, label: 'Как похудеть', hint: 'Метод и принципы' },
       { id: 'recipes' as const, icon: UtensilsCrossed, label: 'Рецепты', hint: 'Подборки по методу' },
       { id: 'audio' as const, icon: Headphones, label: 'Аудио-поддержка', hint: 'Короткие практики' },
+      { id: 'materials' as const, icon: BookOpen, label: 'Полезные материалы', hint: 'Таблицы, гайды, шпаргалки' },
       { id: 'progress' as const, icon: TrendingUp, label: 'Мой прогресс', hint: 'Вес, объёмы, медали' },
       { id: 'profile' as const, icon: User, label: 'Профиль', hint: 'Данные и настройки' },
-      { id: 'consultation' as const, icon: CalendarCheck, label: 'Консультация', hint: 'С Ингой', badge: 'платно' },
+      { id: 'consultation' as const, icon: CalendarCheck, label: 'Консультация с нутрициологом', hint: 'Индивидуальный разбор', badge: 'платно' },
     ];
 
     return (
@@ -1382,19 +1383,96 @@ export function MenuScreen() {
     );
   }
 
+
+  if (section === 'materials') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <BackButton />
+          <h2 className="text-2xl font-bold mb-6">Полезные материалы</h2>
+          <div className="space-y-2.5">
+
+            <div className="inga-card">
+              <p className="text-sm font-semibold mb-1">📊 Упрощённая таблица калорийности</p>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Калорийность основных продуктов на 100 г — для быстрой ориентации без подсчётов.</p>
+              {[
+                { cat: 'Белки (нежирные)', items: ['Куриная грудка — 110 ккал', 'Индейка грудка — 115 ккал', 'Треска — 75 ккал', 'Минтай — 70 ккал', 'Тунец (в собственном соку) — 95 ккал', 'Горбуша — 140 ккал', 'Творог 0% — 65 ккал', 'Греческий йогурт 2% — 60 ккал', 'Яичный белок — 45 ккал', 'Кальмар — 75 ккал', 'Креветки — 85 ккал'] },
+                { cat: 'Сложные углеводы', items: ['Гречка варёная — 110 ккал', 'Овсянка варёная — 85 ккал', 'Рис бурый варёный — 110 ккал', 'Макароны варёные — 115 ккал', 'Картофель варёный — 75 ккал', 'Чечевица варёная — 110 ккал', 'Нут варёный — 120 ккал'] },
+                { cat: 'Клетчатка (овощи)', items: ['Огурец — 15 ккал', 'Помидор — 20 ккал', 'Капуста белокочанная — 25 ккал', 'Перец болгарский — 30 ккал', 'Брокколи — 35 ккал', 'Кабачок — 25 ккал', 'Листья салата — 15 ккал', 'Грибы шампиньоны — 25 ккал', 'Квашеная капуста — 20 ккал'] },
+                { cat: 'Фрукты и ягоды', items: ['Яблоко — 45 ккал', 'Клубника — 35 ккал', 'Черника — 45 ккал', 'Арбуз — 30 ккал', 'Апельсин — 45 ккал', 'Банан — 90 ккал', 'Виноград — 65 ккал'] },
+              ].map(group => (
+                <div key={group.cat} className="mb-3">
+                  <p className="text-xs font-semibold text-primary mb-1">{group.cat}</p>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+                    {group.items.map(item => (
+                      <p key={item} className="text-xs text-muted-foreground">{item}</p>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="inga-card opacity-60">
+              <p className="text-sm font-semibold mb-1">📎 Гайды</p>
+              <p className="text-xs text-muted-foreground">Скоро появятся полезные материалы для скачивания.</p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'how-to' && nutrientSection === 'Меню30') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-2">Примеры меню на 30 дней</h2>
+          <p className="text-sm text-muted-foreground mb-6">Примерный рацион по методу «Лёгкая замена». Порции — по методу тарелки или ладони.</p>
+
+          <div className="space-y-3 mb-8">
+            {[
+              { day: 'День 1', meals: ['Завтрак: омлет из 3 белков + греческий йогурт 0% + яблоко', 'Перекус: творог 0% с ягодами', 'Обед: грудка курицы + гречка + салат из свежих овощей', 'Перекус: кефир 1%', 'Ужин: рыба (треска) + тушёные овощи', 'Метаболическая точка: грудка + огурец'] },
+              { day: 'День 2', meals: ['Завтрак: творог 0% с ягодами + кофе', 'Перекус: греческий йогурт 2% + груша', 'Обед: индейка + бурый рис + капустный салат', 'Перекус: кефир + яблоко', 'Ужин: тунец + стручковая фасоль', 'Метаболическая точка: белковый омлет + помидор'] },
+              { day: 'День 3', meals: ['Завтрак: белковый омлет с грибами + огурец', 'Перекус: творог 0% + персик', 'Обед: грудка + чечевица + салат с зеленью', 'Перекус: греческий йогурт', 'Ужин: кальмары + брокколи на пару', 'Метаболическая точка: грудка + листья салата'] },
+              { day: 'День 4', meals: ['Завтрак: творог 0% с яблоком и корицей', 'Перекус: кефир 1%', 'Обед: говядина постная + гречка + свежий перец', 'Перекус: греческий йогурт + ягоды', 'Ужин: горбуша + огурцы', 'Метаболическая точка: белковый омлет + капуста'] },
+              { day: 'День 5', meals: ['Завтрак: омлет из 2 яиц + 1 белок + помидор', 'Перекус: творог 0% + клубника', 'Обед: креветки + бурый рис + квашеная капуста', 'Перекус: кефир + яблоко', 'Ужин: треска + тушёный кабачок', 'Метаболическая точка: грудка индейки + зелень'] },
+            ].map(item => (
+              <div key={item.day} className="inga-card">
+                <p className="text-sm font-semibold mb-2">{item.day}</p>
+                <div className="space-y-1">
+                  {item.meals.map(meal => (
+                    <div key={meal} className="flex gap-2 items-start">
+                      <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                      <span className="text-xs text-muted-foreground leading-relaxed">{meal}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="inga-card opacity-60">
+              <p className="text-xs text-muted-foreground text-center">Дни 6–30 скоро появятся здесь</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (section === 'consultation') {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
           <BackButton />
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-2xl font-bold">Консультация</h2>
+            <h2 className="text-2xl font-bold">Консультация с нутрициологом</h2>
             <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent text-accent-foreground">платно</span>
           </div>
-          <h3 className="text-base font-semibold mb-3">Индивидуальная консультация с Ингой</h3>
+          <h3 className="text-base font-semibold mb-3">Индивидуальная консультация</h3>
           <div className="inga-bubble mb-6">
-            <p>Иногда полезно разобрать ситуацию глубже — лично, голосом, с живым человеком.</p>
-            <p className="text-muted-foreground mt-2">Здесь ты можешь записаться на индивидуальную консультацию со мной.</p>
+            <p>Иногда полезно разобрать ситуацию глубже — лично, с профессиональным нутрициологом.</p>
+            <p className="text-muted-foreground mt-2">Вы можете записаться на индивидуальную консультацию и получить персональный план питания с учётом ваших особенностей, анализов и образа жизни.</p>
           </div>
           <div className="space-y-3">
             <button className="inga-btn-primary w-full">Записаться на консультацию</button>
