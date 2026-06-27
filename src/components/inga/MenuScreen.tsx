@@ -67,10 +67,12 @@ const howToTopics = [
   {
     title: 'Сладкая точка',
     content: 'Сладкое не запрещено — оно запланировано. Когда каждый день ешь что-то сладкое, спокойно проходишь мимо конфет. Фрукты, ягоды или лёгкий десерт из раздела Рецепты — Десерты. До 100 г и 100 ккал.',
+    isSweetLesson: true,
   },
   {
     title: 'Вечерний перекус',
     content: 'Единственный приём, который отличается от остальных. Только нежирный белок 60–100 г + клетчатка 60–100 г. Без углеводов и жира. Можно есть даже на ночь. Например: куриная грудка + болгарский перец, или белковый омлет с грибами.',
+    isEveningLesson: true,
   },
   {
     title: 'Как планировать питание',
@@ -194,6 +196,127 @@ export function MenuScreen() {
   );
 
   // ── Nutrient detail screen ─────────────────────────────────────────────
+
+
+  if (section === 'how-to' && nutrientSection === 'Сладкая') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-5">Сладкая точка</h2>
+
+          <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
+            <p className="text-sm font-semibold" style={{ color: '#FF6200' }}>Сладкое не запрещено — оно запланировано.</p>
+            <p className="text-sm mt-1" style={{ color: '#7A3A00' }}>Это один из главных принципов метода.</p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              После каждого приёма пищи, кроме последнего — сладкая точка, если вы любите сладкое.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              До 100 г фруктов или ягод, или низкокалорийный десерт из базы рецептов (до 100 ккал на 100 г).
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Когда сладкое есть в рационе каждый день, вы спокойно проходите мимо тортов и конфет. Нет запрета — нет срыва.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Важно</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Сладкая точка — до 100 г, и только после полноценного приёма пищи.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Если у вас перекус, вместе с десертом съешьте 60–100 г белкового продукта — например, творог или греческий йогурт 0–2%. А в качестве клетчатки можно добавить чайную ложку яблочной клетчатки в творог.
+            </p>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Рецепты низкокалорийных десертов вы найдёте в разделе «Рецепты».
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'how-to' && nutrientSection === 'Вечерний') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-5">Вечерний перекус</h2>
+
+          <div className="inga-card mb-4" style={{ background: '#F4F0F9', border: '1px solid #C9B8E8' }}>
+            <p className="text-sm font-semibold" style={{ color: '#4A3570' }}>Самое большое заблуждение: хочешь похудеть — не ешь после шести вечера.</p>
+            <p className="text-sm mt-2" style={{ color: '#4A3570' }}>Но ведь после шести большинство возвращается с работы — неужели голодать до утра? Мы договорились не падать в голодные ямы, и вечер — не исключение.</p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Ужин — такой же приём пищи, как и остальные</p>
+            <div className="space-y-1">
+              {['60–100 г нежирного белка', '60–100 г сложных углеводов', '100–150 г клетчатки'].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Метаболическая точка — особенный последний приём</p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              Делается в течение 2 часов перед сном. Хоть за 5 минут до сна.
+            </p>
+            <p className="text-sm font-medium mb-1">Что есть:</p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              60–100 г нежирного белка (куриная грудка или белковый омлет) + 60–100 г клетчатки (свежие овощи). Без масла, без углеводов, без жира.
+            </p>
+            <p className="text-sm font-medium mb-2">Зачем это нужно:</p>
+            <div className="space-y-1 mb-3">
+              {[
+                'Подавляет вечерний аппетит и убирает «ночной дожор»',
+                'Запускает метаболизм во время сна',
+                'Снижает вечерние инсулиновые пики',
+                'Улучшает сон',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm font-medium mb-1">Примеры:</p>
+            <div className="space-y-1">
+              {[
+                'Куриная грудка + болгарский перец или сырая морковь',
+                'Белковый омлет + грибы',
+                'Грудка индейки + листья салата',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed italic">
+              Желательно не есть перед сном творог, рыбу, морепродукты, квашеную капусту и солёные продукты — возможны отёки.
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-8">
+            <p className="text-sm font-semibold" style={{ color: '#FF6200' }}>После 18:00 есть можно и нужно — главное, правильно выбирать продукты.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (section === 'how-to' && nutrientSection === 'Метод') {
     return (
@@ -744,10 +867,15 @@ export function MenuScreen() {
                 {((topic as any).isFixation) && (
                   <div className="border-t border-border my-1" />
                 )}
-              {((topic as any).isMethodLesson || (topic as any).isVolumeLesson) ? (
+              {((topic as any).isMethodLesson || (topic as any).isVolumeLesson || (topic as any).isSweetLesson || (topic as any).isEveningLesson) ? (
                 <div
                   className="inga-card cursor-pointer flex items-center justify-between"
-                  onClick={() => setNutrientSection((topic as any).isMethodLesson ? 'Метод' : 'Объём')}
+                  onClick={() => {
+                    if ((topic as any).isMethodLesson) setNutrientSection('Метод');
+                    else if ((topic as any).isVolumeLesson) setNutrientSection('Объём');
+                    else if ((topic as any).isSweetLesson) setNutrientSection('Сладкая');
+                    else if ((topic as any).isEveningLesson) setNutrientSection('Вечерний');
+                  }}
                 >
                   <span className="font-semibold">{topic.title}</span>
                   <ChevronRight size={18} className="text-muted-foreground" />
