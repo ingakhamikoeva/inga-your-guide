@@ -200,6 +200,116 @@ export function MenuScreen() {
 
 
 
+
+  if (section === 'how-to' && nutrientSection === 'Тарелка') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-5">Метод тарелки</h2>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Делите тарелку на части на глаз — без взвешивания. Подходит, если любите видеть структуру тарелки.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Оптимальный диаметр тарелки — 20–22 см.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <div className="flex items-center gap-6 mb-4">
+              <svg width="80" height="80" viewBox="0 0 72 72">
+                <path d="M 36 36 L 36 4 A 32 32 0 0 0 36 68 Z" fill="#5E9E72" />
+                <path d="M 36 36 L 36 4 A 32 32 0 0 1 68 36 Z" fill="#C0614A" />
+                <path d="M 36 36 L 68 36 A 32 32 0 0 1 36 68 Z" fill="#B5A030" />
+                <circle cx="36" cy="36" r="32" fill="none" stroke="#FFFFFF" strokeWidth="2" />
+              </svg>
+              <div className="space-y-2">
+                {[
+                  { color: '#5E9E72', label: '½ тарелки — клетчатка', sub: 'свежие овощи, зелень, грибы' },
+                  { color: '#C0614A', label: '¼ тарелки — белок', sub: 'грудка, рыба, творог' },
+                  { color: '#B5A030', label: '¼ тарелки — углеводы', sub: 'крупы, картофель, бобовые' },
+                ].map(item => (
+                  <div key={item.label} className="flex items-start gap-2">
+                    <span className="shrink-0 w-2 h-2 rounded-full mt-1" style={{ background: item.color }} />
+                    <div>
+                      <p className="text-xs font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Как собрать тарелку</p>
+            <div className="space-y-2">
+              {[
+                'Половину тарелки заполните клетчаткой — салаты из свежих овощей и зелени, грибы, квашеная капуста',
+                'Четверть — нежирным белком: грудка курицы или индейки, рыба, морепродукты, творог 0%',
+                'Четверть — сложными углеводами: крупы, макароны из твёрдых сортов, тушёные овощи, картофель, бобовые',
+              ].map((s, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                  <span className="text-xs text-muted-foreground leading-relaxed">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              В качестве заправки для салата — пшик масла или греческий йогурт 2% с горчицей и специями. После основного приёма пищи — сладкая точка: до 100 г фруктов или ягод.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'how-to' && nutrientSection === 'Ладонь') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-5">Метод ладони</h2>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Измеряете порции руками — ориентир всегда с вами. Подходит, если часто едите вне дома.
+            </p>
+          </div>
+
+          <img
+            src={palmMethodImage}
+            alt="Метод ладони"
+            className="w-full rounded-xl mb-4"
+            loading="lazy"
+          />
+
+          <div className="space-y-3 mb-8">
+            {palmMethodCards.map(card => (
+              <div key={card.title} className="inga-card">
+                <p className="text-sm font-semibold mb-1">{card.title}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-2">{card.body}</p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {card.list.map(item => (
+                    <span key={item} className="text-xs px-2 py-0.5 rounded-full border border-border bg-background">{item}</span>
+                  ))}
+                </div>
+                {card.note && (
+                  <p className="text-xs text-muted-foreground italic leading-relaxed">{card.note}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (section === 'how-to' && nutrientSection === 'Планирование') {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
@@ -1051,7 +1161,7 @@ export function MenuScreen() {
                   </div>
                 ) : (topic as any).isCountingGroup ? (
                   <div className="mt-3 space-y-2">
-                    <div className="rounded-xl border border-border p-3.5 flex items-center justify-between">
+                    <button className="w-full rounded-xl border border-border p-3.5 flex items-center justify-between" onClick={() => setNutrientSection('Тарелка')}>
                       <div className="flex items-center gap-3">
                         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <circle cx="11" cy="11" r="9.5" stroke="#888" strokeWidth="1"/>
@@ -1064,14 +1174,14 @@ export function MenuScreen() {
                         <span className="text-sm font-medium">Метод тарелки</span>
                       </div>
                       <ChevronRight size={15} className="text-muted-foreground" />
-                    </div>
-                    <div className="rounded-xl border border-border p-3.5 flex items-center justify-between">
+                    </button>
+                    <button className="w-full rounded-xl border border-border p-3.5 flex items-center justify-between" onClick={() => setNutrientSection('Ладонь')}>
                       <div className="flex items-center gap-3">
                         <span style={{ fontSize: 20 }}>✋</span>
                         <span className="text-sm font-medium">Метод ладоней</span>
                       </div>
                       <ChevronRight size={15} className="text-muted-foreground" />
-                    </div>
+                    </button>
                   </div>
                 ) : (topic as any).isFixation || (topic as any).isMaintenance ? (
                   <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{topic.content}</p>
