@@ -8,6 +8,7 @@ import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/so
 import { hasName, cleanName } from '@/lib/user-name';
 import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
+import { FoodCheatsheet } from '@/components/inga/FoodCheatsheet';
 import recipeOatmeal from '@/assets/breakfast_oatmeal.jpg';
 import recipePate from '@/assets/breakfast_pate.jpg';
 import recipeZucchini from '@/assets/breakfast_zucchini.jpg';
@@ -132,6 +133,7 @@ export function MenuScreen() {
   const [section, setSection] = useState<MenuSection>("main");
   const [nutrientSection, setNutrientSection] = useState<string | null>(null);
   const [recipeSection, setRecipeSection] = useState<string | null>(null);
+  const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [activeRecipe, setActiveRecipe] = useState<string | null>(null);
   const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
 
@@ -1699,6 +1701,15 @@ export function MenuScreen() {
 
 
   if (section === 'materials') {
+    if (showCheatsheet) {
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <FoodCheatsheet onBack={() => setShowCheatsheet(false)} />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
@@ -1706,8 +1717,12 @@ export function MenuScreen() {
           <h2 className="text-2xl font-bold mb-6">Полезные материалы</h2>
           <div className="space-y-2.5">
 
-            <div className="inga-card">
-              <p className="text-sm font-semibold mb-1">📊 Упрощённая таблица калорийности</p>
+            <button onClick={() => setShowCheatsheet(true)} className="w-full inga-card text-left">
+              <p className="text-sm font-semibold mb-1">📊 Шпаргалка по продуктам</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Калорийность продуктов с цветными индикаторами и поиском. Белки, углеводы, клетчатка, жиры.</p>
+            </button>
+            <div className="inga-card opacity-60 pointer-events-none">
+              <p className="text-sm font-semibold mb-1">📊 Упрощённая таблица калорийности (старая)</p>
               <p className="text-xs text-muted-foreground leading-relaxed mb-3">Калорийность основных продуктов на 100 г — для быстрой ориентации без подсчётов.</p>
               {[
                 { cat: 'Белки (нежирные)', items: ['Куриная грудка — 110 ккал', 'Индейка грудка — 115 ккал', 'Треска — 75 ккал', 'Минтай — 70 ккал', 'Тунец (в собственном соку) — 95 ккал', 'Горбуша — 140 ккал', 'Творог 0% — 65 ккал', 'Греческий йогурт 2% — 60 ккал', 'Яичный белок — 45 ккал', 'Кальмар — 75 ккал', 'Креветки — 85 ккал'] },
