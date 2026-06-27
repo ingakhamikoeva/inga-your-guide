@@ -47,6 +47,7 @@ const howToTopics = [
   {
     title: 'Метод "Лёгкая замена"',
     content: 'Не запрещаем любимое — заменяем более калорийный вариант на более лёгкий. Сметана → греческий йогурт 2%, сливочное масло → масло через распылитель, сыр на перекус → творог 0%. Та же еда, меньше калорий, без срывов.',
+    isMethodLesson: true,
   },
   {
     title: 'Питательные вещества',
@@ -56,6 +57,7 @@ const howToTopics = [
   {
     title: 'Объём еды',
     content: 'Голод — твой главный враг. Не допускай чувства голода. Ешь каждые 3–4 часа, 4–6 раз в день. Объём каждого приёма пищи — до 500 г вместе с напитком.',
+    isVolumeLesson: true,
   },
   {
     title: 'Как считать порции',
@@ -192,6 +194,206 @@ export function MenuScreen() {
   );
 
   // ── Nutrient detail screen ─────────────────────────────────────────────
+
+  if (section === 'how-to' && nutrientSection === 'Метод') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-5">Метод «Лёгкая замена»</h2>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Лишний вес — это всегда перебор с калориями. У каждого человека есть основной обмен веществ — количество энергии, которая нужна организму для жизни. Эта энергия измеряется в калориях.
+            </p>
+            <div className="mt-3 space-y-1">
+              {[
+                'Поступает больше калорий, чем нужно → избыток откладывается в жир',
+                'Поступает ровно столько, сколько нужно → вес стоит',
+                'Поступает меньше, чем тратите → вес уходит',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Как создать дефицит калорий так, чтобы через неделю не сорваться? Если лишить себя всего вкусного и ходить с постоянным чувством голода, малейший стресс — и срыв неизбежен.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Весь секрет в том, чтобы не голодать и не лишать себя любимых блюд. Вы любите сладкое? Выбирайте 2–3 любимых низкокалорийных десерта и ешьте каждый день. Фрукты — можно. Каши — можно. Есть лайфхаки, как снизить калорийность каш в 2–3 раза. Вы едите 4–6 раз в день и всегда чувствуете сытость.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-3">Суть метода</p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+              Вы не отказываетесь от любимых блюд, а делаете их легче по калориям. Придерживаться такой системы легко.
+            </p>
+            <div className="space-y-2">
+              {[
+                'Сметану или жирный соус заменяем на греческий йогурт 2% с горчицей, кетчупом и любимыми специями',
+                'Голени и бёдра птицы — на грудку',
+                'Жареная картошка остаётся в рационе: выбираем молодой картофель (в нём в 2 раза меньше калорий), добавляем побольше грибов и жарим на пшиках масла',
+                'Вместо бутылки масла — распылитель',
+                'В классической шарлотке 300 ккал, в лёгкой — 120',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-start">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                  <span className="text-xs text-muted-foreground leading-relaxed">{s}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs font-medium">Та же еда, но в 2–3 раза меньше калорий. Нет запретов — нет срывов.</p>
+            </div>
+          </div>
+
+          <p className="text-sm font-semibold mb-3">Работа с весом — 3 этапа</p>
+
+          <div className="inga-card mb-3">
+            <p className="text-sm font-semibold mb-2">1. Активное снижение веса</p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+              Создаём дефицит калорий 25–30% от основного обмена. Можно ничего не считать, главное — соблюдать принцип в каждый приём пищи:
+            </p>
+            <div className="space-y-1 mb-3">
+              {[
+                '60–100 г белковых продуктов',
+                '60–100 г сложных углеводов',
+                '100–150 г клетчатки',
+                'до 100 г — Сладкая точка (десерт до 100 ккал/100 г)',
+                'объём всей пищи с напитком — не более 500 г',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Едим 4–6 раз в день, каждые 3–4 часа. Не допускаем чувства голода, едим на опережение.
+            </p>
+            <div className="mt-2 rounded-xl bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">На этом этапе уходят 3–6 кг в месяц. Может и больше, если есть отёки.</p>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+              Если к вечеру разгорается аппетит — ешьте на ночь: 60–100 г белкового продукта + 60–100 г клетчатки, без жира и углеводов.
+            </p>
+          </div>
+
+          <div className="inga-card mb-3">
+            <p className="text-sm font-semibold mb-2">2. Фиксация веса</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Когда вы достигли целевого веса, нельзя резко выходить из дефицита. Постепенно увеличиваем калорийность на 200 ккал в неделю, пока не дойдём до равновесной калорийности — того количества калорий, при котором ваш вес стоит на месте. Продолжаем взвешиваться и следить за весом.
+            </p>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm font-semibold mb-2">3. Сохранение веса</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Главная привычка на всю жизнь: каждое утро вставать на весы. Если вес приближается к верхней границе — сразу возвращаемся к «Лёгкой замене». Один-два дня, и вес в норме.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'how-to' && nutrientSection === 'Объём') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-5">Объём еды</h2>
+
+          <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
+            <p className="text-sm font-semibold" style={{ color: '#FF6200' }}>Голод — главный враг похудения. Именно он приводит к срывам.</p>
+            <p className="text-sm mt-1" style={{ color: '#7A3A00' }}>Ваша задача — не доводить себя до чувства голода.</p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Режим питания</p>
+            <div className="space-y-2">
+              {[
+                'Ешьте 4–6 раз в день, каждые 3–4 часа',
+                'Даже если через 4 часа есть не хочется — сделайте небольшой перекус',
+                'Пропускать приёмы пищи нельзя',
+                'Завтракать обязательно — в течение 2 часов после пробуждения',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-start">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                  <span className="text-xs text-muted-foreground leading-relaxed">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Объём одного приёма пищи — до 500 г вместе с напитком</p>
+            <div className="space-y-1 mb-2">
+              {[
+                '300 г еды + 200 мл чая или кофе',
+                '400 г еды + 100 мл напитка',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed italic">
+              Это помогает контролировать переедание и постепенно уменьшает растянутый желудок.
+            </p>
+          </div>
+
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-3">Как собрать тарелку без подсчёта калорий</p>
+            <p className="text-sm font-medium mb-1">Метод тарелки</p>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+              Половину тарелки заполняем клетчаткой (салаты из свежих овощей и зелени с пшиком масла или греческим йогуртом в качестве заправки, грибы, квашеная капуста), четверть — нежирным белковым продуктом, четверть — сложными углеводами (крупы, макароны, тушёные овощи, картофель, бобовые).
+            </p>
+            <p className="text-sm font-medium mb-1">Метод ладони</p>
+            <div className="space-y-1">
+              {[
+                'Белок — с ладонь без пальцев',
+                'Углеводы — горсть (ладонь лодочкой) и кулак',
+                'Клетчатка — два кулачка',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="inga-card mb-8">
+            <p className="text-sm font-semibold mb-2">Если предпочитаете взвешивать</p>
+            <div className="space-y-1">
+              {[
+                '60–100 г белка',
+                '60–100 г сложных углеводов',
+                '100–150 г клетчатки',
+              ].map(s => (
+                <div key={s} className="flex gap-2 items-center">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">{s}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs font-medium">Вы едите много по объёму, но мало по калориям — именно в этом секрет метода.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (section === 'how-to' && nutrientSection === 'Белок') {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
@@ -542,6 +744,15 @@ export function MenuScreen() {
                 {((topic as any).isFixation) && (
                   <div className="border-t border-border my-1" />
                 )}
+              {((topic as any).isMethodLesson || (topic as any).isVolumeLesson) ? (
+                <div
+                  className="inga-card cursor-pointer flex items-center justify-between"
+                  onClick={() => setNutrientSection((topic as any).isMethodLesson ? 'Метод' : 'Объём')}
+                >
+                  <span className="font-semibold">{topic.title}</span>
+                  <ChevronRight size={18} className="text-muted-foreground" />
+                </div>
+              ) : (
               <details className="inga-card group">
                 <summary className="font-semibold cursor-pointer flex items-center justify-between list-none">
                   <div>
@@ -667,6 +878,7 @@ export function MenuScreen() {
                   <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{topic.content}</p>
                 )}
               </details>
+              )}
               </React.Fragment>
             ))}
           </div>
