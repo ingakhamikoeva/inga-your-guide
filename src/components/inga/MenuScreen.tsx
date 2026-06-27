@@ -312,7 +312,7 @@ export function MenuScreen() {
 
           <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
             <p className="text-sm font-semibold" style={{ color: '#FF6200' }}>Голод — главный враг похудения. Именно он приводит к срывам.</p>
-            <p className="text-sm mt-1" style={{ color: '#7A3A00' }}>Ваша задача — не доводить себя до чувства голода.</p>
+            <p className="text-sm mt-1" style={{ color: '#7A3A00' }}>Ваша задача — не падать в голодные ямы.</p>
           </div>
 
           <div className="inga-card mb-4">
@@ -360,7 +360,7 @@ export function MenuScreen() {
             <div className="space-y-1">
               {[
                 'Белок — с ладонь без пальцев',
-                'Углеводы — горсть (ладонь лодочкой) и кулак',
+                'Углеводы — горсть (ладонь лодочкой)',
                 'Клетчатка — два кулачка',
               ].map(s => (
                 <div key={s} className="flex gap-2 items-center">
