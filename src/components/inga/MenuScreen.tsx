@@ -8,14 +8,14 @@ import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/so
 import { hasName, cleanName } from '@/lib/user-name';
 import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
-import recipeOatmeal from '@/assets/recipes/breakfast_oatmeal.jpg';
-import recipePate from '@/assets/recipes/breakfast_pate.jpg';
-import recipeZucchini from '@/assets/recipes/breakfast_zucchini.jpg';
-import recipeBliny from '@/assets/recipes/breakfast_bliny.jpg';
-import recipeVarenie from '@/assets/recipes/breakfast_varenie.jpg';
-import recipeShaurma from '@/assets/recipes/breakfast_shaurma.jpg';
-import recipeTaco from '@/assets/recipes/breakfast_taco.jpg';
-import recipePirozhki from '@/assets/recipes/breakfast_pirozhki.jpg';
+import recipeOatmeal from '@/assets/breakfast_oatmeal.jpg';
+import recipePate from '@/assets/breakfast_pate.jpg';
+import recipeZucchini from '@/assets/breakfast_zucchini.jpg';
+import recipeBliny from '@/assets/breakfast_bliny.jpg';
+import recipeVarenie from '@/assets/breakfast_varenie.jpg';
+import recipeShaurma from '@/assets/breakfast_shaurma.jpg';
+import recipeTaco from '@/assets/breakfast_taco.jpg';
+import recipePirozhki from '@/assets/breakfast_pirozhki.jpg';
 
 const palmMethodCards = [
   {
