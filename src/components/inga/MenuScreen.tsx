@@ -8,6 +8,14 @@ import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/so
 import { hasName, cleanName } from '@/lib/user-name';
 import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
+import recipeOatmeal from '@/assets/recipes/breakfast_oatmeal.jpg';
+import recipePate from '@/assets/recipes/breakfast_pate.jpg';
+import recipeZucchini from '@/assets/recipes/breakfast_zucchini.jpg';
+import recipeBliny from '@/assets/recipes/breakfast_bliny.jpg';
+import recipeVarenie from '@/assets/recipes/breakfast_varenie.jpg';
+import recipeShaurma from '@/assets/recipes/breakfast_shaurma.jpg';
+import recipeTaco from '@/assets/recipes/breakfast_taco.jpg';
+import recipePirozhki from '@/assets/recipes/breakfast_pirozhki.jpg';
 
 const palmMethodCards = [
   {
@@ -123,6 +131,8 @@ export function MenuScreen() {
   const { setStep, weeklyData, profile, dailyReports, medals, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>("main");
   const [nutrientSection, setNutrientSection] = useState<string | null>(null);
+  const [recipeSection, setRecipeSection] = useState<string | null>(null);
+  const [activeRecipe, setActiveRecipe] = useState<string | null>(null);
   const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
 
   useEffect(() => {
@@ -1200,20 +1210,324 @@ export function MenuScreen() {
   }
 
   if (section === 'recipes') {
+    const breakfastRecipes = [
+      {
+        id: 'oatmeal',
+        name: 'Нежное утро',
+        subtitle: 'Овсянка по-новому',
+        kbju: '50.8 / 4 / 0.5 / 7.2',
+        image: recipeOatmeal,
+        video: 'https://vkvideo.ru/clip-239899185_456239020',
+        ingredients: [
+          '20 г овсяной крупы долгой варки',
+          '100 мл воды',
+          '100 г мягкого творога 0%',
+          '100 г яблока',
+          '1 ч.л. пектина',
+          'Щепотка корицы',
+          'Сахарозаменитель по вкусу',
+        ],
+        steps: [
+          'Запариваем овсянку на ночь: насыпать 20 г крупы, залить 100 мл воды, прокипятить 2–3 минуты, посолить, переложить в термос, оставить на ночь.',
+          'Яблоки нарезать на тонкие дольки и тушить в кастрюле до мягкости. Добавить 1 ч.л. пектина, часто помешивая. Добавить корицу и сахарозаменитель по вкусу.',
+          'Если любите сладкое — в творожок можно добавить подсластитель.',
+          'Выкладываем слоями: нижний слой — мягкий творог, на творог — овсянку, сверху — яблоки.',
+        ],
+      },
+      {
+        id: 'pate',
+        name: 'Железная леди',
+        subtitle: 'Бутерброды с паштетом из печени',
+        kbju: '109.7 / 6.4 / 4.3 / 11.2',
+        image: recipePate,
+        video: 'https://vkvideo.ru/clip-239899185_456239024',
+        ingredients: [
+          '100 г паштета из печени',
+          '50 г бородинского хлеба',
+          '100 г болгарского перца',
+          'Для паштета: 500 г куриной печени, 200 мл молока для замачивания, 1 луковица, 1 морковь, 200 мл сливок 10%, 5 г растительного масла',
+        ],
+        steps: [
+          'Промыть печень, залить молоком, убрать в холодильник на 30 мин. Слить молоко, промыть.',
+          'Обжарить лук и морковь на пшиках масла.',
+          'Добавить печень, тушить до готовности 15 минут.',
+          'Добавить сливки, тушить 2–3 минуты.',
+          'Переложить в блендер, перемолоть до однородности. Хранить в холодильнике.',
+          'Для завтрака: 2 кусочка хлеба по 25 г, намазать паштетом. Есть с болгарским перцем — для усвоения железа нужен витамин С.',
+        ],
+      },
+      {
+        id: 'zucchini',
+        name: 'Золотые зайчики',
+        subtitle: 'Драники из кабачков',
+        kbju: '83.2 / 5.9 / 2.2 / 9.6',
+        image: recipeZucchini,
+        video: 'https://vkvideo.ru/clip-239899185_456239035',
+        ingredients: [
+          '800 г кабачков',
+          '1 яйцо',
+          '60 г муки пшеничной цельнозерновой',
+          '50 г муки из зелёной гречки',
+          'Соль по вкусу',
+          '5 г растительного высокоолеинового масла',
+        ],
+        steps: [
+          'Кабачки почистить, натереть на крупной тёрке, отжать сок.',
+          'Добавить яйцо, 2 вида муки, соль, перемешать.',
+          'Обжарить на пшиках масла.',
+          'Для сбалансированной тарелки: 100 г драников + 100 г греческого йогурта 2% или мягкого творога 0%.',
+        ],
+        note: 'КБЖУ указаны на драники с греческим йогуртом.',
+      },
+      {
+        id: 'bliny',
+        name: 'Солнце на тарелке',
+        subtitle: 'Блины с мягким творогом и вареньем',
+        kbju: '99 / 5.4 / 1.2 / 7.7',
+        image: recipeBliny,
+        video: 'https://vkvideo.ru/clip-239899185_456239034',
+        ingredients: [
+          '200 г кефира 1%',
+          '1 яйцо',
+          '1 яичный белок',
+          '70 г пшеничной муки ц/з',
+          '2 мерные ложки сахзама FitParad 7',
+          'Соль по вкусу',
+          '60 мл кипятка',
+          '½ ч.л. соды',
+          '5 г растительного масла',
+        ],
+        steps: [
+          'Смешать кефир, яйцо, белок, муку, сахарозаменитель, соль.',
+          'В 60 мл кипятка развести соду и влить в тесто. Перемешать венчиком.',
+          'Выпекать на блинной сковороде на пшиках масла. Получается 5–6 блинчиков.',
+          'Для сбалансированной тарелки: 100 г блинов + 100 г мягкого творога 0% + 100 г пектинового варенья.',
+        ],
+        note: 'КБЖУ указаны на блины с творогом и вареньем.',
+      },
+      {
+        id: 'varenie',
+        name: 'Пектиновое варенье',
+        subtitle: 'Вкусное — из любых фруктов и ягод',
+        kbju: '40 / 0.7 / 0.2 / 7.8',
+        image: recipeVarenie,
+        video: 'https://vkvideo.ru/clip-239899185_456239036',
+        ingredients: [
+          '400 г любых ягод или фруктов (можно замороженных)',
+          '2 ст.л. пектина',
+          '10 мерных ложек сахарозаменителя FitParad 7 или другого по вкусу',
+        ],
+        steps: [
+          'Ягоды можно пробить блендером или сварить целиком.',
+          'Положить в кастрюлю, нагреть, засыпать «дождиком» пектин, постоянно помешивая.',
+          'Довести до кипения, кипятить на слабом огне 2–3 минуты, постоянно помешивать.',
+          'Убрать с огня, добавить сахарозаменитель, размешать.',
+          'Варенье станет гуще когда остынет. Идеально для сладкой точки после приёма пищи.',
+        ],
+        note: 'Пектин — растворимая клетчатка, имеет мягкий слабительный эффект. Очень вкусно получается из клубники, сливы, вишни.',
+      },
+      {
+        id: 'shaurma',
+        name: 'Заверните две',
+        subtitle: 'ПП-шаурма',
+        kbju: '104.2 / 8.7 / 2 / 12.8',
+        image: recipeShaurma,
+        video: 'https://vkvideo.ru/clip-239899185_456239017',
+        ingredients: [
+          '60 г лаваша',
+          '100 г куриной грудки',
+          '50 г капусты белокочанной',
+          '50 г болгарского перца',
+          '60 г помидора',
+          '30 г красного лука',
+          'Приправа «Копчёная паприка», соль',
+          '5 г растительного масла',
+          'Соус: 20 г кетчупа + 20 г греческого йогурта 2%',
+        ],
+        steps: [
+          'Грудку нарезать слайсами, отбить, посыпать паприкой и солью. Обжарить на пшиках масла по 3 мин с каждой стороны.',
+          'Отбивные и перец нарезать соломкой. Нашинковать капусту, помидор и лук нарезать.',
+          'Смешать ингредиенты для соуса.',
+          'Выложить на лаваш слоями: капуста, мясо, лук, соус, помидор, перец. Посолить по вкусу.',
+          'Завернуть лаваш, готовить на гриле или на сухой сковороде до хрустящей корочки.',
+        ],
+      },
+      {
+        id: 'taco',
+        name: 'Такого я не ожидала',
+        subtitle: 'ПП-тако',
+        kbju: '80 / 10 / 2 / 5.7',
+        image: recipeTaco,
+        video: 'https://vkvideo.ru/clip-239899185_456239023',
+        ingredients: [
+          '2 лепёшки (46 г)',
+          '160 г копчёно-запечённого филе грудки',
+          '250 г шампиньонов',
+          '30 г красного лука',
+          '120 г помидоров',
+          '25 г листьев салата',
+          '60 г мягкого творога 0%',
+          '25 г кетчупа',
+          '5 г растительного масла, соль',
+        ],
+        steps: [
+          'Грибы нарезать, обжарить на пшиках масла до готовности.',
+          'Куриное филе, лук, помидоры нарезать.',
+          'Приготовить соус: смешать мягкий творог и кетчуп, посолить, добавить приправы.',
+          'Смазать лепёшки соусом.',
+          'На половину выложить слоями грибы, курицу, лук, помидоры.',
+          'Свернуть пополам, запечь в гриле или на сухой сковороде.',
+          'В готовые тако вложить листья салата.',
+        ],
+      },
+      {
+        id: 'pirozhki',
+        name: 'Как настоящие',
+        subtitle: 'ПП-пирожки с луком и яйцом',
+        kbju: '113.2 / 13.9 / 2.7 / 8',
+        image: recipePirozhki,
+        video: 'https://vkvideo.ru/clip-239899185_456239018',
+        ingredients: [
+          '200 г творога высокобелкового 0%',
+          '1 сырое яйцо',
+          'Белок от 3 варёных яиц',
+          '50 г зелёного лука',
+          '40 г рисовой муки',
+          'Соль по вкусу',
+          '5 г растительного высокоолеинового масла',
+        ],
+        steps: [
+          'Творог смешать с сырым яйцом.',
+          'Добавить муку, перемешать.',
+          'Мелко нарезать варёный яичный белок, добавить в тесто.',
+          'Нарезать зелёный лук, добавить в тесто, перемешать. Посолить.',
+          'Влажными руками сформировать плоские пирожки, обжарить на пшиках масла с двух сторон.',
+        ],
+        note: 'На этапе сохранения веса можно добавить яйцо целиком и 80 г сыра моцарелла или «Лёгкий». Но калорийность будет 166 ккал/100 г — только на этапе сохранения.',
+      },
+    ];
+
+    // Recipe detail screen
+    if (activeRecipe) {
+      const recipe = breakfastRecipes.find(r => r.id === activeRecipe);
+      if (!recipe) return null;
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setActiveRecipe(null)} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold">{recipe.name}</h2>
+              <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>
+              <div className="mt-2 inline-block bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">
+                КБЖУ на 100 г: {recipe.kbju}
+              </div>
+            </div>
+            <div className="inga-card mb-3">
+              <p className="text-sm font-semibold mb-2">Ингредиенты</p>
+              <div className="space-y-1">
+                {recipe.ingredients.map(ing => (
+                  <div key={ing} className="flex gap-2 items-start">
+                    <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    <span className="text-xs text-muted-foreground leading-relaxed">{ing}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="inga-card mb-3">
+              <p className="text-sm font-semibold mb-2">Приготовление</p>
+              <div className="space-y-2">
+                {recipe.steps.map((step, i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium mt-0.5">{i + 1}</span>
+                    <span className="text-xs text-muted-foreground leading-relaxed">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {recipe.note && (
+              <div className="inga-card mb-3">
+                <p className="text-xs text-muted-foreground leading-relaxed italic">{recipe.note}</p>
+              </div>
+            )}
+            <a
+              href={recipe.video}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl py-3.5 font-semibold text-sm mb-8"
+            >
+              <Play size={16} fill="currentColor" />
+              Смотреть видеорецепт
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    // Category screen - Завтраки
+    if (recipeSection === 'breakfasts') {
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <h2 className="text-2xl font-bold mb-5">Завтраки</h2>
+            <div className="space-y-3">
+              {breakfastRecipes.map(recipe => (
+                <button
+                  key={recipe.id}
+                  onClick={() => setActiveRecipe(recipe.id)}
+                  className="w-full inga-card flex gap-4 items-center text-left"
+                >
+                  <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main recipes screen
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
           <BackButton />
           <h2 className="text-2xl font-bold mb-2">Рецепты</h2>
-          <p className="text-sm text-muted-foreground mb-5">Подборки блюд и десертов по методу «Мягкая замена».</p>
-          <div className="space-y-3">
-            {recipeCategories.map(cat => (
-              <div key={cat.cat} className="inga-card">
-                <div className="font-semibold mb-2">{cat.cat}</div>
-                <ul className="text-sm text-muted-foreground space-y-1.5">
-                  {cat.items.map(item => <li key={item}>• {item}</li>)}
-                </ul>
-              </div>
+          <p className="text-sm text-muted-foreground mb-5">Подборки блюд по методу «Лёгкая замена».</p>
+          <div className="space-y-2.5">
+            {[
+              { id: 'breakfasts', icon: '🌅', label: 'Завтраки', count: 8 },
+              { id: 'lunches', icon: '🍽️', label: 'Обеды и ужины', count: null },
+              { id: 'snacks', icon: '🥗', label: 'Перекусы', count: null },
+              { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: null },
+              { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: null },
+              { id: 'evening', icon: '🌙', label: 'Метаболическая точка', count: null },
+            ].map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => cat.id === 'breakfasts' ? setRecipeSection('breakfasts') : undefined}
+                className="w-full inga-card flex items-center justify-between"
+                style={{ opacity: cat.count ? 1 : 0.5, cursor: cat.count ? 'pointer' : 'default' }}
+              >
+                <div className="flex items-center gap-3">
+                  <span style={{ fontSize: 22 }}>{cat.icon}</span>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold">{cat.label}</p>
+                    {cat.count ? (
+                      <p className="text-xs text-muted-foreground">{cat.count} рецепта</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Скоро появятся</p>
+                    )}
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-muted-foreground" />
+              </button>
             ))}
           </div>
         </div>
