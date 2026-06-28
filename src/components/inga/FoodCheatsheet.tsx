@@ -231,6 +231,33 @@ const allProducts = [
   { name: 'Кедровый орех', kcal: 670, cat: 'fat', color: 'red' },
   { name: 'Фундук', kcal: 700, cat: 'fat', color: 'red' },
   { name: 'Халва подсолнечная', kcal: 520, cat: 'fat', color: 'red' },
+
+  // ЖИРЫ - Дополнительные
+  { name: 'Угорь морской', kcal: 90, cat: 'fat', color: 'green' },
+  { name: 'Авокадо', kcal: 160, cat: 'fat', color: 'red' },
+  { name: 'Сырки и масса творожные', kcal: 340, cat: 'fat', color: 'red' },
+  { name: 'Брынза из коровьего молока', kcal: 260, cat: 'fat', color: 'red' },
+  { name: 'Яйцо куриное 1 шт 60г', kcal: 90, cat: 'fat', color: 'green' },
+  { name: 'Перепелиное яйцо 100г', kcal: 160, cat: 'fat', color: 'red' },
+  { name: 'Жир кулинарный', kcal: 900, cat: 'fat', color: 'red' },
+  // УГЛЕВОДЫ - Крупы дополнительные
+  { name: 'Манная крупа', kcal: null, cat: 'carbs', color: 'white', note: 'сухая 330 / варёная ~80' },
+  { name: 'Мука пшеничная 1 сорт', kcal: 330, cat: 'carbs', color: 'red' },
+  { name: 'Мука пшеничная в/с', kcal: 330, cat: 'carbs', color: 'red' },
+  { name: 'Мука ржаная', kcal: 330, cat: 'carbs', color: 'red' },
+  // УГЛЕВОДЫ - Сладости дополнительные
+  { name: 'Ирис', kcal: 380, cat: 'carbs', color: 'red' },
+  { name: 'Хлеб пшеничный 1 сорт', kcal: 250, cat: 'carbs', color: 'red' },
+  // УГЛЕВОДЫ - Сухофрукты дополнительные
+  { name: 'Изюм с косточкой', kcal: 280, cat: 'carbs', color: 'red' },
+  { name: 'Кишмиш', kcal: 280, cat: 'carbs', color: 'red' },
+  { name: 'Вишня сушёная', kcal: 280, cat: 'carbs', color: 'red' },
+  { name: 'Груша сушёная', kcal: 250, cat: 'carbs', color: 'red' },
+  { name: 'Персик сушёный', kcal: 280, cat: 'carbs', color: 'red' },
+  { name: 'Чернослив сушёный', kcal: 260, cat: 'carbs', color: 'red' },
+  { name: 'Яблоки сушёные', kcal: 280, cat: 'carbs', color: 'red' },
+  { name: 'Папайя сушёная', kcal: 340, cat: 'carbs', color: 'red' },
+  { name: 'Клубника сушёная', kcal: 280, cat: 'carbs', color: 'red' },
 ];
 
 const catLabels: Record<string, string> = {
