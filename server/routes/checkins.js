@@ -23,7 +23,7 @@ r.get("/:date", async (req, res) => {
   const { date } = req.params;
   try {
     const q = await pool.query(
-      `SELECT date, weight_kg, sleep_hours, steps_yesterday
+      `SELECT date, weight_kg, sleep_hours, steps_yesterday, stool_yesterday
          FROM public.daily_checkins
         WHERE user_id = $1 AND date = $2
         LIMIT 1`,
@@ -36,6 +36,7 @@ r.get("/:date", async (req, res) => {
       weight: d.weight_kg != null ? Number(d.weight_kg) : null,
       sleepHours: d.sleep_hours != null ? Number(d.sleep_hours) : null,
       stepsYesterday: d.steps_yesterday != null ? Number(d.steps_yesterday) : null,
+      stoolYesterday: d.stool_yesterday != null ? Boolean(d.stool_yesterday) : null,
     });
   } catch (e) {
     console.error("GET /checkins/:date:", e);
@@ -45,13 +46,13 @@ r.get("/:date", async (req, res) => {
 
 r.put("/:date", async (req, res) => {
   const { date } = req.params;
-  const { weight = null, sleepHours = null, stepsYesterday = null } = req.body || {};
+  const { weight = null, sleepHours = null, stepsYesterday = null, stoolYesterday = null } = req.body || {};
   try {
     await upsert(
       "public.daily_checkins",
       ["user_id", "date"],
       [req.userId, date],
-      { weight_kg: weight, sleep_hours: sleepHours, steps_yesterday: stepsYesterday }
+      { weight_kg: weight, sleep_hours: sleepHours, steps_yesterday: stepsYesterday, stool_yesterday: stoolYesterday }
     );
     res.json({ ok: true });
   } catch (e) {
