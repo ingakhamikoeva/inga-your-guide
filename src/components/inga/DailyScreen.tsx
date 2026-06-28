@@ -1331,8 +1331,8 @@ export function DailyScreen() {
       {/* Fixed bottom chat panel */}
       <button
         onClick={() => setStep('chat')}
-        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[14px] border-t border-[#EDE5DF] bg-white"
-        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)' }}
+        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[14px] bg-white"
+        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)', borderRadius: '16px 16px 0 0' }}
       >
         <img
           src={ingaPhoto}
