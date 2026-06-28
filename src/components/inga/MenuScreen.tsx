@@ -2233,7 +2233,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
         >
           📥 Скачать дневник питания
         </button>
-        <p className="text-xs text-muted-foreground text-center -mt-2">
+        <p className="text-xs text-muted-foreground text-center mt-1">
           Отчёт за последние 14 дней — для подготовки к консультации
         </p>
 
