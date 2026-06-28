@@ -1820,7 +1820,7 @@ export function MenuScreen() {
 }
 
 function ProfileSection({ onBack }: { onBack: () => void }) {
-  const { profile, calculations, updateProfile, setStep } = useApp();
+  const { profile, calculations, updateProfile, setStep, weeklyData, dailyReports } = useApp();
 
   // ---------- name ----------
   const [editingName, setEditingName] = useState(false);
@@ -1843,6 +1843,134 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
 
   // ---------- sign-out ----------
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  const handleDownloadDiary = async () => {
+    const today = new Date();
+    const days14 = Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 13 + i);
+      return d.toISOString().slice(0, 10);
+    });
+
+    const rows = days14.map(date => {
+      const weight = weeklyData.find(w => w.date === date);
+      const report = dailyReports.find(r => r.date === date);
+      return { date, weight, report };
+    });
+
+    const hasAnyData = rows.some(r => r.weight || r.report);
+    if (!hasAnyData) {
+      alert('Пока нет данных для скачивания. Заполните дневник хотя бы за несколько дней.');
+      return;
+    }
+
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Load and embed font that supports Cyrillic
+    const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
+    const fontResp = await fetch(fontUrl);
+    const fontBuf = await fontResp.arrayBuffer();
+    const fontBase64 = btoa(String.fromCharCode(...new Uint8Array(fontBuf)));
+    doc.addFileToVFS('Roboto-Regular.ttf', fontBase64);
+    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+    doc.setFont('Roboto');
+
+    const pageW = 210;
+    const margin = 15;
+    const contentW = pageW - margin * 2;
+    let y = margin;
+
+    const checkPage = (needed: number) => {
+      if (y + needed > 280) { doc.addPage(); y = margin; }
+    };
+
+    // Header
+    doc.setFontSize(18);
+    doc.setTextColor(255, 98, 0);
+    doc.text('Дневник питания', margin, y);
+    y += 7;
+    doc.setFontSize(10);
+    doc.setTextColor(120, 100, 90);
+    doc.text(`${profile.name ?? 'Пользователь'} · Отчёт за 14 дней · ${today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}`, margin, y);
+    y += 10;
+
+    // Summary box
+    const weights = rows.filter(r => r.weight).map(r => r.weight!.weight);
+    const avgWeight = weights.length ? (weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(1) : '—';
+    const minWeight = weights.length ? Math.min(...weights).toFixed(1) : '—';
+    const maxWeight = weights.length ? Math.max(...weights).toFixed(1) : '—';
+    const daysWithData = rows.filter(r => r.weight || r.report?.meals?.length).length;
+
+    doc.setFillColor(250, 245, 240);
+    doc.roundedRect(margin, y, contentW, 28, 3, 3, 'F');
+    y += 6;
+    doc.setFontSize(11);
+    doc.setTextColor(44, 26, 14);
+    doc.text('Сводка', margin + 4, y);
+    y += 5;
+    doc.setFontSize(9);
+    doc.setTextColor(100, 80, 70);
+    doc.text(`Дней с данными: ${daysWithData} из 14`, margin + 4, y); y += 4;
+    doc.text(`Средний вес: ${avgWeight} кг   Минимальный: ${minWeight} кг   Максимальный: ${maxWeight} кг`, margin + 4, y);
+    y += 10;
+
+    // Days
+    for (const { date, weight, report } of rows) {
+      const d = new Date(date + 'T12:00:00');
+      const dateLabel = d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
+
+      checkPage(20);
+      // Day header
+      doc.setFillColor(255, 98, 0);
+      doc.roundedRect(margin, y, contentW, 7, 2, 2, 'F');
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(dateLabel, margin + 3, y + 4.5);
+      y += 9;
+
+      // Meta row
+      checkPage(8);
+      doc.setFontSize(9);
+      doc.setTextColor(80, 60, 50);
+      const meta = [
+        `Вес: ${weight ? weight.weight + ' кг' : '—'}`,
+        `Сон: ${report?.sleepHours ? report.sleepHours + ' ч' : '—'}`,
+        `Шаги: ${report?.stepsYesterday ? report.stepsYesterday.toLocaleString('ru-RU') : '—'}`,
+        `Стул: ${report?.stoolYesterday === true ? 'Да' : report?.stoolYesterday === false ? 'Нет' : '—'}`,
+      ].join('   ');
+      doc.text(meta, margin + 2, y);
+      y += 6;
+
+      // Meals
+      if (report?.meals?.length) {
+        for (const m of report.meals) {
+          const text = typeof m === 'string' ? m : (m.description || '');
+          if (!text) continue;
+          const lines = doc.splitTextToSize(`• ${text}`, contentW - 4);
+          checkPage(lines.length * 4 + 2);
+          doc.setFontSize(8.5);
+          doc.setTextColor(60, 40, 30);
+          doc.text(lines, margin + 2, y);
+          y += lines.length * 4;
+        }
+      } else {
+        checkPage(6);
+        doc.setFontSize(8.5);
+        doc.setTextColor(180, 160, 150);
+        doc.text('Приёмы пищи не записаны', margin + 2, y);
+        y += 5;
+      }
+      y += 4; // gap between days
+    }
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(180, 160, 150);
+    doc.text('Сформировано в legche.online', margin, 290);
+
+    doc.save(`дневник-питания-${today.toISOString().slice(0, 10)}.pdf`);
+  };
 
   const handleSaveName = () => {
     updateProfile({ name: cleanName(name) });
@@ -2096,6 +2224,18 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
             <div className="text-[11px] text-muted-foreground mt-2">Загружено: {fmtDate(photo.uploadedAt)}</div>
           )}
         </div>
+
+        {/* 7.5 Скачать дневник */}
+        <button
+          onClick={handleDownloadDiary}
+          className="w-full rounded-2xl py-3 text-sm font-medium transition-colors"
+          style={{ backgroundColor: 'transparent', border: '1px solid #FF6200', color: '#FF6200' }}
+        >
+          📥 Скачать дневник питания
+        </button>
+        <p className="text-xs text-muted-foreground text-center -mt-2">
+          Отчёт за последние 14 дней — для подготовки к консультации
+        </p>
 
         {/* 8. Выйти из аккаунта */}
         {!confirmSignOut ? (
