@@ -1864,112 +1864,66 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
       return;
     }
 
-    const { jsPDF } = await import('jspdf');
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-    // Load and embed font that supports Cyrillic
-    const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/fonts/Roboto/Roboto-Regular.ttf';
-    const fontResp = await fetch(fontUrl);
-    const fontBuf = await fontResp.arrayBuffer();
-    const fontBase64 = btoa(String.fromCharCode(...new Uint8Array(fontBuf)));
-    doc.addFileToVFS('Roboto-Regular.ttf', fontBase64);
-    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-    doc.setFont('Roboto');
-
-    const pageW = 210;
-    const margin = 15;
-    const contentW = pageW - margin * 2;
-    let y = margin;
-
-    const checkPage = (needed: number) => {
-      if (y + needed > 280) { doc.addPage(); y = margin; }
+    // Generate HTML and open print dialog → user saves as PDF
+    const formatDate = (dateStr: string) => {
+      const d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
     };
 
-    // Header
-    doc.setFontSize(18);
-    doc.setTextColor(255, 98, 0);
-    doc.text('Дневник питания', margin, y);
-    y += 7;
-    doc.setFontSize(10);
-    doc.setTextColor(120, 100, 90);
-    doc.text(`${profile.name ?? 'Пользователь'} · Отчёт за 14 дней · ${today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}`, margin, y);
-    y += 10;
-
-    // Summary box
     const weights = rows.filter(r => r.weight).map(r => r.weight!.weight);
     const avgWeight = weights.length ? (weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(1) : '—';
     const minWeight = weights.length ? Math.min(...weights).toFixed(1) : '—';
     const maxWeight = weights.length ? Math.max(...weights).toFixed(1) : '—';
     const daysWithData = rows.filter(r => r.weight || r.report?.meals?.length).length;
 
-    doc.setFillColor(250, 245, 240);
-    doc.roundedRect(margin, y, contentW, 28, 3, 3, 'F');
-    y += 6;
-    doc.setFontSize(11);
-    doc.setTextColor(44, 26, 14);
-    doc.text('Сводка', margin + 4, y);
-    y += 5;
-    doc.setFontSize(9);
-    doc.setTextColor(100, 80, 70);
-    doc.text(`Дней с данными: ${daysWithData} из 14`, margin + 4, y); y += 4;
-    doc.text(`Средний вес: ${avgWeight} кг   Минимальный: ${minWeight} кг   Максимальный: ${maxWeight} кг`, margin + 4, y);
-    y += 10;
+    const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
+<title>Дневник питания</title>
+<style>
+@media print { body { margin: 0; } .no-print { display: none; } }
+body { font-family: Arial, sans-serif; font-size: 12px; color: #2C1A0E; max-width: 750px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 18px; color: #FF6200; margin-bottom: 2px; }
+.sub { color: #888; font-size: 11px; margin-bottom: 16px; }
+.summary { background: #FAF5F0; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; gap: 20px; flex-wrap: wrap; }
+.summary span { font-size: 11px; }
+.day { border: 1px solid #EDE5DF; border-radius: 8px; padding: 12px; margin-bottom: 10px; page-break-inside: avoid; }
+.day-title { font-weight: bold; color: #FF6200; font-size: 13px; margin-bottom: 6px; }
+.meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+.meta span { font-size: 11px; background: #F5F0EB; padding: 2px 7px; border-radius: 5px; }
+.meal { font-size: 11px; padding: 2px 0; border-bottom: 1px solid #F0EAE4; }
+.meal:last-child { border-bottom: none; }
+.empty { color: #bbb; font-style: italic; font-size: 11px; }
+.print-btn { display: block; margin: 16px auto; padding: 10px 30px; background: #FF6200; color: white; border: none; border-radius: 20px; font-size: 14px; cursor: pointer; }
+</style></head><body>
+<button class="print-btn no-print" onclick="window.print()">📥 Сохранить как PDF</button>
+<h1>Дневник питания — ${profile.name ?? 'Пользователь'}</h1>
+<div class="sub">Отчёт за последние 14 дней · ${today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+<div class="summary">
+  <span>📅 Дней с данными: <b>${daysWithData} из 14</b></span>
+  <span>⚖️ Средний вес: <b>${avgWeight} кг</b></span>
+  <span>📉 Мин: <b>${minWeight} кг</b></span>
+  <span>📈 Макс: <b>${maxWeight} кг</b></span>
+</div>
+${rows.map(({ date, weight, report }) => `
+<div class="day">
+  <div class="day-title">${formatDate(date)}</div>
+  <div class="meta">
+    <span>⚖️ ${weight ? weight.weight + ' кг' : '—'}</span>
+    <span>😴 ${report?.sleepHours ? report.sleepHours + ' ч' : '—'}</span>
+    <span>👟 ${report?.stepsYesterday ? report.stepsYesterday.toLocaleString('ru-RU') : '—'}</span>
+    <span>🚿 Стул: ${report?.stoolYesterday === true ? 'Да' : report?.stoolYesterday === false ? 'Нет' : '—'}</span>
+  </div>
+  ${report?.meals?.length
+    ? report.meals.map((m: any) => `<div class="meal">• ${typeof m === 'string' ? m : (m.description || '')}</div>`).join('')
+    : '<div class="empty">Приёмы пищи не записаны</div>'
+  }
+</div>`).join('')}
+<button class="print-btn no-print" onclick="window.print()">📥 Сохранить как PDF</button>
+</body></html>`;
 
-    // Days
-    for (const { date, weight, report } of rows) {
-      const d = new Date(date + 'T12:00:00');
-      const dateLabel = d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
 
-      checkPage(20);
-      // Day header
-      doc.setFillColor(255, 98, 0);
-      doc.roundedRect(margin, y, contentW, 7, 2, 2, 'F');
-      doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text(dateLabel, margin + 3, y + 4.5);
-      y += 9;
-
-      // Meta row
-      checkPage(8);
-      doc.setFontSize(9);
-      doc.setTextColor(80, 60, 50);
-      const meta = [
-        `Вес: ${weight ? weight.weight + ' кг' : '—'}`,
-        `Сон: ${report?.sleepHours ? report.sleepHours + ' ч' : '—'}`,
-        `Шаги: ${report?.stepsYesterday ? report.stepsYesterday.toLocaleString('ru-RU') : '—'}`,
-        `Стул: ${report?.stoolYesterday === true ? 'Да' : report?.stoolYesterday === false ? 'Нет' : '—'}`,
-      ].join('   ');
-      doc.text(meta, margin + 2, y);
-      y += 6;
-
-      // Meals
-      if (report?.meals?.length) {
-        for (const m of report.meals) {
-          const text = typeof m === 'string' ? m : (m.description || '');
-          if (!text) continue;
-          const lines = doc.splitTextToSize(`• ${text}`, contentW - 4);
-          checkPage(lines.length * 4 + 2);
-          doc.setFontSize(8.5);
-          doc.setTextColor(60, 40, 30);
-          doc.text(lines, margin + 2, y);
-          y += lines.length * 4;
-        }
-      } else {
-        checkPage(6);
-        doc.setFontSize(8.5);
-        doc.setTextColor(180, 160, 150);
-        doc.text('Приёмы пищи не записаны', margin + 2, y);
-        y += 5;
-      }
-      y += 4; // gap between days
-    }
-
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(180, 160, 150);
-    doc.text('Сформировано в legche.online', margin, 290);
-
-    doc.save(`дневник-питания-${today.toISOString().slice(0, 10)}.pdf`);
+    // window.open already called above
   };
 
   const handleSaveName = () => {
