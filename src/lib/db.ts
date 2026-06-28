@@ -107,6 +107,7 @@ export async function saveDailyCheckin(
   weight?: number,
   sleepHours?: number,
   stepsYesterday?: number,
+  stoolYesterday?: boolean | null,
 ) {
   await apiFetch(`/checkins/${date}`, {
     method: 'PUT',
@@ -114,6 +115,7 @@ export async function saveDailyCheckin(
       weight: weight ?? null,
       sleepHours: sleepHours ?? null,
       stepsYesterday: stepsYesterday ?? null,
+      stoolYesterday: stoolYesterday ?? null,
     },
   });
 }
