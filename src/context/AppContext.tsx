@@ -9,6 +9,7 @@ import {
   saveBehaviorProfile,
   saveDailyCheckin,
   saveEveningReflection,
+  saveFoodLog,
   loadUserProfile,
   loadUserPlan,
   loadBehaviorProfile,
@@ -120,10 +121,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Sync to DB
     if (report.weight || report.sleepHours || report.stepsYesterday) {
-      saveDailyCheckin(report.date, report.weight, report.sleepHours, report.stepsYesterday).catch(() => {});
+      saveDailyCheckin(report.date, report.weight, report.sleepHours, report.stepsYesterday, report.stoolYesterday).catch(() => {});
     }
-    // Note: food_logs are already saved individually in addMealEntry (DailyScreen).
-    // Do NOT call saveFoodLog here — it would create duplicates in the DB.
+    if (report.meals.length > 0) {
+      report.meals.forEach(m => {
+        saveFoodLog(m.description, m.type).catch(() => {});
+      });
+    }
     if (report.eveningEmotion || report.hungerLevel || report.hardestPart || report.dayWin || report.sweetPointDone !== undefined) {
       saveEveningReflection(report.date, report.eveningEmotion, report.hungerLevel, report.hardestPart, report.sweetPointDone ?? null, report.dayWin).catch(() => {});
     }
