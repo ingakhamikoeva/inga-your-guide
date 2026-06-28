@@ -1,4 +1,4 @@
-import { useState, useEffect , useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getText } from '@/lib/gender-text';
@@ -35,7 +35,6 @@ type DailyTab = 'morning' | 'meals' | 'evening';
 export function DailyScreen() {
   const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
   const todayInit = new Date().toISOString().slice(0, 10);
-  const foodLoadedRef = useRef(false);
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
       const savedDate = localStorage.getItem('dailyActiveTabDate');
@@ -48,6 +47,7 @@ export function DailyScreen() {
   });
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
+  const [stool, setStool] = useState<boolean | null>(null);
   const [steps, setSteps] = useState('');
   const [mealText, setMealText] = useState('');
   const nowHHMM = () => {
@@ -164,7 +164,7 @@ export function DailyScreen() {
 
   // If morning checkin already saved today → always go to meals tab
   useEffect(() => {
-    const checkinToday = weeklyData.some(e => e.date === today && e.weight != null);
+    const checkinToday = weeklyData.some(e => e.date === today);
     if (checkinToday && tab === 'morning') {
       try {
         localStorage.setItem('dailyActiveTab', 'meals');
@@ -176,13 +176,9 @@ export function DailyScreen() {
 
   // Load today's persisted food logs on mount.
   useEffect(() => {
-    console.log("[DEBUG] loadFoodLogs effect fired, foodLoadedRef=", foodLoadedRef.current);
     let cancelled = false;
     loadFoodLogs(today).then(rows => {
-      console.log("[DEBUG] got rows:", rows?.length);
       if (cancelled || !rows?.length) return;
-      if (foodLoadedRef.current) return;
-      foodLoadedRef.current = true;
       const texts: string[] = [];
       const metas: MealMeta[] = [];
       for (const r of rows) {
@@ -219,7 +215,7 @@ export function DailyScreen() {
       setMealMeta(metas);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [today]);
 
 
 
@@ -475,6 +471,7 @@ export function DailyScreen() {
       weight: weight ? parseFloat(weight) : undefined,
       sleepHours: sleep ? parseFloat(sleep) : undefined,
       stepsYesterday: steps ? parseInt(steps) : undefined,
+      stoolYesterday: stool,
       meals: meals.map((m, i) => ({ time: '', description: m, type: 'snack' as const })),
       eveningEmotion: emotion,
       hungerLevel: hunger,
@@ -500,7 +497,6 @@ export function DailyScreen() {
 
   const startNewDay = () => {
     setSaved(false);
-    foodLoadedRef.current = true;
     setShowPlanning(false);
     setPlanText('');
     setPlanSavedMessage(false);
@@ -804,6 +800,23 @@ export function DailyScreen() {
             <div>
               <label className="block text-sm font-medium mb-1">Шаги вчера</label>
               <input type="number" value={steps} onChange={e => setSteps(e.target.value)} className="inga-input" placeholder="6000" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Вчера был стул?</label>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStool(true)}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${stool === true ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-muted-foreground'}`}
+                >
+                  Да
+                </button>
+                <button
+                  onClick={() => setStool(false)}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${stool === false ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-muted-foreground'}`}
+                >
+                  Нет
+                </button>
+              </div>
             </div>
             {!morningAnalysis && (
               <div className="inga-bubble">
@@ -1318,8 +1331,8 @@ export function DailyScreen() {
       {/* Fixed bottom chat panel */}
       <button
         onClick={() => setStep('chat')}
-        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[14px] bg-white"
-        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)', borderRadius: '16px 16px 0 0' }}
+        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[14px] border-t border-[#EDE5DF] bg-white"
+        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)' }}
       >
         <img
           src={ingaPhoto}
