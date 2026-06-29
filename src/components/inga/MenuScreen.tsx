@@ -17,6 +17,16 @@ import recipeVarenie from '@/assets/breakfast_varenie.jpg';
 import recipeShaurma from '@/assets/breakfast_shaurma.jpg';
 import recipeTaco from '@/assets/breakfast_taco.jpg';
 import recipePirozhki from '@/assets/breakfast_pirozhki.jpg';
+import sweetNezhnost from '@/assets/sweet_nezhnost.jpg';
+import sweetNevesimost from '@/assets/sweet_nevesimost.jpg';
+import sweetOblaka from '@/assets/sweet_oblaka.jpg';
+import sweetSlivovoe from '@/assets/sweet_slivovoe.jpg';
+import sweetGrusha from '@/assets/sweet_grusha.jpg';
+import sweetMilfey from '@/assets/sweet_milfey.jpg';
+import sweetVarenie from '@/assets/breakfast_varenie.jpg';
+import sweetMorozhenoe from '@/assets/sweet_morozhenoe.jpg';
+import sweetMaffiny from '@/assets/sweet_maffiny.jpg';
+import sweetSharlotka from '@/assets/sweet_sharlotka.jpg';
 
 const palmMethodCards = [
   {
@@ -1466,6 +1476,324 @@ export function MenuScreen() {
       );
     }
 
+    const sweetRecipes = [
+      {
+        id: 'nezhnost',
+        name: 'Шоколадный кекс «Нежность»',
+        subtitle: 'С вишней и творожным кремом',
+        kbju: '95 / 3.9 / 2.8 / 12.1',
+        image: sweetNezhnost,
+        video: 'https://vkvideo.ru/clip-239899185_456239033',
+        ingredients: [
+          'Фруктовое пюре без сахара — 250 г (Фрутоняня «Яблоко» или «Груша и яблоко»)',
+          '2 яйца С1',
+          '2 ст.л. рисовой муки',
+          '1–2 ст.л. обезжиренного какао (1,5% жирности)',
+          'FitParad №7 — 4 мерных ложки',
+          'По желанию: яблочная или черничная клетчатка — 1 ч.л., бамбуковая клетчатка — 1 ст.л.',
+          '½ ч.л. соды, гашенной кипятком',
+          'Вишня без косточки (можно замороженную)',
+        ],
+        steps: [
+          'Смешать все ингредиенты венчиком.',
+          'Вылить тесто в форму диаметром 16 см.',
+          'Вишню равномерно воткнуть в тесто.',
+          'Запекать в микроволновке 7–8 минут.',
+          'Остудить на решётке.',
+          'По желанию украсить кремом: мягкий творог 0% + подсластитель.',
+        ],
+      },
+      {
+        id: 'nevesimost',
+        name: '«Невесомость»',
+        subtitle: 'Меренговый рулет с ягодами',
+        kbju: '56 / 7 / 1.1 / 4.3',
+        image: sweetNevesimost,
+        video: 'https://vkvideo.ru/clip-239899185_456239026',
+        ingredients: [
+          'Корж: 120 г яичного белка, 100 г эритрита, 2 мерные ложки FitParad 7 или 10, 15 г кукурузного крахмала, по желанию — 1 ч.л. лимонного сока',
+          'Начинка: 100 г лёгкой рикотты, 375 г мягкого творога 0%, 5–7 мерных ложек FitParad 7, 200 г ягод (малина, клубника, голубика)',
+          'По желанию: 1 мерная ложка протеина',
+        ],
+        steps: [
+          'Взбить белки с подсластителем, крахмалом и лимонным соком.',
+          'Выложить на пергамент с силиконизированным покрытием.',
+          'Выпекать 14 минут при 180°C до румяности.',
+          'Пока корж запекается, смешать рикотту, творог и подсластитель. Подготовить ягоды.',
+          'Сразу после духовки снять корж с пергамента.',
+          'Смазать кремом, выложить ягоды, свернуть в рулет.',
+          'Вкуснее после 1–2 часов в холодильнике.',
+        ],
+      },
+      {
+        id: 'oblaka',
+        name: 'Суфле «Яблочные облака»',
+        subtitle: 'Нежное желейное суфле',
+        kbju: '40.2 / 3.7 / 0 / 6.4',
+        image: sweetOblaka,
+        video: 'https://vkvideo.ru/clip-239899185_456239028',
+        ingredients: [
+          'Яблочное пюре без сахара — 250 г',
+          'Яичный белок — 4 ст.л.',
+          'Эритрит — 60 г',
+          'Желатин — 10 г',
+        ],
+        steps: [
+          'Взбить пюре, белок и эритрит до пены.',
+          'Желатин замочить в 50 мл воды комнатной температуры.',
+          'Разогреть желатин в микроволновке до 60°C.',
+          'Влить желатин в яблочно-белковую массу, перемешать миксером несколько секунд.',
+          'Разложить по формам.',
+          'Украсить ягодами или корицей по желанию.',
+          'Убрать в холодильник до застывания.',
+        ],
+      },
+      {
+        id: 'slivovoe',
+        name: 'Сливовое варенье',
+        subtitle: 'Пектиновое — из любых ягод',
+        kbju: '40 / 0.7 / 0.2 / 8',
+        image: sweetSlivovoe,
+        video: 'https://vkvideo.ru/clip-239899185_456239031',
+        ingredients: [
+          'Слива — 700 г',
+          'Вода — 100–150 мл',
+          'Пектин — 2 ст.л.',
+          'Сахарозаменитель по вкусу (FitParad 7 или 10) — 12 мерных ложек',
+        ],
+        steps: [
+          'Сливу помыть, удалить косточки, измельчить в блендере.',
+          'Добавить воду, перемешать.',
+          'Перелить в кастрюлю, разогреть до кипения.',
+          'Всыпать пектин «дождиком», постоянно помешивая.',
+          'Прокипятить 2–3 минуты, постоянно помешивать.',
+          'Снять с плиты, добавить подсластитель, перемешать.',
+          'Остудить и убрать в холодильник — загустеет ещё больше.',
+        ],
+      },
+      {
+        id: 'grusha',
+        name: 'Пирог с грушей за 10 минут',
+        subtitle: 'Воздушный пирог в микроволновке',
+        kbju: '117 / 4.7 / 3.7 / 16',
+        image: sweetGrusha,
+        video: 'https://vkvideo.ru/clip-239899185_456239030',
+        ingredients: [
+          'Кефир 1% — 50 мл',
+          'Мука рисовая — 30 г',
+          'Груша — 80 г',
+          '1 яйцо',
+          'FitParad 7 или 10 — 2 мерных ложки',
+          'Разрыхлитель — ½ ч.л.',
+          'Ванилин по вкусу',
+        ],
+        steps: [
+          'Отделить белок от желтка.',
+          'К желтку добавить кефир, муку, разрыхлитель, ванилин, перемешать венчиком.',
+          'Белок взбить до пиков, аккуратно ввести в тесто.',
+          'Добавить нарезанную грушу, перемешать.',
+          'Переложить в силиконовую форму диаметром 10 см.',
+          'Запекать в микроволновке 4–5 минут.',
+        ],
+      },
+      {
+        id: 'milfey',
+        name: 'Яблочный мильфей',
+        subtitle: 'Слоёный яблочный пирог',
+        kbju: '68 / 0.2 / 0.2 / 15.6',
+        image: sweetMilfey,
+        video: 'https://vkvideo.ru/clip-239899185_456239021',
+        ingredients: [
+          'Яблоки среднего размера — 4 шт',
+          'Мёд — 1 ст.л.',
+          'Кукурузный крахмал — 10 г',
+          'Подсластитель (эритрит, трегалоза или аллюлоза) — 15 г',
+          'Корица — 1 ч.л.',
+        ],
+        steps: [
+          'Смешать крахмал, подсластитель и корицу.',
+          'Нарезать яблоки тонкими ломтиками.',
+          'На дно небольшой формы вылить ложку мёда.',
+          'Выложить слой яблок, посыпать смесью. Повторять слоями.',
+          'Хорошо прижать, накрыть фольгой.',
+          'Запекать 1–1,5 часа при 180°C.',
+          'Выложить на блюдо, перевернув форму.',
+        ],
+      },
+      {
+        id: 'varenie',
+        name: 'Пектиновое варенье',
+        subtitle: 'Вкусное — из любых фруктов и ягод',
+        kbju: '40 / 0.7 / 0.2 / 7.8',
+        image: sweetVarenie,
+        video: 'https://vkvideo.ru/clip-239899185_456239036',
+        ingredients: [
+          '400 г любых ягод или фруктов (можно замороженных)',
+          '2 ст.л. пектина',
+          '10 мерных ложек сахарозаменителя FitParad 7 или другого по вкусу',
+        ],
+        steps: [
+          'Ягоды пробить блендером или сварить целиком.',
+          'Положить в кастрюлю, нагреть, засыпать пектин «дождиком», постоянно помешивая.',
+          'Довести до кипения, кипятить 2–3 минуты.',
+          'Убрать с огня, добавить сахарозаменитель, размешать.',
+          'Остынет — загустеет ещё больше.',
+        ],
+        note: 'Пектин — растворимая клетчатка, имеет мягкий слабительный эффект. Очень вкусно из клубники, сливы, вишни.',
+      },
+      {
+        id: 'morozhenoe',
+        name: '«Ягодный бриз»',
+        subtitle: 'Лёгкое ягодное мороженое',
+        kbju: '60 / 3.2 / 1 / 9',
+        image: sweetMorozhenoe,
+        video: 'https://vkvideo.ru/clip-239899185_456239032',
+        ingredients: [
+          'Замороженный банан — 1 шт',
+          'Ягоды замороженные любые — 600 г',
+          'Греческий йогурт — 250 г',
+          'Подсластитель по вкусу',
+        ],
+        steps: [
+          'Ягоды и банан немного разморозить.',
+          'В йогурт добавить подсластитель, перемешать.',
+          'Пробить всё блендером до однородной массы.',
+          'Разложить по формочкам, убрать в морозильник.',
+        ],
+      },
+      {
+        id: 'maffiny',
+        name: '«Мягкая посадка»',
+        subtitle: 'Воздушные маффины',
+        kbju: '124.6 / 7.5 / 2.4 / 17',
+        image: sweetMaffiny,
+        video: null,
+        ingredients: [
+          'Кефир 1% — 300 г',
+          'Мягкий творог 0% — 125 г',
+          '2 яйца',
+          '4 яичных белка (8 ст.л. жидкого белка)',
+          'Рисовая мука — 130 г',
+          'Подсластитель: эритрит ~3 ст.л. или FitParad 7 ~5–6 мерных ложек',
+          'Разрыхлитель — 1 ч.л.',
+          'Ванилин по вкусу',
+        ],
+        steps: [
+          'Смешать все ингредиенты до однородной массы.',
+          'Разлить тесто по формочкам для кексов.',
+          'Выпекать ~30 минут при 180°C.',
+        ],
+      },
+      {
+        id: 'sharlotka',
+        name: '«Бабушкина тайна»',
+        subtitle: 'Лёгкая шарлотка с яблоками',
+        kbju: '122 / 4.9 / 3.3 / 17.3',
+        image: sweetSharlotka,
+        video: null,
+        ingredients: [
+          'Кефир 1% — 150 г',
+          'Яйца — 3 шт',
+          'Рисовая мука — 90 г',
+          'Трегалоза или аллюлоза — 3–4 ст.л. (или другой подсластитель)',
+          'Яблоки — 240 г',
+          'Разрыхлитель — 1 ч.л.',
+          'Корица, ванилин — по желанию',
+        ],
+        steps: [
+          'Отделить белки от желтков.',
+          'Белки взбить в пену.',
+          'К желткам добавить кефир, муку, разрыхлитель, подсластитель, корицу, ванилин — перемешать.',
+          'Нарезать яблоки дольками, добавить в тесто.',
+          'Аккуратно ввести взбитые белки, помешивая снизу вверх.',
+          'Форму слегка смазать маслом, вылить тесто.',
+          'Запекать 30–40 минут при 180°C.',
+        ],
+      },
+    ];
+
+    // Sweet recipe detail screen
+    if (activeRecipe && sweetRecipes.find(r => r.id === activeRecipe)) {
+      const recipe = sweetRecipes.find(r => r.id === activeRecipe)!;
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setActiveRecipe(null)} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold">{recipe.name}</h2>
+              <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>
+              <div className="mt-2 inline-block bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">
+                КБЖУ на 100 г: {recipe.kbju}
+              </div>
+            </div>
+            <div className="inga-card mb-3">
+              <p className="text-sm font-semibold mb-2">Ингредиенты</p>
+              <div className="space-y-1">
+                {recipe.ingredients.map(ing => (
+                  <div key={ing} className="flex gap-2 items-start">
+                    <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    <span className="text-xs text-muted-foreground leading-relaxed">{ing}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="inga-card mb-3">
+              <p className="text-sm font-semibold mb-2">Приготовление</p>
+              <div className="space-y-2">
+                {recipe.steps.map((step, i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium mt-0.5">{i + 1}</span>
+                    <span className="text-xs text-muted-foreground leading-relaxed">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {recipe.note && (
+              <div className="inga-card mb-3">
+                <p className="text-xs text-muted-foreground leading-relaxed italic">{recipe.note}</p>
+              </div>
+            )}
+            {recipe.video ? (
+              <a href={recipe.video} target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl py-3.5 font-semibold text-sm mb-8">
+                <Play size={16} fill="currentColor" />
+                Смотреть видеорецепт
+              </a>
+            ) : (
+              <div className="mb-8" />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Sweet category screen
+    if (recipeSection === 'sweet') {
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <h2 className="text-2xl font-bold mb-5">Сладкая точка</h2>
+            <div className="space-y-3">
+              {sweetRecipes.map(recipe => (
+                <button key={recipe.id} onClick={() => setActiveRecipe(recipe.id)}
+                  className="w-full inga-card flex gap-4 items-center text-left">
+                  <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Category screen - Завтраки
     if (recipeSection === 'breakfasts') {
       return (
@@ -1508,12 +1836,12 @@ export function MenuScreen() {
               { id: 'lunches', icon: '🍽️', label: 'Обеды и ужины', count: null },
               { id: 'snacks', icon: '🥗', label: 'Перекусы', count: null },
               { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: null },
-              { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: null },
+              { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: 10 },
               { id: 'evening', icon: '🌙', label: 'Метаболическая точка', count: null },
             ].map(cat => (
               <button
                 key={cat.id}
-                onClick={() => cat.id === 'breakfasts' ? setRecipeSection('breakfasts') : undefined}
+                onClick={() => { if (cat.id === 'breakfasts') setRecipeSection('breakfasts'); else if (cat.id === 'sweet') setRecipeSection('sweet'); }}
                 className="w-full inga-card flex items-center justify-between"
                 style={{ opacity: cat.count ? 1 : 0.5, cursor: cat.count ? 'pointer' : 'default' }}
               >
