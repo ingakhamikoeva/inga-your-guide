@@ -1420,7 +1420,7 @@ export function MenuScreen() {
     ];
 
     // Recipe detail screen
-    if (activeRecipe) {
+    if (activeRecipe && recipeSection === 'breakfasts') {
       const recipe = breakfastRecipes.find(r => r.id === activeRecipe);
       if (!recipe) return null;
       return (
@@ -1713,7 +1713,7 @@ export function MenuScreen() {
     ];
 
     // Sweet recipe detail screen
-    if (activeRecipe && sweetRecipes.find(r => r.id === activeRecipe)) {
+    if (activeRecipe && recipeSection === 'sweet' && sweetRecipes.find(r => r.id === activeRecipe)) {
       const recipe = sweetRecipes.find(r => r.id === activeRecipe)!;
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
