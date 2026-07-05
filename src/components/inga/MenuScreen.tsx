@@ -1722,7 +1722,7 @@ export function MenuScreen() {
       {
         id: 'okroshka',
         name: 'Окрошка',
-        subtitle: 'Летний суп без картофеля-крахмала и лишнего жира',
+        subtitle: 'Лёгкая версия холодного супа',
         kbju: '42 / 3.6 / 0.5 / 4.9',
         image: recipeOkroshka as string | undefined,
         emoji: '🥣',
@@ -1752,7 +1752,7 @@ export function MenuScreen() {
       {
         id: 'turkey-cutlets',
         name: 'Котлеты из индейки',
-        subtitle: 'Сочные котлеты на пшиках масла, без сковороды в жиру',
+        subtitle: 'Идеальны как самостоятельное блюдо и как начинка для шаурмы',
         kbju: '136 / 19.6 / 5.6 / 1.4',
         image: recipeTurkeyCutlets as string | undefined,
         emoji: '🍖',
@@ -1773,14 +1773,15 @@ export function MenuScreen() {
       {
         id: 'fried-potatoes-mushrooms',
         name: 'Жареная картошка с грибами',
-        subtitle: 'Хрустящая корочка без сковороды масла',
+        subtitle: 'Тот же вкус, калорий в 3 раза меньше',
         kbju: '60 / 3.5 / 1.4 / 8.8',
         image: recipeFriedPotatoesMushrooms as string | undefined,
         emoji: '🍟',
+        video: 'https://vk.com/clip-239899185_456239027',
         ingredients: [
           '1,3 кг молодого картофеля',
           '800 г грибов',
-          '1 репчатая луковица',
+          '1 луковица',
           'Зелень',
           'Оливковое масло в распылителе',
         ],
@@ -1789,7 +1790,7 @@ export function MenuScreen() {
           'Обжарить на пшиках масла раздельно до готовности: картофель отдельно, лук с грибами отдельно.',
           'Соединить в одной сковороде, посолить, добавить нарезанную зелень.',
         ],
-        note: 'Видеорецепт: https://vk.com/clip-239899185_456239027. Классический рецепт жареной картошки — примерно 190 ккал.',
+        note: 'Классический рецепт жареной картошки — примерно 190 ккал.',
       },
     ];
 
@@ -1863,7 +1864,7 @@ export function MenuScreen() {
                   <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold">{recipe.name}</p>
-                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
                     <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0" />
@@ -1893,7 +1894,7 @@ export function MenuScreen() {
             )}
             <div className="mb-4">
               <h2 className="text-2xl font-bold">{recipe.name}</h2>
-              <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>
+              {recipe.subtitle && <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>}
               <div className="mt-2 inline-block bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">
                 КБЖУ на 100 г: {recipe.kbju}
               </div>
@@ -1921,9 +1922,18 @@ export function MenuScreen() {
               </div>
             </div>
             {recipe.note && (
-              <div className="inga-card mb-8">
+              <div className="inga-card mb-3">
                 <p className="text-xs text-muted-foreground leading-relaxed italic">{recipe.note}</p>
               </div>
+            )}
+            {recipe.video ? (
+              <a href={recipe.video} target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-2xl py-3.5 font-semibold text-sm mb-8">
+                <Play size={16} fill="currentColor" />
+                Смотреть видеорецепт
+              </a>
+            ) : (
+              <div className="mb-8" />
             )}
           </div>
         </div>
@@ -1950,7 +1960,7 @@ export function MenuScreen() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold">{recipe.name}</p>
-                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
                     <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0" />
@@ -1982,7 +1992,7 @@ export function MenuScreen() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold">{recipe.name}</p>
-                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
                     <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0" />
@@ -2011,7 +2021,7 @@ export function MenuScreen() {
                   <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold">{recipe.name}</p>
-                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
                     <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0" />
