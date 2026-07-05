@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { UserProfile } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play } from 'lucide-react';
+import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles } from 'lucide-react';
+import { LightVersionScreen } from './LightVersionScreen';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
@@ -17,6 +18,9 @@ import recipeVarenie from '@/assets/breakfast_varenie.jpg';
 import recipeShaurma from '@/assets/breakfast_shaurma.jpg';
 import recipeTaco from '@/assets/breakfast_taco.jpg';
 import recipePirozhki from '@/assets/breakfast_pirozhki.jpg';
+import recipeOkroshka from '@/assets/recipe_okroshka.jpg';
+import recipeTurkeyCutlets from '@/assets/recipe_turkey_cutlets.jpg';
+import recipeFriedPotatoesMushrooms from '@/assets/recipe_fried_potatoes_mushrooms.jpg';
 import sweetNezhnost from '@/assets/sweet_nezhnost.jpg';
 import sweetNevesimost from '@/assets/sweet_nevesimost.jpg';
 import sweetOblaka from '@/assets/sweet_oblaka.jpg';
@@ -60,7 +64,7 @@ const palmMethodCards = [
   },
 ];
 
-type MenuSection = 'main' | 'how-to' | 'recipes' | 'audio' | 'progress' | 'profile' | 'consultation' | 'materials';
+type MenuSection = 'main' | 'how-to' | 'recipes' | 'light-version' | 'audio' | 'progress' | 'profile' | 'consultation' | 'materials';
 
 const howToTopics = [
   {
@@ -168,6 +172,7 @@ export function MenuScreen() {
     const items = [
       { id: 'how-to' as const, icon: BookOpen, label: 'Как похудеть', hint: 'Метод и принципы' },
       { id: 'recipes' as const, icon: UtensilsCrossed, label: 'Рецепты', hint: 'Подборки по методу' },
+      { id: 'light-version' as const, icon: Sparkles, label: 'Лёгкая версия', hint: 'Любимое блюдо — легче' },
       { id: 'audio' as const, icon: Headphones, label: 'Аудио-поддержка', hint: 'Короткие практики' },
       { id: 'materials' as const, icon: BookOpen, label: 'Полезные материалы', hint: 'Таблицы, гайды, шпаргалки' },
       { id: 'progress' as const, icon: TrendingUp, label: 'Мой прогресс', hint: 'Вес, объёмы, медали' },
@@ -1712,6 +1717,82 @@ export function MenuScreen() {
       },
     ];
 
+    // Супы
+    const soupRecipes = [
+      {
+        id: 'okroshka',
+        name: 'Окрошка',
+        subtitle: 'Летний суп без картофеля-крахмала и лишнего жира',
+        kbju: '42 / 3.6 / 0.5 / 4.9',
+        image: recipeOkroshka as string | undefined,
+        emoji: '🥣',
+        ingredients: [
+          '300 г молодого картофеля',
+          '380 г огурцов',
+          '250 г редиса',
+          '340 г куриной или индюшиной грудки (вместо колбасы)',
+          '1–2 целых яйца',
+          '4–5 яичных белков',
+          'Зелень по вкусу',
+          'Заправка на выбор: окрошечный квас, кефир или айран 1%, минералка, греческий йогурт 2% вместо сметаны',
+        ],
+        steps: [
+          'Картофель в кожуре и яйца отварить, почистить, нарезать. От 2 яиц оставить желтки, у остальных — только белки (в белке 50 ккал, в желтке 350).',
+          'Огурцы, редис и зелень мелко нарезать.',
+          'Грудку положить в кипящую воду и варить 20 минут, затем нарезать кубиками. Если хотите с колбасой — выбирайте вариант до 100 ккал/100 г.',
+          'Соединить все ингредиенты в кастрюле, посолить.',
+          'Заправлять лучше прямо в тарелке — так окрошка дольше хранится.',
+        ],
+        note: 'В большой тарелке окрошки (≈300 г) — около 150 ккал.',
+      },
+    ];
+
+    // Вторые блюда
+    const mainDishRecipes = [
+      {
+        id: 'turkey-cutlets',
+        name: 'Котлеты из индейки',
+        subtitle: 'Сочные котлеты на пшиках масла, без сковороды в жиру',
+        kbju: '136 / 19.6 / 5.6 / 1.4',
+        image: recipeTurkeyCutlets as string | undefined,
+        emoji: '🍖',
+        ingredients: [
+          '500 г филе грудки индейки',
+          '500 г филе бедра индейки',
+          '1 репчатая луковица',
+          'Соль, специи по вкусу',
+          'Оливковое масло в распылителе для жарки',
+        ],
+        steps: [
+          'Сделать фарш из мяса и лука, посолить, перемешать.',
+          'Мокрыми руками сформировать приплюснутые круглые котлетки.',
+          'Обжарить на пшиках оливкового масла до готовности.',
+        ],
+        note: 'Хороши и как самостоятельное блюдо, и как начинка для домашней шаурмы в пите. Классические котлеты — примерно 250 ккал.',
+      },
+      {
+        id: 'fried-potatoes-mushrooms',
+        name: 'Жареная картошка с грибами',
+        subtitle: 'Хрустящая корочка без сковороды масла',
+        kbju: '60 / 3.5 / 1.4 / 8.8',
+        image: recipeFriedPotatoesMushrooms as string | undefined,
+        emoji: '🍟',
+        ingredients: [
+          '1,3 кг молодого картофеля',
+          '800 г грибов',
+          '1 репчатая луковица',
+          'Зелень',
+          'Оливковое масло в распылителе',
+        ],
+        steps: [
+          'Картофель и грибы нарезать.',
+          'Обжарить на пшиках масла раздельно до готовности: картофель отдельно, лук с грибами отдельно.',
+          'Соединить в одной сковороде, посолить, добавить нарезанную зелень.',
+        ],
+        note: 'Видеорецепт: https://vk.com/clip-239899185_456239027. Классический рецепт жареной картошки — примерно 190 ккал.',
+      },
+    ];
+
     // Sweet recipe detail screen
     if (activeRecipe && recipeSection === 'sweet' && sweetRecipes.find(r => r.id === activeRecipe)) {
       const recipe = sweetRecipes.find(r => r.id === activeRecipe)!;
@@ -1794,6 +1875,125 @@ export function MenuScreen() {
       );
     }
 
+    // Recipe detail screen — Супы / Вторые блюда (общий рендер, фото опционально)
+    if (activeRecipe && (recipeSection === 'soups' || recipeSection === 'lunches')) {
+      const list = recipeSection === 'soups' ? soupRecipes : mainDishRecipes;
+      const recipe = list.find(r => r.id === activeRecipe);
+      if (!recipe) return null;
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setActiveRecipe(null)} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            {recipe.image ? (
+              <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
+            ) : (
+              <div className="w-full rounded-2xl mb-4 bg-muted flex items-center justify-center" style={{ height: 180, fontSize: 48 }}>
+                {recipe.emoji}
+              </div>
+            )}
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold">{recipe.name}</h2>
+              <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>
+              <div className="mt-2 inline-block bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">
+                КБЖУ на 100 г: {recipe.kbju}
+              </div>
+            </div>
+            <div className="inga-card mb-3">
+              <p className="text-sm font-semibold mb-2">Ингредиенты</p>
+              <div className="space-y-1">
+                {recipe.ingredients.map(ing => (
+                  <div key={ing} className="flex gap-2 items-start">
+                    <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    <span className="text-xs text-muted-foreground leading-relaxed">{ing}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="inga-card mb-3">
+              <p className="text-sm font-semibold mb-2">Приготовление</p>
+              <div className="space-y-2">
+                {recipe.steps.map((step, i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium mt-0.5">{i + 1}</span>
+                    <span className="text-xs text-muted-foreground leading-relaxed">{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {recipe.note && (
+              <div className="inga-card mb-8">
+                <p className="text-xs text-muted-foreground leading-relaxed italic">{recipe.note}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Category screen — Супы
+    if (recipeSection === 'soups') {
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <h2 className="text-2xl font-bold mb-5">Супы</h2>
+            <div className="space-y-3">
+              {soupRecipes.map(recipe => (
+                <button key={recipe.id} onClick={() => setActiveRecipe(recipe.id)}
+                  className="w-full inga-card flex gap-4 items-center text-left">
+                  {recipe.image ? (
+                    <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0" style={{ fontSize: 26 }}>
+                      {recipe.emoji}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Category screen — Вторые блюда
+    if (recipeSection === 'lunches') {
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <h2 className="text-2xl font-bold mb-5">Вторые блюда</h2>
+            <div className="space-y-3">
+              {mainDishRecipes.map(recipe => (
+                <button key={recipe.id} onClick={() => setActiveRecipe(recipe.id)}
+                  className="w-full inga-card flex gap-4 items-center text-left">
+                  {recipe.image ? (
+                    <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0" style={{ fontSize: 26 }}>
+                      {recipe.emoji}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>
+                    <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Category screen - Завтраки
     if (recipeSection === 'breakfasts') {
       return (
@@ -1833,7 +2033,8 @@ export function MenuScreen() {
           <div className="space-y-2.5">
             {[
               { id: 'breakfasts', icon: '🌅', label: 'Завтраки', count: 8 },
-              { id: 'lunches', icon: '🍽️', label: 'Обеды и ужины', count: null },
+              { id: 'soups', icon: '🍲', label: 'Супы', count: 1 },
+              { id: 'lunches', icon: '🍽️', label: 'Вторые блюда', count: 2 },
               { id: 'snacks', icon: '🥗', label: 'Перекусы', count: null },
               { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: null },
               { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: 10 },
@@ -1841,7 +2042,7 @@ export function MenuScreen() {
             ].map(cat => (
               <button
                 key={cat.id}
-                onClick={() => { if (cat.id === 'breakfasts') setRecipeSection('breakfasts'); else if (cat.id === 'sweet') setRecipeSection('sweet'); }}
+                onClick={() => { if (cat.id === 'breakfasts') setRecipeSection('breakfasts'); else if (cat.id === 'sweet') setRecipeSection('sweet'); else if (cat.id === 'soups') setRecipeSection('soups'); else if (cat.id === 'lunches') setRecipeSection('lunches'); }}
                 className="w-full inga-card flex items-center justify-between"
                 style={{ opacity: cat.count ? 1 : 0.5, cursor: cat.count ? 'pointer' : 'default' }}
               >
@@ -2114,6 +2315,19 @@ export function MenuScreen() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (section === 'light-version') {
+    return (
+      <LightVersionScreen
+        onBack={() => setSection('main')}
+        onOpenRecipe={(recipeSec, recipeId) => {
+          setSection('recipes');
+          setRecipeSection(recipeSec);
+          setActiveRecipe(recipeId);
+        }}
+      />
     );
   }
 
