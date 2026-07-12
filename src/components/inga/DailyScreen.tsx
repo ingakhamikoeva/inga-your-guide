@@ -5,6 +5,7 @@ import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
+import { LIGHT_RECIPES, timesLighter, LightRecipeEntry } from '@/lib/light-version';
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
@@ -26,6 +27,18 @@ const FOOD_PREFERENCE_OPTIONS = [
   { emoji: '🌙', label: 'Вечерние перекусы' },
   { emoji: '🧃', label: 'Сладкие напитки' },
 ];
+
+// Карта «категория опроса → рецепты лёгких версий» (id из light-version.ts)
+const CATEGORY_RECIPES: Record<string, string[]> = {
+  'Блины и сырники': ['bliny'],
+  'Десерты': ['nezhnost', 'milfey', 'sharlotka'],
+  'Несладкая выпечка': ['pirozhki', 'pizza'],
+  'Паста и каши': ['oatmeal'],
+  'Салаты с майонезом': [],
+  'Жирные вторые блюда': ['turkey-cutlets', 'fried-potatoes-mushrooms'],
+  'Вечерние перекусы': [],
+  'Сладкие напитки': ['cappuccino'],
+};
 
 const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 
@@ -780,6 +793,61 @@ export function DailyScreen() {
                 <p className="text-sm">{ingaResponse}</p>
               </div>
             )}
+
+            {foodSurveyAnswered && (() => {
+              const ids: string[] = [];
+              let hasEmptyCategory = false;
+              for (const cat of selectedFoods) {
+                const rs = CATEGORY_RECIPES[cat] ?? [];
+                if (rs.length === 0) hasEmptyCategory = true;
+                for (const id of rs) if (!ids.includes(id)) ids.push(id);
+              }
+              const cards = ids
+                .map(id => LIGHT_RECIPES.find(r => r.recipeId === id))
+                .filter((r): r is LightRecipeEntry => !!r)
+                .slice(0, 3);
+              const openRecipe = (r: LightRecipeEntry) => {
+                try { localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'recipes', recipeSection: r.recipeSection, activeRecipe: r.recipeId })); } catch {}
+                setStep('menu');
+              };
+              const openLightVersion = () => {
+                try { localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'light-version' })); } catch {}
+                setStep('menu');
+              };
+              return (
+                <div className="space-y-3 animate-fade-in-up">
+                  {cards.map(r => (
+                    <div key={r.recipeId} className="inga-card">
+                      <p className="font-semibold text-sm mb-2">«{r.name}»</p>
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <div className="flex-1 text-center bg-muted rounded-xl py-1.5 px-1">
+                          <p className="text-[11px] text-muted-foreground">{r.classicLabel}</p>
+                          <p className="text-base text-muted-foreground line-through">~{r.classicKcal} ккал</p>
+                        </div>
+                        <span className="text-primary shrink-0">→</span>
+                        <div className="flex-1 text-center bg-primary/10 rounded-xl py-1.5 px-1">
+                          <p className="text-[11px] text-primary">ваша версия</p>
+                          <p className="text-base font-bold text-primary">{r.lightKcal} ккал</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {timesLighter(r.classicKcal, r.lightKcal).replace(/^в/, 'В')}{r.tagline ? ` — ${r.tagline}` : ''}
+                      </p>
+                      <button onClick={() => openRecipe(r)} className="inga-btn-secondary w-full text-sm">Открыть рецепт</button>
+                    </div>
+                  ))}
+                  {hasEmptyCategory && (
+                    <div className="inga-bubble">
+                      <p className="text-sm">Рецепты скоро появятся! А пока спросите меня в чате, я подскажу замену</p>
+                      <button onClick={() => setStep('chat')} className="inga-btn-secondary w-full mt-2 text-sm">Спросить Ингу</button>
+                    </div>
+                  )}
+                  <button onClick={openLightVersion} className="inga-btn-primary w-full">
+                    Смотреть все лёгкие версии
+                  </button>
+                </div>
+              );
+            })()}
 
             {foodSurveyAnswered && showMorningCheckin && (
               <p className="text-center text-xs text-muted-foreground italic py-2">
