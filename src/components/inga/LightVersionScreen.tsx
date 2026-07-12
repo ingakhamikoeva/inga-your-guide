@@ -85,7 +85,7 @@ export function LightVersionScreen({ onBack, onOpenRecipe }: Props) {
           </div>
         </div>
         <p className="text-sm text-muted-foreground mb-3">
-          {timesLighter(entry.classicKcal, entry.lightKcal).replace(/^в/, 'В')} — {entry.tagline}
+          {timesLighter(entry.classicKcal, entry.lightKcal).replace(/^в/, 'В')}{entry.tagline ? ` — ${entry.tagline}` : ''}
         </p>
         <button
           onClick={() => onOpenRecipe(entry.recipeSection, entry.recipeId)}
