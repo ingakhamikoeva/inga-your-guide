@@ -21,6 +21,8 @@ import recipePirozhki from '@/assets/breakfast_pirozhki.jpg';
 import recipeOkroshka from '@/assets/recipe_okroshka.jpg';
 import recipeTurkeyCutlets from '@/assets/recipe_turkey_cutlets.jpg';
 import recipeFriedPotatoesMushrooms from '@/assets/recipe_fried_potatoes_mushrooms.jpg';
+import recipePizza from '@/assets/recipe_pizza.jpg';
+import recipeCappuccino from '@/assets/recipe_cappuccino.jpg';
 import sweetNezhnost from '@/assets/sweet_nezhnost.jpg';
 import sweetNevesimost from '@/assets/sweet_nevesimost.jpg';
 import sweetOblaka from '@/assets/sweet_oblaka.jpg';
@@ -149,6 +151,20 @@ export function MenuScreen() {
   const [recipeSection, setRecipeSection] = useState<string | null>(null);
   const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [activeRecipe, setActiveRecipe] = useState<string | null>(null);
+
+  // Переход из других экранов (например, «Смотреть все лёгкие версии» в первом дне):
+  // читаем одноразовый флаг и открываем нужный раздел
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('inga-menu-jump');
+      if (!raw) return;
+      localStorage.removeItem('inga-menu-jump');
+      const jump = JSON.parse(raw) as { section?: MenuSection; recipeSection?: string; activeRecipe?: string };
+      if (jump.section) setSection(jump.section);
+      if (jump.recipeSection) setRecipeSection(jump.recipeSection);
+      if (jump.activeRecipe) setActiveRecipe(jump.activeRecipe);
+    } catch { /* некритично */ }
+  }, []);
   const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
 
   useEffect(() => {
@@ -1230,8 +1246,8 @@ export function MenuScreen() {
     const breakfastRecipes = [
       {
         id: 'oatmeal',
-        name: 'Нежное утро',
-        subtitle: 'Овсянка по-новому',
+        name: 'Овсянка',
+        subtitle: 'Нежное утро',
         kbju: '50.8 / 4 / 0.5 / 7.2',
         image: recipeOatmeal,
         video: 'https://vkvideo.ru/clip-239899185_456239020',
@@ -1253,8 +1269,8 @@ export function MenuScreen() {
       },
       {
         id: 'pate',
-        name: 'Железная леди',
-        subtitle: 'Бутерброды с паштетом из печени',
+        name: 'Печёночный паштет',
+        subtitle: 'Железная леди',
         kbju: '109.7 / 6.4 / 4.3 / 11.2',
         image: recipePate,
         video: 'https://vkvideo.ru/clip-239899185_456239024',
@@ -1275,8 +1291,8 @@ export function MenuScreen() {
       },
       {
         id: 'zucchini',
-        name: 'Золотые зайчики',
-        subtitle: 'Драники из кабачков',
+        name: 'Оладьи из кабачков',
+        subtitle: 'Золотые зайчики',
         kbju: '83.2 / 5.9 / 2.2 / 9.6',
         image: recipeZucchini,
         video: 'https://vkvideo.ru/clip-239899185_456239035',
@@ -1298,8 +1314,8 @@ export function MenuScreen() {
       },
       {
         id: 'bliny',
-        name: 'Солнце на тарелке',
-        subtitle: 'Блины с мягким творогом и вареньем',
+        name: 'Блины',
+        subtitle: 'Солнце на тарелке',
         kbju: '99 / 5.4 / 1.2 / 7.7',
         image: recipeBliny,
         video: 'https://vkvideo.ru/clip-239899185_456239034',
@@ -1345,8 +1361,8 @@ export function MenuScreen() {
       },
       {
         id: 'shaurma',
-        name: 'Заверните две',
-        subtitle: 'ПП-шаурма',
+        name: 'Шаурма',
+        subtitle: 'Заверните две',
         kbju: '104.2 / 8.7 / 2 / 12.8',
         image: recipeShaurma,
         video: 'https://vkvideo.ru/clip-239899185_456239017',
@@ -1371,8 +1387,8 @@ export function MenuScreen() {
       },
       {
         id: 'taco',
-        name: 'Такого я не ожидала',
-        subtitle: 'ПП-тако',
+        name: 'Тако',
+        subtitle: 'Такого я не ожидала',
         kbju: '80 / 10 / 2 / 5.7',
         image: recipeTaco,
         video: 'https://vkvideo.ru/clip-239899185_456239023',
@@ -1399,8 +1415,8 @@ export function MenuScreen() {
       },
       {
         id: 'pirozhki',
-        name: 'Как настоящие',
-        subtitle: 'ПП-пирожки с луком и яйцом',
+        name: 'Пирожки',
+        subtitle: 'Как настоящие',
         kbju: '113.2 / 13.9 / 2.7 / 8',
         image: recipePirozhki,
         video: 'https://vkvideo.ru/clip-239899185_456239018',
@@ -1437,7 +1453,7 @@ export function MenuScreen() {
               <h2 className="text-2xl font-bold">{recipe.name}</h2>
               <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>
               <div className="mt-2 inline-block bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">
-                КБЖУ на 100 г: {recipe.kbju}
+                {(recipe as { kbjuLabel?: string }).kbjuLabel || 'КБЖУ на 100 г'}: {recipe.kbju}
               </div>
             </div>
             <div className="inga-card mb-3">
@@ -1484,8 +1500,8 @@ export function MenuScreen() {
     const sweetRecipes = [
       {
         id: 'nezhnost',
-        name: 'Шоколадный кекс «Нежность»',
-        subtitle: 'С вишней и творожным кремом',
+        name: 'Шоколадный пирог',
+        subtitle: 'Нежность',
         kbju: '95 / 3.9 / 2.8 / 12.1',
         image: sweetNezhnost,
         video: 'https://vkvideo.ru/clip-239899185_456239033',
@@ -1510,8 +1526,8 @@ export function MenuScreen() {
       },
       {
         id: 'nevesimost',
-        name: '«Невесомость»',
-        subtitle: 'Меренговый рулет с ягодами',
+        name: 'Меренговый рулет',
+        subtitle: 'Невесомость',
         kbju: '56 / 7 / 1.1 / 4.3',
         image: sweetNevesimost,
         video: 'https://vkvideo.ru/clip-239899185_456239026',
@@ -1532,8 +1548,8 @@ export function MenuScreen() {
       },
       {
         id: 'oblaka',
-        name: 'Суфле «Яблочные облака»',
-        subtitle: 'Нежное желейное суфле',
+        name: 'Яблочное суфле',
+        subtitle: 'Яблочные облака',
         kbju: '40.2 / 3.7 / 0 / 6.4',
         image: sweetOblaka,
         video: 'https://vkvideo.ru/clip-239899185_456239028',
@@ -1578,8 +1594,8 @@ export function MenuScreen() {
       },
       {
         id: 'grusha',
-        name: 'Пирог с грушей за 10 минут',
-        subtitle: 'Воздушный пирог в микроволновке',
+        name: 'Грушевый пирог',
+        subtitle: 'за 10 минут в микроволновке',
         kbju: '117 / 4.7 / 3.7 / 16',
         image: sweetGrusha,
         video: 'https://vkvideo.ru/clip-239899185_456239030',
@@ -1648,8 +1664,8 @@ export function MenuScreen() {
       },
       {
         id: 'morozhenoe',
-        name: '«Ягодный бриз»',
-        subtitle: 'Лёгкое ягодное мороженое',
+        name: 'Ягодное мороженое',
+        subtitle: 'Ягодный бриз',
         kbju: '60 / 3.2 / 1 / 9',
         image: sweetMorozhenoe,
         video: 'https://vkvideo.ru/clip-239899185_456239032',
@@ -1668,8 +1684,8 @@ export function MenuScreen() {
       },
       {
         id: 'maffiny',
-        name: '«Мягкая посадка»',
-        subtitle: 'Воздушные маффины',
+        name: 'Маффины',
+        subtitle: 'Мягкая посадка',
         kbju: '124.6 / 7.5 / 2.4 / 17',
         image: sweetMaffiny,
         video: null,
@@ -1691,8 +1707,8 @@ export function MenuScreen() {
       },
       {
         id: 'sharlotka',
-        name: '«Бабушкина тайна»',
-        subtitle: 'Лёгкая шарлотка с яблоками',
+        name: 'Шарлотка',
+        subtitle: 'Бабушкина тайна',
         kbju: '122 / 4.9 / 3.3 / 17.3',
         image: sweetSharlotka,
         video: null,
@@ -1752,7 +1768,7 @@ export function MenuScreen() {
       {
         id: 'turkey-cutlets',
         name: 'Котлеты из индейки',
-        subtitle: 'Идеальны как самостоятельное блюдо и как начинка для шаурмы',
+        subtitle: 'Для стройной талии',
         kbju: '136 / 19.6 / 5.6 / 1.4',
         image: recipeTurkeyCutlets as string | undefined,
         emoji: '🍖',
@@ -1773,7 +1789,7 @@ export function MenuScreen() {
       {
         id: 'fried-potatoes-mushrooms',
         name: 'Жареная картошка с грибами',
-        subtitle: 'Тот же вкус, калорий в 3 раза меньше',
+        subtitle: 'Для снижения веса',
         kbju: '60 / 3.5 / 1.4 / 8.8',
         image: recipeFriedPotatoesMushrooms as string | undefined,
         emoji: '🍟',
@@ -1791,6 +1807,65 @@ export function MenuScreen() {
           'Соединить в одной сковороде, посолить, добавить нарезанную зелень.',
         ],
         note: 'Классический рецепт жареной картошки — примерно 190 ккал.',
+      },
+    ];
+
+    // Несладкая выпечка (пирожки дублируются из завтраков — один источник данных)
+    const pirozhkiRef = breakfastRecipes.find(r => r.id === 'pirozhki')!;
+    const bakingRecipes = [
+      { ...pirozhkiRef, emoji: '🥟', image: pirozhkiRef.image as string | undefined },
+      {
+        id: 'pizza',
+        name: 'Пицца «Я худею»',
+        subtitle: 'Лёгкая версия для красивой фигуры',
+        kbju: '118.3 / 12.4 / 2.7 / 11.1',
+        image: recipePizza as string | undefined,
+        emoji: '🍕',
+        video: 'https://vk.com/clip-239899185_456239037',
+        ingredients: [
+          '4 шт. питы или тортильи',
+          '300 г куриного филе',
+          '150 г помидоров',
+          '170 г болгарского перца',
+          '100 г красного лука',
+          '100 г лёгкого сыра',
+          'Кетчуп без сахара',
+          'Копчёная паприка — по вкусу',
+          'Соль — по вкусу',
+        ],
+        steps: [
+          'Нарезать куриное филе на слайсы, посыпать копчёной паприкой, солью, обжарить на пшиках масла по 3 минуты с каждой стороны. Или использовать готовую грудку курицы или индейки.',
+          'Приготовленное филе нарезать полосками. Овощи нарезать, сыр натереть на крупной тёрке.',
+          'Питу положить на противень, намазать соусом. Варианты соуса: кетчуп без сахара; кетчуп + любимый соус (калорийность будет немного выше); кетчуп + 0% мягкий творог или греческий йогурт + горчица + соль и специи.',
+          'Выложить нарезанные овощи, филе, посыпать тёртым сыром.',
+          'Запекать в духовке до румяной корочки.',
+        ],
+        note: 'Классическая пицца — примерно 265 ккал.',
+      },
+    ];
+
+    // Напитки
+    const drinksRecipes = [
+      {
+        id: 'cappuccino',
+        name: 'Протеиновый капучино',
+        subtitle: '12 г белка в порции — сытость, а не пустые калории',
+        kbju: '54 / 12 / 0.3 / 0.7',
+        kbjuLabel: 'КБЖУ на порцию 250 мл',
+        image: recipeCappuccino as string | undefined,
+        emoji: '☕',
+        video: 'https://vk.com/clip-239899185_456239029',
+        ingredients: [
+          'Кофе',
+          'Казеин — 2–3 ч.л.',
+          'Вода',
+        ],
+        steps: [
+          'В шейкер налить 50 мл горячей воды, добавить 2–3 ч.л. казеина (или половину мерной ложки).',
+          'Размешать, взбить капучинатором в пену.',
+          'Приготовить чёрный кофе. Налить протеиновую пенку.',
+        ],
+        note: 'Капучино из кофейни — примерно 120 ккал за порцию.',
       },
     ];
 
@@ -1877,8 +1952,8 @@ export function MenuScreen() {
     }
 
     // Recipe detail screen — Супы / Вторые блюда (общий рендер, фото опционально)
-    if (activeRecipe && (recipeSection === 'soups' || recipeSection === 'lunches')) {
-      const list = recipeSection === 'soups' ? soupRecipes : mainDishRecipes;
+    if (activeRecipe && (recipeSection === 'soups' || recipeSection === 'lunches' || recipeSection === 'baking' || recipeSection === 'drinks')) {
+      const list = recipeSection === 'soups' ? soupRecipes : recipeSection === 'baking' ? bakingRecipes : recipeSection === 'drinks' ? drinksRecipes : mainDishRecipes;
       const recipe = list.find(r => r.id === activeRecipe);
       if (!recipe) return null;
       return (
@@ -1935,6 +2010,70 @@ export function MenuScreen() {
             ) : (
               <div className="mb-8" />
             )}
+          </div>
+        </div>
+      );
+    }
+
+    // Category screen — Напитки
+    if (recipeSection === 'drinks') {
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <h2 className="text-2xl font-bold mb-5">Напитки</h2>
+            <div className="space-y-3">
+              {drinksRecipes.map(recipe => (
+                <button key={recipe.id} onClick={() => setActiveRecipe(recipe.id)}
+                  className="w-full inga-card flex gap-4 items-center text-left">
+                  {recipe.image ? (
+                    <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0" style={{ fontSize: 26 }}>
+                      {recipe.emoji}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
+                    <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Category screen — Несладкая выпечка
+    if (recipeSection === 'baking') {
+      return (
+        <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+          <div className="w-full max-w-md">
+            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <h2 className="text-2xl font-bold mb-5">Несладкая выпечка</h2>
+            <div className="space-y-3">
+              {bakingRecipes.map(recipe => (
+                <button key={recipe.id} onClick={() => setActiveRecipe(recipe.id)}
+                  className="w-full inga-card flex gap-4 items-center text-left">
+                  {recipe.image ? (
+                    <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0" style={{ fontSize: 26 }}>
+                      {recipe.emoji}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
+                    <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
+                  </div>
+                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       );
@@ -2046,13 +2185,14 @@ export function MenuScreen() {
               { id: 'soups', icon: '🍲', label: 'Супы', count: 1 },
               { id: 'lunches', icon: '🍽️', label: 'Вторые блюда', count: 2 },
               { id: 'snacks', icon: '🥗', label: 'Перекусы', count: null },
-              { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: null },
+              { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: 2 },
+              { id: 'drinks', icon: '☕', label: 'Напитки', count: 1 },
               { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: 10 },
               { id: 'evening', icon: '🌙', label: 'Метаболическая точка', count: null },
             ].map(cat => (
               <button
                 key={cat.id}
-                onClick={() => { if (cat.id === 'breakfasts') setRecipeSection('breakfasts'); else if (cat.id === 'sweet') setRecipeSection('sweet'); else if (cat.id === 'soups') setRecipeSection('soups'); else if (cat.id === 'lunches') setRecipeSection('lunches'); }}
+                onClick={() => { if (cat.id === 'breakfasts') setRecipeSection('breakfasts'); else if (cat.id === 'sweet') setRecipeSection('sweet'); else if (cat.id === 'soups') setRecipeSection('soups'); else if (cat.id === 'lunches') setRecipeSection('lunches'); else if (cat.id === 'baking') setRecipeSection('baking'); else if (cat.id === 'drinks') setRecipeSection('drinks'); }}
                 className="w-full inga-card flex items-center justify-between"
                 style={{ opacity: cat.count ? 1 : 0.5, cursor: cat.count ? 'pointer' : 'default' }}
               >
