@@ -4,6 +4,7 @@ import type { UserProfile } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles } from 'lucide-react';
 import { LightVersionScreen } from './LightVersionScreen';
+import { ProgressPhotosSection } from './ProgressPhotosSection';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
@@ -2524,11 +2525,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
   const [draft, setDraft] = useState('');
 
   // ---------- photo & measurements-updated meta (client-side persistence) ----------
-  const PHOTO_KEY = 'inga-profile-photo';
   const MEAS_KEY = 'inga-measurements-updated';
-  const [photo, setPhoto] = useState<{ dataUrl: string; uploadedAt: string } | null>(() => {
-    try { const raw = localStorage.getItem(PHOTO_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
-  });
   const [measUpdated, setMeasUpdated] = useState<string | null>(() => {
     try { return localStorage.getItem(MEAS_KEY); } catch { return null; }
   });
@@ -2659,18 +2656,6 @@ ${rows.map(({ date, weight, report }) => `
 
   const setGender = (g: 'female' | 'male') => {
     if (profile.gender !== g) updateProfile({ gender: g });
-  };
-
-  const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const data = { dataUrl: String(reader.result), uploadedAt: new Date().toISOString() };
-      try { localStorage.setItem(PHOTO_KEY, JSON.stringify(data)); } catch {}
-      setPhoto(data);
-    };
-    reader.readAsDataURL(file);
   };
 
   const doSignOut = async () => {
@@ -2852,24 +2837,8 @@ ${rows.map(({ date, weight, report }) => `
           </div>
         </div>
 
-        {/* 6. Фото */}
-        <div className="inga-card mb-6">
-          <div className="text-sm text-muted-foreground mb-2">Фото</div>
-          <label className="flex items-center gap-3 cursor-pointer">
-            {photo ? (
-              <>
-                <img src={photo.dataUrl} alt="Профиль" className="w-14 h-14 rounded-xl object-cover border border-border" />
-                <span className="inga-btn-secondary">Обновить</span>
-              </>
-            ) : (
-              <span className="inga-btn-secondary">📷 Добавить фото</span>
-            )}
-            <input type="file" accept="image/*" className="hidden" onChange={onPhotoChange} />
-          </label>
-          {photo?.uploadedAt && (
-            <div className="text-[11px] text-muted-foreground mt-2">Загружено: {fmtDate(photo.uploadedAt)}</div>
-          )}
-        </div>
+        {/* 6. Фото прогресса */}
+        <ProgressPhotosSection />
 
         {/* 7.5 Скачать дневник */}
         <button
