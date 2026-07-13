@@ -12,6 +12,7 @@ import events from "./events.js";
 import consultations from "./consultations.js";
 import nutrition, { foodReferenceRouter } from "./nutrition.js";
 import admin from "./admin.js";
+import profilePhotos from "./profile-photos.js";
 
 export function registerRoutes(app, base = "/api/v1") {
   app.use(`${base}/profile`, profile);
@@ -28,4 +29,5 @@ export function registerRoutes(app, base = "/api/v1") {
   app.use(`${base}/nutrition`, nutrition);
   app.use(`${base}/food-reference`, foodReferenceRouter);
   app.use(`${base}/admin`, admin);
+  app.use(`${base}/profile-photos`, profilePhotos);
 }
