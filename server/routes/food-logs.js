@@ -48,6 +48,35 @@ r.get("/", async (req, res) => {
   }
 });
 
+// Копилка лёгкости: сумма сэкономленных ккал за месяц.
+// Считаем только записи с meta.lightSwap (реальная еда через «Из лёгких рецептов»).
+// ?month=YYYY-MM (по умолчанию — текущий месяц UTC).
+r.get("/savings", async (req, res) => {
+  try {
+    const userId = await resolveUserId(req);
+    let { month } = req.query;
+    if (!month || !/^\d{4}-\d{2}$/.test(String(month))) {
+      month = new Date().toISOString().slice(0, 7);
+    }
+    const result = await pool.query(
+      `SELECT
+         COALESCE(SUM((meta->'lightSwap'->>'savedKcal')::numeric), 0)::int AS total_kcal,
+         COUNT(*)::int AS swaps_count
+       FROM public.food_logs
+       WHERE user_id = $1
+         AND meta ? 'lightSwap'
+         AND (meta->'lightSwap'->>'savedKcal') ~ '^[0-9]+(\\.[0-9]+)?$'
+         AND datetime >= ($2 || '-01')::date::timestamptz
+         AND datetime <  ((($2 || '-01')::date) + INTERVAL '1 month')::timestamptz`,
+      [userId, month]
+    );
+    res.json(result.rows[0] || { total_kcal: 0, swaps_count: 0 });
+  } catch (e) {
+    console.error("GET /food-logs/savings:", e);
+    res.status(500).json({ error: "load_failed" });
+  }
+});
+
 r.post("/", async (req, res) => {
   const { description = "", mealTag = "unknown", datetime, meta } = req.body || {};
   try {
