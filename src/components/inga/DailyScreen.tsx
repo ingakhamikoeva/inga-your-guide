@@ -9,7 +9,8 @@ import { LIGHT_RECIPES, timesLighter, LightRecipeEntry } from '@/lib/light-versi
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
-import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, type MealTag } from '@/lib/db';
+import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadLightSavings, type MealTag, type LightSavings } from '@/lib/db';
+import { findSwapHint, registerHintShown, muteSwapPair, kgEquivalent, COPILKA_TEXTS, HINT_TEXTS, type SwapPair } from '@/lib/swap-base';
 import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
@@ -73,13 +74,27 @@ export function DailyScreen() {
   const [editingProteinValue, setEditingProteinValue] = useState('');
   const [meals, setMeals] = useState<string[]>([]);
   type ProteinPortion = 'small' | 'palm' | 'large';
+  type LightSwapMeta = { recipeId: string; savedKcal: number };
   type MealMeta = {
     id?: string;
     protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean;
     time: string; name: string; isEvening: boolean; proteinPortion: ProteinPortion;
     proteinAi: number | null; proteinLoading: boolean; proteinManual: boolean;
+    lightSwap?: LightSwapMeta | null;
   };
   const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
+  // Копилка лёгкости и подсказки замен
+  const [lightSavings, setLightSavings] = useState<LightSavings | null>(null);
+  const [pendingHint, setPendingHint] = useState<{ pair: SwapPair; revealed: boolean } | null>(null);
+  const [showLightPicker, setShowLightPicker] = useState(false);
+
+  // Единый payload meta для сохранения (lightSwap не теряется при патчах)
+  const metaPayloadOf = (m: MealMeta) => ({
+    protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
+    isEvening: m.isEvening, proteinPortion: m.proteinPortion,
+    proteinAi: m.proteinAi, proteinManual: m.proteinManual,
+    ...(m.lightSwap ? { lightSwap: m.lightSwap } : {}),
+  });
   const [waterCount, setWaterCount] = useState<number>(() => {
     try {
       const todayStr = new Date().toISOString().slice(0, 10);
@@ -222,10 +237,22 @@ export function DailyScreen() {
           proteinAi: typeof m.proteinAi === 'number' ? (m.proteinAi as number) : null,
           proteinLoading: false,
           proteinManual: Boolean(m.proteinManual),
+          lightSwap: (m.lightSwap && typeof m.lightSwap === 'object')
+            ? (m.lightSwap as LightSwapMeta)
+            : null,
         });
       }
       setMeals(texts);
       setMealMeta(metas);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [today]);
+
+  // Копилка лёгкости: сумма за текущий месяц
+  useEffect(() => {
+    let cancelled = false;
+    loadLightSavings(today.slice(0, 7)).then(s => {
+      if (!cancelled && s) setLightSavings(s);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [today]);
@@ -351,11 +378,7 @@ export function DailyScreen() {
       const next = prev.map((m, k) => k === idx ? { ...m, ...partial } : m);
       const m = next[idx];
       if (m?.id) {
-        const metaPayload = {
-          protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
-          isEvening: m.isEvening, proteinPortion: m.proteinPortion,
-          proteinAi: m.proteinAi, proteinManual: m.proteinManual,
-        };
+        const metaPayload = metaPayloadOf(m);
         updateFoodLog(m.id, {
           mealTag: mealTagFromName(m.name),
           datetime: timeToIso(m.time),
@@ -366,7 +389,12 @@ export function DailyScreen() {
     });
   };
 
-  const addMealEntry = (text: string, isEvening = false, timeOverride?: string) => {
+  const addMealEntry = (
+    text: string,
+    isEvening = false,
+    timeOverride?: string,
+    lightSwap?: LightSwapMeta,
+  ) => {
     const t = text.trim();
     if (!t) return;
     const time = timeOverride || nowHHMM();
@@ -384,13 +412,7 @@ export function DailyScreen() {
               : mm);
             const m = next[newIdx];
             if (m?.id) {
-              updateFoodLog(m.id, {
-                meta: {
-                  protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
-                  isEvening: m.isEvening, proteinPortion: m.proteinPortion,
-                  proteinAi: m.proteinAi, proteinManual: m.proteinManual,
-                },
-              }).catch(() => {});
+              updateFoodLog(m.id, { meta: metaPayloadOf(m) }).catch(() => {});
             }
             return next;
           });
@@ -406,17 +428,14 @@ export function DailyScreen() {
       protein: false, carbs: false, fiber: false, sweet: false,
       time, name, isEvening, proteinPortion: 'palm',
       proteinAi: null, proteinLoading: true, proteinManual: false,
+      lightSwap: lightSwap ?? null,
     };
     setMealMeta(prev => [...prev, meta]);
 
     // Fire-and-forget DB save; backfill id on the row when it returns.
     saveFoodLog(t, mealTagFromName(name), {
       datetime: timeToIso(time),
-      meta: {
-        protein: false, carbs: false, fiber: false, sweet: false,
-        isEvening, proteinPortion: 'palm',
-        proteinAi: null, proteinManual: false,
-      },
+      meta: metaPayloadOf(meta),
     })
       .then(row => {
         if (!row?.log_id) return;
@@ -426,18 +445,37 @@ export function DailyScreen() {
           if (m) {
             // Backfill any meta changes (e.g. AI protein estimate) that
             // landed before the DB row was persisted.
-            updateFoodLog(row.log_id, {
-              meta: {
-                protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
-                isEvening: m.isEvening, proteinPortion: m.proteinPortion,
-                proteinAi: m.proteinAi, proteinManual: m.proteinManual,
-              },
-            }).catch(() => {});
+            updateFoodLog(row.log_id, { meta: metaPayloadOf(m) }).catch(() => {});
           }
           return next;
         });
       })
       .catch(() => {});
+
+    // Обучающая подсказка о лёгкой замене — только для обычной еды,
+    // не для записей «Из лёгких рецептов». Лимиты и «Не сейчас» — в swap-base.
+    if (!lightSwap) {
+      const stage = profile.currentStage ?? 'loss';
+      const pair = findSwapHint(t, stage);
+      if (pair) {
+        registerHintShown();
+        setPendingHint({ pair, revealed: false });
+      }
+    }
+  };
+
+  // Запись еды из лёгкого рецепта: реальная еда → зачёт в Копилку лёгкости.
+  // Зачёт = classicKcal − lightKcal рецепта (согласовано; начислений за клики нет).
+  const addLightRecipeEntry = (recipe: LightRecipeEntry) => {
+    const savedKcal = Math.round(recipe.classicKcal - recipe.lightKcal);
+    addMealEntry(recipe.name, false, nowHHMM(), { recipeId: recipe.recipeId, savedKcal });
+    setShowLightPicker(false);
+    setShowMealInput(false);
+    // Оптимистично обновляем копилку на экране
+    setLightSavings(prev => ({
+      total_kcal: (prev?.total_kcal ?? 0) + savedKcal,
+      swaps_count: (prev?.swaps_count ?? 0) + 1,
+    }));
   };
 
   const handleAddMeal = () => {
@@ -1181,6 +1219,30 @@ export function DailyScreen() {
               ))}
             </div>
 
+            {/* Копилка лёгкости */}
+            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-bold tracking-wide" style={{ color: '#8A7A70' }}>
+                  {COPILKA_TEXTS.title.toUpperCase()}
+                </p>
+                <span className="text-base">🪙</span>
+              </div>
+              {lightSavings && lightSavings.total_kcal > 0 ? (
+                <>
+                  <p className="text-2xl font-bold tabular-nums" style={{ color: '#FF6200' }}>
+                    {lightSavings.total_kcal.toLocaleString('ru-RU')}
+                    <span className="text-sm font-medium ml-2" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.monthLabel}</span>
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: '#2C1A0E' }}>
+                    {COPILKA_TEXTS.kgLine(kgEquivalent(lightSavings.total_kcal))}
+                  </p>
+                  <p className="text-[11px] mt-2" style={{ color: '#A89A8E' }}>{COPILKA_TEXTS.note}</p>
+                </>
+              ) : (
+                <p className="text-sm" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.empty}</p>
+              )}
+            </div>
+
             {/* Inga smart card */}
             <div className="inga-bubble flex gap-3 items-start">
               <img src={ingaPhoto} alt="Инга" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
@@ -1189,9 +1251,18 @@ export function DailyScreen() {
 
             {/* Add meal */}
             {!showMealInput ? (
-              <button onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
-                + Добавить приём пищи
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }} className="inga-btn-primary flex-1" style={{ borderRadius: 12 }}>
+                  + Добавить приём пищи
+                </button>
+                <button
+                  onClick={() => setShowLightPicker(true)}
+                  className="inga-btn-secondary"
+                  style={{ borderRadius: 12, whiteSpace: 'nowrap' }}
+                >
+                  Из лёгких рецептов
+                </button>
+              </div>
             ) : (
               <div className="bg-white space-y-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
                 <div className="flex items-center gap-2">
@@ -1232,6 +1303,92 @@ export function DailyScreen() {
                 <div className="flex gap-2">
                   <button onClick={handleAddMeal} className="inga-btn-primary flex-1">Добавить</button>
                   <button onClick={() => { setShowMealInput(false); setMealText(''); }} className="inga-btn-secondary flex-1">Отмена</button>
+                </div>
+              </div>
+            )}
+
+            {/* Обучающая подсказка о лёгкой замене */}
+            {pendingHint && (
+              <div className="bg-white animate-fade-in-up" style={{ borderRadius: 14, border: '1px solid #FFD9C2', padding: 14 }}>
+                {!pendingHint.revealed ? (
+                  <>
+                    <p className="text-sm mb-3" style={{ color: '#2C1A0E' }}>💡 {HINT_TEXTS.teaser}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setPendingHint(h => h ? { ...h, revealed: true } : h)}
+                        className="inga-btn-primary flex-1 text-sm py-2"
+                      >
+                        {HINT_TEXTS.showButton}
+                      </button>
+                      <button
+                        onClick={() => { muteSwapPair(pendingHint.pair.id); setPendingHint(null); }}
+                        className="inga-btn-secondary flex-1 text-sm py-2"
+                      >
+                        {HINT_TEXTS.laterButton}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-bold tracking-wide mb-2" style={{ color: '#8A7A70' }}>{HINT_TEXTS.title.toUpperCase()}</p>
+                    <p className="text-sm" style={{ color: '#2C1A0E' }}>
+                      <span style={{ color: '#8A7A70' }}>{pendingHint.pair.from}</span>
+                      {' → '}
+                      <span className="font-semibold">{pendingHint.pair.to}</span>
+                    </p>
+                    <p className="text-sm font-semibold mt-1" style={{ color: '#FF6200' }}>
+                      {HINT_TEXTS.savedLabel(pendingHint.pair.savedKcal)}
+                    </p>
+                    {pendingHint.pair.comment && (
+                      <p className="text-xs mt-1" style={{ color: '#8A7A70' }}>{pendingHint.pair.comment}</p>
+                    )}
+                    {pendingHint.pair.tip && (
+                      <p className="text-xs mt-1" style={{ color: '#8A7A70' }}>{pendingHint.pair.tip}</p>
+                    )}
+                    <button onClick={() => setPendingHint(null)} className="inga-btn-secondary w-full text-sm py-2 mt-3">
+                      Понятно
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Выбор лёгкого рецепта для записи в дневник */}
+            {showLightPicker && (
+              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={() => setShowLightPicker(false)}>
+                <div
+                  className="bg-card rounded-2xl w-full max-w-md shadow-xl animate-fade-in-up flex flex-col"
+                  style={{ maxHeight: '75vh' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="p-5 pb-3">
+                    <p className="text-base font-semibold">Из лёгких рецептов</p>
+                    <p className="text-xs mt-1" style={{ color: '#8A7A70' }}>
+                      Что вы приготовили? Разница с классикой попадёт в {COPILKA_TEXTS.title.toLowerCase()}.
+                    </p>
+                  </div>
+                  <div className="overflow-y-auto px-5 pb-3 space-y-2">
+                    {LIGHT_RECIPES.map(r => {
+                      const saved = Math.round(r.classicKcal - r.lightKcal);
+                      return (
+                        <button
+                          key={r.recipeId}
+                          onClick={() => addLightRecipeEntry(r)}
+                          className="w-full text-left bg-white"
+                          style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: '10px 12px' }}
+                        >
+                          <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>{r.name}</p>
+                          <p className="text-xs" style={{ color: '#8A7A70' }}>
+                            {r.classicLabel}: ≈{r.classicKcal} → {r.lightKcal} ккал/100 г
+                            <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} 🪙</span>
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="p-5 pt-2">
+                    <button onClick={() => setShowLightPicker(false)} className="inga-btn-secondary w-full text-sm py-2">Отмена</button>
+                  </div>
                 </div>
               </div>
             )}
