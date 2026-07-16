@@ -203,6 +203,21 @@ export async function loadFoodLogs(date?: string): Promise<FoodLogRow[]> {
   }
 }
 
+// Копилка лёгкости: сумма сэкономленных ккал за месяц (YYYY-MM)
+export interface LightSavings {
+  total_kcal: number;
+  swaps_count: number;
+}
+
+export async function loadLightSavings(month: string): Promise<LightSavings | null> {
+  try {
+    return await apiFetch<LightSavings>(`/food-logs/savings?month=${encodeURIComponent(month)}`);
+  } catch (e) {
+    console.error('loadLightSavings failed', e);
+    return null;
+  }
+}
+
 export async function updateFoodLog(
   id: string,
   patch: { description?: string; mealTag?: MealTag; datetime?: string; meta?: Record<string, unknown> },
