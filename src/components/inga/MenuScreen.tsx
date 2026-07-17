@@ -12,6 +12,7 @@ import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
 import { FoodCheatsheet } from '@/components/inga/FoodCheatsheet';
 import recipeOatmeal from '@/assets/breakfast_oatmeal.jpg';
+import recipeOatmealPlain from '@/assets/breakfast_oatmeal_plain.jpg';
 import recipePate from '@/assets/breakfast_pate.jpg';
 import recipeZucchini from '@/assets/breakfast_zucchini.jpg';
 import recipeBliny from '@/assets/breakfast_bliny.jpg';
@@ -1247,7 +1248,7 @@ export function MenuScreen() {
     const breakfastRecipes = [
       {
         id: 'oatmeal',
-        name: 'Овсянка',
+        name: 'Овсянка с творогом и яблоками',
         subtitle: 'Нежное утро',
         kbju: '50.8 / 4 / 0.5 / 7.2',
         image: recipeOatmeal,
@@ -1266,6 +1267,25 @@ export function MenuScreen() {
           'Яблоки нарезать на тонкие дольки и тушить в кастрюле до мягкости. Добавить 1 ч.л. пектина, часто помешивая. Добавить корицу и сахарозаменитель по вкусу.',
           'Если любите сладкое — в творожок можно добавить подсластитель.',
           'Выкладываем слоями: нижний слой — мягкий творог, на творог — овсянку, сверху — яблоки.',
+        ],
+      },
+      {
+        id: 'oatmeal-plain',
+        name: 'Запаренная овсянка',
+        subtitle: 'Как снизить калорийность каши в 2 раза?',
+        kbju: '58.7 / 2.1 / 1 / 10.3',
+        image: recipeOatmealPlain,
+        video: 'https://vk.com/clip-239899185_456239019',
+        ingredients: [
+          '20 г овсянки долгой варки',
+          '100 мл воды (или другое количество крупы, в соотношении с водой 1:5)',
+          'Соль',
+        ],
+        steps: [
+          'Запаривайте крупу в термосе! Способ подходит для гречки, овсянки, риса.',
+          'В кастрюлю насыпьте 20 г овсянки долгой варки, залейте 100 мл воды (или другое количество крупы, в соотношении с водой 1:5).',
+          'Прокипятите 2–3 минуты, посолите.',
+          'Перелейте крупу с водой в термос, оставьте на ночь.',
         ],
       },
       {
