@@ -74,7 +74,7 @@ export function DailyScreen() {
   const [editingProteinValue, setEditingProteinValue] = useState('');
   const [meals, setMeals] = useState<string[]>([]);
   type ProteinPortion = 'small' | 'palm' | 'large';
-  type LightSwapMeta = { recipeId: string; savedKcal: number };
+  type LightSwapMeta = { recipeIds: string[]; savedKcal: number };
   type MealMeta = {
     id?: string;
     protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean;
@@ -87,6 +87,10 @@ export function DailyScreen() {
   const [lightSavings, setLightSavings] = useState<LightSavings | null>(null);
   const [pendingHint, setPendingHint] = useState<{ pair: SwapPair; revealed: boolean } | null>(null);
   const [showLightPicker, setShowLightPicker] = useState(false);
+  const [copilkaOpen, setCopilkaOpen] = useState(false);
+  const [lightPickerQuery, setLightPickerQuery] = useState('');
+  // Лёгкие рецепты, выбранные в текущем окне ввода (своё + лёгкое в одной записи)
+  const [draftLightSwaps, setDraftLightSwaps] = useState<{ recipeId: string; name: string; savedKcal: number }[]>([]);
 
   // Единый payload meta для сохранения (lightSwap не теряется при патчах)
   const metaPayloadOf = (m: MealMeta) => ({
@@ -107,6 +111,11 @@ export function DailyScreen() {
     return 0;
   });
   const [showMealInput, setShowMealInput] = useState(false);
+  // Флажки, отмечаемые прямо при вводе приёма (чтобы не искать карточку внизу)
+  const emptyDraftFlags = { protein: false, carbs: false, fiber: false, sweet: false };
+  const [draftFlags, setDraftFlags] = useState(emptyDraftFlags);
+  const toggleDraftFlag = (key: keyof typeof emptyDraftFlags) =>
+    setDraftFlags(f => ({ ...f, [key]: !f[key] }));
   const [showEveningInput, setShowEveningInput] = useState(false);
   const [eveningText, setEveningText] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -394,6 +403,7 @@ export function DailyScreen() {
     isEvening = false,
     timeOverride?: string,
     lightSwap?: LightSwapMeta,
+    initialFlags?: { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean },
   ) => {
     const t = text.trim();
     if (!t) return;
@@ -425,7 +435,10 @@ export function DailyScreen() {
       return [...prev, t];
     });
     const meta: MealMeta = {
-      protein: false, carbs: false, fiber: false, sweet: false,
+      protein: initialFlags?.protein ?? false,
+      carbs: initialFlags?.carbs ?? false,
+      fiber: initialFlags?.fiber ?? false,
+      sweet: (!isEvening && initialFlags?.sweet) || false,
       time, name, isEvening, proteinPortion: 'palm',
       proteinAi: null, proteinLoading: true, proteinManual: false,
       lightSwap: lightSwap ?? null,
@@ -466,31 +479,49 @@ export function DailyScreen() {
 
   // Запись еды из лёгкого рецепта: реальная еда → зачёт в Копилку лёгкости.
   // Зачёт = classicKcal − lightKcal рецепта (согласовано; начислений за клики нет).
-  const addLightRecipeEntry = (recipe: LightRecipeEntry) => {
-    const savedKcal = Math.round(recipe.classicKcal - recipe.lightKcal);
-    addMealEntry(recipe.name, false, nowHHMM(), { recipeId: recipe.recipeId, savedKcal });
+  // Выбор лёгкого рецепта в окне ввода: название дописывается в текст приёма,
+  // зачёт (разница классика−лёгкая × типичная порция) прикрепится к записи при сохранении.
+  const pickLightRecipe = (recipe: LightRecipeEntry) => {
+    const savedKcal = Math.round((recipe.classicKcal - recipe.lightKcal) * recipe.portionGrams / 100);
+    setMealText(prev => prev.trim() ? `${prev.trim()}, ${recipe.name}` : recipe.name);
+    setDraftLightSwaps(prev => [...prev, { recipeId: recipe.recipeId, name: recipe.name, savedKcal }]);
     setShowLightPicker(false);
-    setShowMealInput(false);
-    // Оптимистично обновляем копилку на экране
-    setLightSavings(prev => ({
-      total_kcal: (prev?.total_kcal ?? 0) + savedKcal,
-      swaps_count: (prev?.swaps_count ?? 0) + 1,
-    }));
+    setLightPickerQuery('');
+  };
+
+  const removeDraftLightSwap = (idx: number) => {
+    setDraftLightSwaps(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleAddMeal = () => {
     if (mealText.trim()) {
-      addMealEntry(mealText.trim(), false, mealTime);
+      const lightSwap: LightSwapMeta | undefined = draftLightSwaps.length
+        ? {
+            recipeIds: draftLightSwaps.map(s => s.recipeId),
+            savedKcal: draftLightSwaps.reduce((sum, s) => sum + s.savedKcal, 0),
+          }
+        : undefined;
+      addMealEntry(mealText.trim(), false, mealTime, lightSwap, draftFlags);
+      if (lightSwap) {
+        // Оптимистично обновляем копилку на экране
+        setLightSavings(prev => ({
+          total_kcal: (prev?.total_kcal ?? 0) + lightSwap.savedKcal,
+          swaps_count: (prev?.swaps_count ?? 0) + draftLightSwaps.length,
+        }));
+      }
       setMealText('');
       setMealTime(nowHHMM());
+      setDraftFlags(emptyDraftFlags);
+      setDraftLightSwaps([]);
       setShowMealInput(false);
     }
   };
 
   const handleAddEveningMeal = () => {
     if (eveningText.trim()) {
-      addMealEntry(eveningText.trim(), true);
+      addMealEntry(eveningText.trim(), true, undefined, undefined, draftFlags);
       setEveningText('');
+      setDraftFlags(emptyDraftFlags);
       setShowEveningInput(false);
     }
   };
@@ -1126,18 +1157,27 @@ export function DailyScreen() {
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2 mb-2">
-                <button onClick={() => toggleMealFlag(m.i, 'protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
+              <div className="flex flex-wrap gap-1.5 mb-2 items-center">
+                <button onClick={() => toggleMealFlag(m.i, 'protein')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
                   {m.protein ? '✓' : '+'} Белок
                 </button>
                 {!hideCarbs && (
-                  <button onClick={() => toggleMealFlag(m.i, 'carbs')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.carbs, 'carbs')}>
+                  <button onClick={() => toggleMealFlag(m.i, 'carbs')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.carbs, 'carbs')}>
                     {m.carbs ? '✓' : '+'} Углеводы
                   </button>
                 )}
-                <button onClick={() => toggleMealFlag(m.i, 'fiber')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(m.fiber, 'fiber')}>
+                <button onClick={() => toggleMealFlag(m.i, 'fiber')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.fiber, 'fiber')}>
                   {m.fiber ? '✓' : '+'} Клетчатка
                 </button>
+                {!m.isEvening && (
+                  <button
+                    onClick={() => toggleMealFlag(m.i, 'sweet')}
+                    className="text-[11px] font-medium"
+                    style={{ color: m.sweet ? '#CF7B5A' : '#8A7A70', background: 'transparent', border: 'none', padding: 0 }}
+                  >
+                    🍰 {m.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
+                  </button>
+                )}
               </div>
               {m.protein && (
                 <div className="mb-2 pl-1">
@@ -1167,15 +1207,6 @@ export function DailyScreen() {
                   </div>
                 </div>
               )}
-              {!m.isEvening && (
-                <button
-                  onClick={() => toggleMealFlag(m.i, 'sweet')}
-                  className="text-xs font-medium"
-                  style={{ color: m.sweet ? '#CF7B5A' : '#8A7A70' }}
-                >
-                  🍰 {m.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
-                </button>
-              )}
             </div>
           );
 
@@ -1195,74 +1226,11 @@ export function DailyScreen() {
               <span className="text-sm font-semibold tabular-nums">{waterCount}/6</span>
             </div>
 
-            {/* Nutrition structure */}
-            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
-              <p className="text-xs font-bold tracking-wide mb-3" style={{ color: '#8A7A70' }}>СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
-              {[
-                { icon: '🥩', label: 'Белок', val: anyProteinLoading ? `...` : `~${proteinGrams}г из ${proteinTarget}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
-                { icon: '🌾', label: 'Углеводы', val: `${carbsMeals}/${carbsTarget}`, color: '#C49A3E', pct: pct(carbsMeals, carbsTarget) },
-                { icon: '🥦', label: 'Клетчатка', val: `${fiberMeals}/${fiberTarget}`, color: '#5E9E72', pct: pct(fiberMeals, fiberTarget) },
-              ].map(row => (
-                <div key={row.label}>
-                  <div className="flex items-center gap-3 py-1.5">
-                    <span className="text-base">{row.icon}</span>
-                    <span className="text-sm w-20">{row.label}</span>
-                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
-                      <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
-                    </div>
-                    <span className="text-xs tabular-nums w-24 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
-                  </div>
-                  {row.label === 'Белок' && (
-                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>оценка по описанию блюд</p>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Копилка лёгкости */}
-            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-bold tracking-wide" style={{ color: '#8A7A70' }}>
-                  {COPILKA_TEXTS.title.toUpperCase()}
-                </p>
-                <span className="text-base">🪙</span>
-              </div>
-              {lightSavings && lightSavings.total_kcal > 0 ? (
-                <>
-                  <p className="text-2xl font-bold tabular-nums" style={{ color: '#FF6200' }}>
-                    {lightSavings.total_kcal.toLocaleString('ru-RU')}
-                    <span className="text-sm font-medium ml-2" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.monthLabel}</span>
-                  </p>
-                  <p className="text-sm mt-1" style={{ color: '#2C1A0E' }}>
-                    {COPILKA_TEXTS.kgLine(kgEquivalent(lightSavings.total_kcal))}
-                  </p>
-                  <p className="text-[11px] mt-2" style={{ color: '#A89A8E' }}>{COPILKA_TEXTS.note}</p>
-                </>
-              ) : (
-                <p className="text-sm" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.empty}</p>
-              )}
-            </div>
-
-            {/* Inga smart card */}
-            <div className="inga-bubble flex gap-3 items-start">
-              <img src={ingaPhoto} alt="Инга" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-              <p className="text-sm">{ingaMsg}</p>
-            </div>
-
             {/* Add meal */}
             {!showMealInput ? (
-              <div className="flex gap-2">
-                <button onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }} className="inga-btn-primary flex-1" style={{ borderRadius: 12 }}>
-                  + Добавить приём пищи
-                </button>
-                <button
-                  onClick={() => setShowLightPicker(true)}
-                  className="inga-btn-secondary"
-                  style={{ borderRadius: 12, whiteSpace: 'nowrap' }}
-                >
-                  Из лёгких рецептов
-                </button>
-              </div>
+              <button onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
+                + Добавить приём пищи
+              </button>
             ) : (
               <div className="bg-white space-y-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
                 <div className="flex items-center gap-2">
@@ -1296,13 +1264,49 @@ export function DailyScreen() {
                     onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
                   />
                   <VoiceInput
-                    onConfirm={(text) => addMealEntry(text, false, mealTime)}
+                    onConfirm={(text) => { addMealEntry(text, false, mealTime, undefined, draftFlags); setDraftFlags(emptyDraftFlags); setDraftLightSwaps([]); }}
                     onEdit={(text) => setMealText(text)}
                   />
                 </div>
+                <button
+                  onClick={() => setShowLightPicker(true)}
+                  className="text-xs font-medium"
+                  style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}
+                >
+                  📋 Из лёгких рецептов
+                </button>
+                {draftLightSwaps.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {draftLightSwaps.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => removeDraftLightSwap(i)}
+                        className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                        style={{ background: '#FFF1E8', color: '#FF6200', border: '1px solid #FFD9C2' }}
+                        title="Убрать"
+                      >
+                        {s.name} +{s.savedKcal} 🪙 ✕
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 items-center">
+                  <button onClick={() => toggleDraftFlag('protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.protein, 'protein')}>
+                    {draftFlags.protein ? '✓' : '+'} Белок
+                  </button>
+                  <button onClick={() => toggleDraftFlag('carbs')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.carbs, 'carbs')}>
+                    {draftFlags.carbs ? '✓' : '+'} Углеводы
+                  </button>
+                  <button onClick={() => toggleDraftFlag('fiber')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.fiber, 'fiber')}>
+                    {draftFlags.fiber ? '✓' : '+'} Клетчатка
+                  </button>
+                  <button onClick={() => toggleDraftFlag('sweet')} className="text-xs font-medium" style={{ color: draftFlags.sweet ? '#CF7B5A' : '#8A7A70', background: 'transparent', border: 'none', padding: 0 }}>
+                    🍰 {draftFlags.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
+                  </button>
+                </div>
                 <div className="flex gap-2">
                   <button onClick={handleAddMeal} className="inga-btn-primary flex-1">Добавить</button>
-                  <button onClick={() => { setShowMealInput(false); setMealText(''); }} className="inga-btn-secondary flex-1">Отмена</button>
+                  <button onClick={() => { setShowMealInput(false); setMealText(''); setDraftFlags(emptyDraftFlags); setDraftLightSwaps([]); }} className="inga-btn-secondary flex-1">Отмена</button>
                 </div>
               </div>
             )}
@@ -1354,8 +1358,19 @@ export function DailyScreen() {
             )}
 
             {/* Выбор лёгкого рецепта для записи в дневник */}
-            {showLightPicker && (
-              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={() => setShowLightPicker(false)}>
+            {showLightPicker && (() => {
+              const SECTION_TITLES: Record<string, string> = {
+                breakfasts: 'Завтраки', soups: 'Супы', lunches: 'Вторые блюда',
+                baking: 'Несладкая выпечка', sweet: 'Сладкая точка', drinks: 'Напитки',
+              };
+              const SECTION_ORDER = ['breakfasts', 'soups', 'lunches', 'baking', 'sweet', 'drinks'];
+              const q = lightPickerQuery.trim().toLowerCase().replace(/ё/g, 'е');
+              const matches = (r: LightRecipeEntry) => !q
+                || r.name.toLowerCase().replace(/ё/g, 'е').includes(q)
+                || r.aliases.some(a => a.toLowerCase().replace(/ё/g, 'е').includes(q));
+              const filtered = LIGHT_RECIPES.filter(matches);
+              return (
+              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={() => { setShowLightPicker(false); setLightPickerQuery(''); }}>
                 <div
                   className="bg-card rounded-2xl w-full max-w-md shadow-xl animate-fade-in-up flex flex-col"
                   style={{ maxHeight: '75vh' }}
@@ -1364,34 +1379,127 @@ export function DailyScreen() {
                   <div className="p-5 pb-3">
                     <p className="text-base font-semibold">Из лёгких рецептов</p>
                     <p className="text-xs mt-1" style={{ color: '#8A7A70' }}>
-                      Что вы приготовили? Разница с классикой попадёт в {COPILKA_TEXTS.title.toLowerCase()}.
+                      Что вы приготовили? Разница с классикой попадёт в Копилку лёгкости.
                     </p>
+                    <input
+                      value={lightPickerQuery}
+                      onChange={e => setLightPickerQuery(e.target.value)}
+                      placeholder="Поиск: блины, суп, чизкейк…"
+                      className="w-full mt-3 text-sm bg-white"
+                      style={{ borderRadius: 10, border: '1px solid #EDE5DF', padding: '8px 12px', outline: 'none' }}
+                    />
                   </div>
                   <div className="overflow-y-auto px-5 pb-3 space-y-2">
-                    {LIGHT_RECIPES.map(r => {
-                      const saved = Math.round(r.classicKcal - r.lightKcal);
+                    {filtered.length === 0 && (
+                      <p className="text-sm py-4 text-center" style={{ color: '#8A7A70' }}>Ничего не нашлось — попробуйте другое слово</p>
+                    )}
+                    {SECTION_ORDER.map(sec => {
+                      const inSection = filtered.filter(r => r.recipeSection === sec);
+                      if (inSection.length === 0) return null;
                       return (
-                        <button
-                          key={r.recipeId}
-                          onClick={() => addLightRecipeEntry(r)}
-                          className="w-full text-left bg-white"
-                          style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: '10px 12px' }}
-                        >
-                          <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>{r.name}</p>
-                          <p className="text-xs" style={{ color: '#8A7A70' }}>
-                            {r.classicLabel}: ≈{r.classicKcal} → {r.lightKcal} ккал/100 г
-                            <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} 🪙</span>
+                        <div key={sec}>
+                          <p className="text-[11px] font-bold tracking-wide mt-2 mb-1" style={{ color: '#A89A8E' }}>
+                            {(SECTION_TITLES[sec] || sec).toUpperCase()}
                           </p>
-                        </button>
+                          <div className="space-y-2">
+                            {inSection.map(r => {
+                              const saved = Math.round((r.classicKcal - r.lightKcal) * r.portionGrams / 100);
+                              const label = r.classicLabel.toLowerCase() === r.name.toLowerCase()
+                                ? 'классика' : r.classicLabel;
+                              return (
+                                <button
+                                  key={r.recipeId}
+                                  onClick={() => pickLightRecipe(r)}
+                                  className="w-full text-left bg-white"
+                                  style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: '10px 12px' }}
+                                >
+                                  <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>{r.name}</p>
+                                  <p className="text-xs" style={{ color: '#8A7A70' }}>
+                                    {label}: ≈{Math.round(r.classicKcal)} → {Math.round(r.lightKcal)} ккал/100 г
+                                  </p>
+                                  <p className="text-xs" style={{ color: '#8A7A70' }}>
+                                    порция {r.portionGrams} {r.recipeSection === 'drinks' ? 'мл' : 'г'}
+                                    <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} 🪙</span>
+                                  </p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
                   <div className="p-5 pt-2">
-                    <button onClick={() => setShowLightPicker(false)} className="inga-btn-secondary w-full text-sm py-2">Отмена</button>
+                    <button onClick={() => { setShowLightPicker(false); setLightPickerQuery(''); }} className="inga-btn-secondary w-full text-sm py-2">Отмена</button>
                   </div>
                 </div>
               </div>
-            )}
+              );
+            })()}
+
+
+            {/* Nutrition structure */}
+            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
+              <p className="text-xs font-bold tracking-wide mb-3" style={{ color: '#8A7A70' }}>СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
+              {[
+                { icon: '🥩', label: 'Белок', val: anyProteinLoading ? `...` : `~${proteinGrams}г из ${proteinTarget}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
+                { icon: '🌾', label: 'Углеводы', val: `${carbsMeals}/${carbsTarget}`, color: '#C49A3E', pct: pct(carbsMeals, carbsTarget) },
+                { icon: '🥦', label: 'Клетчатка', val: `${fiberMeals}/${fiberTarget}`, color: '#5E9E72', pct: pct(fiberMeals, fiberTarget) },
+              ].map(row => (
+                <div key={row.label}>
+                  <div className="flex items-center gap-3 py-1.5">
+                    <span className="text-base">{row.icon}</span>
+                    <span className="text-sm w-20">{row.label}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
+                      <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
+                    </div>
+                    <span className="text-xs tabular-nums w-24 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
+                  </div>
+                  {row.label === 'Белок' && (
+                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>оценка по описанию блюд</p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Копилка лёгкости — свёрнутая строка, детали по тапу */}
+            <button
+              onClick={() => setCopilkaOpen(o => !o)}
+              className="bg-white w-full text-left"
+              style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: '10px 14px' }}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>
+                  <span className="mr-1">🪙</span> {COPILKA_TEXTS.title}
+                  <span className="tabular-nums" style={{ color: '#FF6200' }}> · {(lightSavings?.total_kcal ?? 0).toLocaleString('ru-RU')}</span>
+                </p>
+                <span className="text-xs" style={{ color: '#A89A8E' }}>{copilkaOpen ? '▲' : '▼'}</span>
+              </div>
+              {copilkaOpen && (
+                lightSavings && lightSavings.total_kcal > 0 ? (
+                  <div className="mt-2">
+                    <p className="text-2xl font-bold tabular-nums" style={{ color: '#FF6200' }}>
+                      {lightSavings.total_kcal.toLocaleString('ru-RU')}
+                      <span className="text-sm font-medium ml-2" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.monthLabel}</span>
+                    </p>
+                    {lightSavings.total_kcal >= 770 && (
+                      <p className="text-sm mt-1" style={{ color: '#2C1A0E' }}>
+                        {COPILKA_TEXTS.kgLine(kgEquivalent(lightSavings.total_kcal))}
+                      </p>
+                    )}
+                    <p className="text-[11px] mt-2" style={{ color: '#A89A8E' }}>{COPILKA_TEXTS.note}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm mt-2" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.empty}</p>
+                )
+              )}
+            </button>
+
+            {/* Inga smart card */}
+            <div className="inga-bubble flex gap-3 items-start">
+              <img src={ingaPhoto} alt="Инга" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              <p className="text-sm">{ingaMsg}</p>
+            </div>
 
             {/* Regular meal cards */}
             {regular.map(m => <MealCard key={m.i} m={m} />)}
@@ -1430,13 +1538,21 @@ export function DailyScreen() {
                       onKeyDown={e => e.key === 'Enter' && handleAddEveningMeal()}
                     />
                     <VoiceInput
-                      onConfirm={(text) => addMealEntry(text, true)}
+                      onConfirm={(text) => { addMealEntry(text, true, undefined, undefined, draftFlags); setDraftFlags(emptyDraftFlags); }}
                       onEdit={(text) => setEveningText(text)}
                     />
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => toggleDraftFlag('protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.protein, 'protein')}>
+                      {draftFlags.protein ? '✓' : '+'} Белок
+                    </button>
+                    <button onClick={() => toggleDraftFlag('fiber')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.fiber, 'fiber')}>
+                      {draftFlags.fiber ? '✓' : '+'} Клетчатка
+                    </button>
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={handleAddEveningMeal} className="flex-1 py-2 rounded-xl text-sm font-medium" style={{ background: '#4A3580', color: '#fff' }}>Добавить</button>
-                    <button onClick={() => { setShowEveningInput(false); setEveningText(''); }} className="inga-btn-secondary flex-1">Отмена</button>
+                    <button onClick={() => { setShowEveningInput(false); setEveningText(''); setDraftFlags(emptyDraftFlags); }} className="inga-btn-secondary flex-1">Отмена</button>
                   </div>
                 </div>
               )}
