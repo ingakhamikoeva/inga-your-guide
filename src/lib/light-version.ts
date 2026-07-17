@@ -16,8 +16,12 @@ export interface LightRecipeEntry {
 }
 
 export const LIGHT_RECIPES: LightRecipeEntry[] = [
-  { recipeId: 'oatmeal', portionGrams: 300, recipeSection: 'breakfasts', name: 'Овсянка', lightKcal: 50.8, hasVideo: true,
-    aliases: ['овсянка', 'каша', 'геркулес', 'овсяная каша', 'нежное утро'],
+  // Запаренная овсянка — своя карточка рецепта в Завтраках (июль 2026). Порция 100 г: углевод по методу.
+  { recipeId: 'oatmeal-plain', portionGrams: 100, recipeSection: 'breakfasts', name: 'Запаренная овсянка', lightKcal: 58.7, hasVideo: true,
+    aliases: ['овсянка', 'каша', 'геркулес', 'овсяная каша', 'запаренная овсянка'],
+    classicLabel: 'овсянка на молоке с маслом', classicKcal: 130, tagline: 'тот же нежный вкус' },
+  { recipeId: 'oatmeal', portionGrams: 300, recipeSection: 'breakfasts', name: 'Овсянка с творогом и яблоками «Нежное утро»', lightKcal: 50.8, hasVideo: true,
+    aliases: ['нежное утро', 'овсянка с творогом', 'овсянка с творогом и яблоками', 'овсянка с вареньем'],
     classicLabel: 'овсянка на молоке с маслом', classicKcal: 130, tagline: 'тот же нежный вкус' },
   { recipeId: 'pate', portionGrams: 100, recipeSection: 'breakfasts', name: 'Печёночный паштет', lightKcal: 109.7, hasVideo: true,
     aliases: ['паштет', 'печёночный паштет', 'печеночный паштет', 'намазка', 'печень', 'железная леди'],
