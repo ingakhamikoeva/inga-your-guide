@@ -554,6 +554,9 @@ export const mainDishRecipes = [
   },
 ];
 
+// Пирожки дублируются из завтраков — один источник данных
+const pirozhkiRef = breakfastRecipes.find(r => r.id === 'pirozhki')!;
+
 export const bakingRecipes = [
   { ...pirozhkiRef, emoji: '🥟', image: pirozhkiRef.image as string | undefined },
   {
