@@ -44,7 +44,7 @@ export function DailySummaryCard({ meals, date, calorieTarget, goalWeightKg }: P
         <CardContent className="p-4 space-y-1">
           <h4 className="text-base font-bold text-foreground">Сводка дня</h4>
           <p className="text-sm text-muted-foreground leading-snug">
-            Пока нет записей по питанию. Добавь первый приём пищи — и я соберу сводку дня.
+            Пока нет записей по питанию. Добавьте первый приём пищи — и я соберу сводку дня.
           </p>
         </CardContent>
       </Card>
@@ -103,7 +103,7 @@ export function DailySummaryCard({ meals, date, calorieTarget, goalWeightKg }: P
 
         {summary?.is_estimate && meals.length < 2 && (
           <p className="text-[11px] text-muted-foreground italic">
-            Пока оценка примерная. Чем подробнее ты описываешь еду, тем точнее будет сводка.
+            Пока оценка примерная. Чем подробнее вы описываете еду, тем точнее будет сводка.
           </p>
         )}
       </CardContent>

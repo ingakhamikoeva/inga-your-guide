@@ -11,11 +11,11 @@ export function PaceChoiceScreen() {
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
-      <h2 className="text-2xl font-bold mb-2">Выбери темп</h2>
+      <h2 className="text-2xl font-bold mb-2">Выберите темп</h2>
       <div className="inga-bubble mb-6 text-center">
         <p>Безопасный темп снижения веса — до 6 кг в месяц.</p>
         <p className="text-muted-foreground mt-2">Мы ни в коем случае не будем голодать.</p>
-        <p className="text-muted-foreground">И ты в любой момент сможешь изменить свой выбор.</p>
+        <p className="text-muted-foreground">И вы в любой момент сможете изменить свой выбор.</p>
       </div>
 
       <div className="w-full max-w-sm space-y-4">

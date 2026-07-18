@@ -29,7 +29,7 @@ export function SurveyEmotionsScreen() {
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
       <h2 className="text-2xl font-bold mb-2">Эмоция-триггер</h2>
       <p className="text-muted-foreground mb-6 text-center max-w-sm">
-        После какой эмоции тебя тянет на калорийную пищу?
+        После какой эмоции вас тянет на калорийную пищу?
       </p>
 
       <div className="w-full max-w-sm flex flex-wrap gap-3 justify-center mb-8">

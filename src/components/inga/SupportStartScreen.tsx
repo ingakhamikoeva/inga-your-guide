@@ -40,12 +40,12 @@ export function SupportStartScreen() {
             <li>• поддерживать мотивацию и стабильность</li>
           </ul>
         )}
-        <p className="mt-3 text-sm italic text-muted-foreground">Моя задача — поддерживать тебя, а не контролировать.</p>
+        <p className="mt-3 text-sm italic text-muted-foreground">Моя задача — поддерживать вас, а не контролировать.</p>
       </div>
 
       {calculations && (
         <div className="inga-card w-full max-w-sm mb-6">
-          <div className="font-bold mb-2">Твой коридор калорийности</div>
+          <div className="font-bold mb-2">Ваш коридор калорийности</div>
           <div className="text-2xl font-bold text-primary">
             {profile.paceChoice === 'fast'
               ? `${Math.round((calculations.totalCalories * 0.6) - 100)} – ${Math.round((calculations.totalCalories * 0.6) + 100)}`

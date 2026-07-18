@@ -57,8 +57,8 @@ export function ChatScreen() {
       setMessages([{
         role: 'assistant',
         content: hasName(profile.name)
-          ? withName(profile.name, 'я рядом 💛 Расскажи, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.')
-          : 'Я рядом 💛 Расскажи, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.',
+          ? withName(profile.name, 'я рядом 💛 Расскажите, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.')
+          : 'Я рядом 💛 Расскажите, что сейчас на душе или о чём хочется поговорить — еда, настроение, поддержка.',
       }]);
     }
   }, []);
@@ -142,7 +142,7 @@ export function ChatScreen() {
       if (event) saveChatEvent(event.type, event.summary).catch(() => {});
     } catch (e) {
       console.error(e);
-      setError('Инга сейчас временно не отвечает. Попробуй ещё раз чуть позже.');
+      setError('Инга сейчас временно не отвечает. Попробуйте ещё раз чуть позже.');
       setMessages(prev => prev.slice(0, assistantIndex));
     } finally {
       setLoading(false);
@@ -198,7 +198,7 @@ export function ChatScreen() {
           {Object.values(pending).map(p => (
             !p.dismissed && (
               <div key={p.msgIndex} className="inga-card border-primary/40 bg-primary/5 max-w-[85%]">
-                <p className="text-base mb-2">Хочешь, сохраню это как приём пищи в дневник?</p>
+                <p className="text-base mb-2">Хотите, сохраню это как приём пищи в дневник?</p>
                 <p className="text-sm text-muted-foreground italic mb-3">«{p.description}»</p>
                 {p.saved ? (
                   <p className="text-base text-primary font-medium">✓ Сохранено в дневник</p>
@@ -243,7 +243,7 @@ export function ChatScreen() {
                   send(input);
                 }
               }}
-              placeholder="Напиши сообщение..."
+              placeholder="Напишите сообщение..."
               rows={1}
               className="inga-input flex-1 resize-none max-h-32"
               disabled={loading}

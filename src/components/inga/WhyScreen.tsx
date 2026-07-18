@@ -18,8 +18,8 @@ export function WhyScreen() {
 
   const name = profile.name?.trim();
   const bubbleText = name
-    ? `${name}, что для тебя изменится, когда достигнешь цели?`
-    : 'Что для тебя изменится, когда достигнешь цели?';
+    ? `${name}, что для вас изменится, когда достигнете цели?`
+    : 'Что для вас изменится, когда достигнете цели?';
 
   const toggleOption = (index: number) => {
     setSelected(prev => {
@@ -92,7 +92,7 @@ export function WhyScreen() {
         >
           <div className="font-medium">{bubbleText}</div>
           <div className="mt-1 text-xs italic" style={{ color: '#9E9E9E' }}>
-            Выбери всё что откликается — я запомню.
+            Выберите всё что откликается — я запомню.
           </div>
         </div>
       </div>
@@ -141,7 +141,7 @@ export function WhyScreen() {
             type="text"
             value={customText}
             onChange={e => setCustomText(e.target.value)}
-            placeholder="Напиши свою причину"
+            placeholder="Напишите свою причину"
             className="inga-input"
             autoFocus
           />

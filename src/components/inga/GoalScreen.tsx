@@ -33,8 +33,8 @@ export function GoalScreen() {
 
   const name = profile.name?.trim();
   const bubbleText = name
-    ? `${name}, на сколько кг ты хочешь похудеть?`
-    : 'На сколько кг ты хочешь похудеть?';
+    ? `${name}, на сколько кг вы хотите похудеть?`
+    : 'На сколько кг вы хотите похудеть?';
 
   const handleNext = () => {
     const currentWeight = profile.weight || (profile as any).current_weight_kg || 70;

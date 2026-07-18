@@ -49,7 +49,7 @@ export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: Voic
         stream.getTracks().forEach(t => t.stop());
       });
     } catch {
-      setError('Нужно разрешение на микрофон. Проверь настройки браузера 💛');
+      setError('Нужно разрешение на микрофон. Проверьте настройки браузера 💛');
       setShowDialog(true);
       return;
     }
@@ -72,11 +72,11 @@ export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: Voic
     };
     rec.onerror = (e: any) => {
       const code = e?.error;
-      let msg = 'Не получилось распознать голос. Можешь попробовать ещё раз или написать текстом.';
+      let msg = 'Не получилось распознать голос. Можете попробовать ещё раз или написать текстом.';
       if (code === 'not-allowed' || code === 'service-not-allowed') {
-        msg = 'Нужно разрешение на микрофон. Проверь настройки браузера 💛';
+        msg = 'Нужно разрешение на микрофон. Проверьте настройки браузера 💛';
       } else if (code === 'no-speech') {
-        msg = 'Я ничего не услышала. Попробуй ещё раз или напиши текстом.';
+        msg = 'Я ничего не услышала. Попробуйте ещё раз или напишите текстом.';
       }
       setError(msg);
       setRecording(false);
@@ -93,7 +93,7 @@ export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: Voic
       setRecording(true);
       setShowDialog(false);
     } catch {
-      setError('Не получилось запустить запись. Попробуй ещё раз.');
+      setError('Не получилось запустить запись. Попробуйте ещё раз.');
       setShowDialog(true);
     }
   };

@@ -26,11 +26,11 @@ export function GoalWeightScreen() {
 
     if (check.isUnsafe) {
       setSafeWeight(check.minHealthyWeight);
-      setMessage(`Такой вес будет ниже безопасной нормы для твоего роста. Нижняя граница здорового веса для тебя — ${check.minHealthyWeight} кг. Давай выберем цель, с которой ты будешь чувствовать себя хорошо и устойчиво.`);
+      setMessage(`Такой вес будет ниже безопасной нормы для вашего роста. Нижняя граница здорового веса для вас — ${check.minHealthyWeight} кг. Давайте выберем цель, с которой вы будете чувствовать себя хорошо и устойчиво.`);
       setStatus('unsafe');
     } else if (check.isBorderlineLow) {
       setComfortableWeight(check.comfortableWeight);
-      setMessage(`Это очень низкий вес для твоего роста. Он находится на нижней границе нормы, и удерживать его может быть сложно. Обычно комфортнее чувствуется диапазон немного выше. Если хочешь, можно начать с более устойчивой цели — например, ${check.comfortableWeight} кг, а дальше двигаться постепенно.`);
+      setMessage(`Это очень низкий вес для вашего роста. Он находится на нижней границе нормы, и удерживать его может быть сложно. Обычно комфортнее чувствуется диапазон немного выше. Если хотите, можно начать с более устойчивой цели — например, ${check.comfortableWeight} кг, а дальше двигаться постепенно.`);
       setStatus('borderline');
     } else if (check.isHealthy) {
       setMessage('Отличная цель. Всё получится, я рядом 💛');
@@ -69,7 +69,7 @@ export function GoalWeightScreen() {
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
-      <h2 className="text-2xl font-bold mb-2">Какая у тебя цель по весу?</h2>
+      <h2 className="text-2xl font-bold mb-2">Какая у вас цель по весу?</h2>
       <p className="text-muted-foreground mb-6">Введи желаемый вес в кг</p>
 
       <div className="w-full max-w-sm space-y-4">

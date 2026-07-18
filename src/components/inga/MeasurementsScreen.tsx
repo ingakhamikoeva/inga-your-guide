@@ -17,7 +17,7 @@ export function MeasurementsScreen() {
       <h2 className="text-2xl font-bold mb-2">Зафиксируем объёмы</h2>
       <div className="inga-bubble mb-6 text-center">
         <p>Вес — не единственный показатель стройности.</p>
-        <p className="text-muted-foreground mt-1">Давай зафиксируем твои объёмы, чтобы видеть динамику.</p>
+        <p className="text-muted-foreground mt-1">Давайте зафиксируем ваши объёмы, чтобы видеть динамику.</p>
       </div>
 
       <div className="w-full max-w-sm space-y-4">

@@ -28,7 +28,7 @@ const palmMethodCards = [
   },
   {
     title: 'Углеводы — кулак',
-    body: 'Ориентир для углеводов — порция размером с твой кулак.',
+    body: 'Ориентир для углеводов — порция размером с ваш кулак.',
     list: ['крупы', 'картофель', 'макароны', 'хлеб', 'лаваш', 'фрукты', 'ягоды'],
     extra: 'Лучше чаще выбирать сложные углеводы:',
     examples: ['гречку', 'рис', 'овсянку', 'картофель', 'цельнозерновой хлеб', 'макароны из твёрдых сортов'],
@@ -63,7 +63,7 @@ const howToTopics = [
   },
   {
     title: 'Объём еды',
-    content: 'Голод — твой главный враг. Не допускай чувства голода. Ешь каждые 3–4 часа, 4–6 раз в день. Объём каждого приёма пищи — до 500 г вместе с напитком.',
+    content: 'Голод — ваш главный враг. Не допускай чувства голода. Ешьте каждые 3–4 часа, 4–6 раз в день. Объём каждого приёма пищи — до 500 г вместе с напитком.',
     isVolumeLesson: true,
   },
   {
@@ -73,7 +73,7 @@ const howToTopics = [
   },
   {
     title: 'Сладкая точка',
-    content: 'Сладкое не запрещено — оно запланировано. Когда каждый день ешь что-то сладкое, спокойно проходишь мимо конфет. Фрукты, ягоды или лёгкий десерт из раздела Рецепты — Десерты. До 100 г и 100 ккал.',
+    content: 'Сладкое не запрещено — оно запланировано. Когда каждый день едите что-то сладкое, спокойно проходите мимо конфет. Фрукты, ягоды или лёгкий десерт из раздела Рецепты — Десерты. До 100 г и 100 ккал.',
     isSweetLesson: true,
   },
   {
@@ -83,7 +83,7 @@ const howToTopics = [
   },
   {
     title: 'Как планировать питание',
-    content: 'Планирование еды накануне сильно снижает риск срывов. Вечером прикинь, что съешь завтра — даже примерно. Это снимает напряжение и помогает не доводить себя до сильного голода.',
+    content: 'Планирование еды накануне сильно снижает риск срывов. Вечером прикиньте, что съедите завтра — даже примерно. Это снимает напряжение и помогает не доводить себя до сильного голода.',
     isPlanningLesson: true,
   },
   {
@@ -467,7 +467,7 @@ export function MenuScreen() {
           <h2 className="text-2xl font-bold mb-5">Вечерний перекус</h2>
 
           <div className="inga-card mb-4" style={{ background: '#F4F0F9', border: '1px solid #C9B8E8' }}>
-            <p className="text-sm font-semibold" style={{ color: '#4A3570' }}>Самое большое заблуждение: хочешь похудеть — не ешь после шести вечера.</p>
+            <p className="text-sm font-semibold" style={{ color: '#4A3570' }}>Самое большое заблуждение: хотите похудеть — не ешьте после шести вечера.</p>
             <p className="text-sm mt-2" style={{ color: '#4A3570' }}>Но ведь после шести большинство возвращается с работы — неужели голодать до утра? Мы договорились не падать в голодные ямы, и вечер — не исключение.</p>
           </div>
 
@@ -1255,7 +1255,7 @@ export function MenuScreen() {
                     <div className="rounded-xl border border-border p-3.5 space-y-2">
                       <div className="font-semibold text-sm">Важное уточнение</div>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        Метод ладони — это ориентир, а не строгий закон. Если ты снижаешь вес, лучше соблюдать принцип:
+                        Метод ладони — это ориентир, а не строгий закон. Если вы снижаете вес, лучше соблюдать принцип:
                       </p>
                       <ul className="text-sm text-muted-foreground space-y-0.5">
                         <li>• белок — в каждый основной приём пищи</li>
@@ -1265,7 +1265,7 @@ export function MenuScreen() {
                       </ul>
                     </div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Метод ладони помогает не усложнять питание. Тебе не нужно каждый раз считать всё до грамма. Достаточно собрать тарелку так, чтобы в ней были: белок + углеводы + овощи + немного жиров. Так проще держать сытость, снижать вес и не жить в режиме вечных расчётов.
+                      Метод ладони помогает не усложнять питание. Вам не нужно каждый раз считать всё до грамма. Достаточно собрать тарелку так, чтобы в ней были: белок + углеводы + овощи + немного жиров. Так проще держать сытость, снижать вес и не жить в режиме вечных расчётов.
                     </p>
                   </div>
                 ) : (topic as any).isNutrientsLesson ? (
@@ -1727,7 +1727,7 @@ export function MenuScreen() {
                   <div className="text-left">
                     <p className="text-sm font-semibold">{cat.label}</p>
                     {cat.count ? (
-                      <p className="text-xs text-muted-foreground">{cat.count} рецепта</p>
+                      <p className="text-xs text-muted-foreground">{cat.count} {(() => { const n = cat.count, m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return 'рецепт'; if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'рецепта'; return 'рецептов'; })()}</p>
                     ) : (
                       <p className="text-xs text-muted-foreground">Скоро появятся</p>
                     )}
@@ -1829,7 +1829,7 @@ export function MenuScreen() {
                 <div className="inga-card">
                   <div className="font-semibold mb-2">Безопасный коридор веса</div>
                   <p className="text-sm text-muted-foreground">
-                    {stage === 'fixation' ? 'Твой ориентир: ' : 'Твой рабочий диапазон: '}
+                    {stage === 'fixation' ? 'Ваш ориентир: ' : 'Ваш рабочий диапазон: '}
                     от <span className="font-semibold text-foreground">{low} кг</span> до <span className="font-semibold text-foreground">{high} кг</span>.
                     {stage === 'fixation'
                       ? ' Колебания веса внутри этого диапазона — нормальны.'
@@ -1846,7 +1846,7 @@ export function MenuScreen() {
               <div className="inga-card">
                 <div className="font-semibold mb-1">Фиксация: калорийность</div>
                 <p className="text-sm text-muted-foreground">
-                  Сейчас твой ориентир — <span className="font-semibold text-foreground">{profile.currentFixationCalories} ккал в день</span>
+                  Сейчас ваш ориентир — <span className="font-semibold text-foreground">{profile.currentFixationCalories} ккал в день</span>
                   {profile.fixationWeekNumber ? ` (неделя ${profile.fixationWeekNumber})` : ''}.
                   {' '}Каждую неделю аккуратно прибавляем ~200 ккал — за счёт половинки авокадо, целого яйца, 40–50 г сыра, орехов в порции или ложки масла в салат.
                 </p>
@@ -1926,26 +1926,7 @@ export function MenuScreen() {
               <p className="text-sm font-semibold mb-1">📊 Шпаргалка по продуктам</p>
               <p className="text-xs text-muted-foreground leading-relaxed">Калорийность продуктов с цветными индикаторами и поиском. Белки, углеводы, клетчатка, жиры.</p>
             </button>
-            <div className="inga-card opacity-60 pointer-events-none">
-              <p className="text-sm font-semibold mb-1">📊 Упрощённая таблица калорийности (старая)</p>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-3">Калорийность основных продуктов на 100 г — для быстрой ориентации без подсчётов.</p>
-              {[
-                { cat: 'Белки (нежирные)', items: ['Куриная грудка — 110 ккал', 'Индейка грудка — 115 ккал', 'Треска — 75 ккал', 'Минтай — 70 ккал', 'Тунец (в собственном соку) — 95 ккал', 'Горбуша — 140 ккал', 'Творог 0% — 65 ккал', 'Греческий йогурт 2% — 60 ккал', 'Яичный белок — 45 ккал', 'Кальмар — 75 ккал', 'Креветки — 85 ккал'] },
-                { cat: 'Сложные углеводы', items: ['Гречка варёная — 110 ккал', 'Овсянка варёная — 85 ккал', 'Рис бурый варёный — 110 ккал', 'Макароны варёные — 115 ккал', 'Картофель варёный — 75 ккал', 'Чечевица варёная — 110 ккал', 'Нут варёный — 120 ккал'] },
-                { cat: 'Клетчатка (овощи)', items: ['Огурец — 15 ккал', 'Помидор — 20 ккал', 'Капуста белокочанная — 25 ккал', 'Перец болгарский — 30 ккал', 'Брокколи — 35 ккал', 'Кабачок — 25 ккал', 'Листья салата — 15 ккал', 'Грибы шампиньоны — 25 ккал', 'Квашеная капуста — 20 ккал'] },
-                { cat: 'Фрукты и ягоды', items: ['Яблоко — 45 ккал', 'Клубника — 35 ккал', 'Черника — 45 ккал', 'Арбуз — 30 ккал', 'Апельсин — 45 ккал', 'Банан — 90 ккал', 'Виноград — 65 ккал'] },
-              ].map(group => (
-                <div key={group.cat} className="mb-3">
-                  <p className="text-xs font-semibold text-primary mb-1">{group.cat}</p>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                    {group.items.map(item => (
-                      <p key={item} className="text-xs text-muted-foreground">{item}</p>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
+            
             <button
               onClick={() => window.open('/guides/gaid-sakharozameniteli.html', '_blank')}
               className="w-full inga-card text-left"

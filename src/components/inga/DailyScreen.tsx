@@ -659,24 +659,24 @@ export function DailyScreen() {
         <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
           <h2 className="text-xl font-bold">План на завтра</h2>
           <p className="text-sm text-muted-foreground">
-            Знаешь, что сильно помогает не срываться? Планирование еды накануне.
-            Постарайся сегодня вечером заранее продумать, что ты будешь есть завтра
-            на завтрак, обед, ужин и перекусы. Так ты не {getText('останешься одна', 'останешься один', profile.gender)} на один с голодом и случайной едой.
+            Знаете, что сильно помогает не срываться? Планирование еды накануне.
+            Постарайтесь сегодня вечером заранее продумать, что вы будете есть завтра
+            на завтрак, обед, ужин и перекусы. Так вы не останетесь один на один с голодом и случайной едой.
           </p>
 
           <div className="inga-card">
             <p className="font-semibold mb-2 text-sm">Как планировать</p>
             <p className="text-sm text-muted-foreground">
-              Запланируй, что у тебя будет в качестве белка, клетчатки и углеводов
+              Запланируйте, что у вас будет в качестве белка, клетчатки и углеводов
               в каждом приёме пищи, включая перекусы.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Также подумай, что ты будешь есть на Сладкую точку:
+              Также подумайте, что вы будете есть на Сладкую точку:
               десерт до 100 ккал/100 г или ягоды/фрукты.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Можешь даже заранее заказать необходимые продукты или положить
-              их в корзину, если покупаешь онлайн.
+              Можете даже заранее заказать необходимые продукты или положить
+              их в корзину, если покупаете онлайн.
             </p>
           </div>
 
@@ -723,8 +723,8 @@ export function DailyScreen() {
       if (waterOk) wins.push('норму воды');
       if (sweetOk) wins.push('сладкую точку');
       const improvements: string[] = [];
-      if (!fiberOk) improvements.push('добавь больше клетчатки — свежие овощи к каждому приёму пищи');
-      else if (!proteinOk) improvements.push('добавь белок в каждый приём пищи');
+      if (!fiberOk) improvements.push('добавьте больше клетчатки — свежие овощи к каждому приёму пищи');
+      else if (!proteinOk) improvements.push('добавьте белок в каждый приём пищи');
       else if (!waterOk) improvements.push('выпей побольше воды — хотя бы 6 стаканов');
       else improvements.push('продолжай в том же духе 🧡');
 
@@ -749,7 +749,7 @@ export function DailyScreen() {
 
           {achievements.length > 0 && (
             <div>
-              <p className="font-semibold mb-2 text-sm">Твои достижения</p>
+              <p className="font-semibold mb-2 text-sm">Ваши достижения</p>
               <div className="flex flex-wrap gap-2">
                 {achievements.map(a => (
                   <div
@@ -807,6 +807,7 @@ export function DailyScreen() {
       {/* Header: date + day badge */}
       <div className="w-full max-w-sm flex items-center justify-between mb-4">
         <span className="text-sm text-muted-foreground">{dateLabel}</span>
+        <div className="flex items-center gap-2">
         <span
           style={{
             background: '#FAEEDA',
@@ -819,6 +820,20 @@ export function DailyScreen() {
         >
           День {dayNumber}
         </span>
+        <button
+          onClick={() => setStep('menu')}
+          className="text-sm font-semibold"
+          style={{
+            background: '#fff',
+            color: '#FF6200',
+            border: '1px solid #FFD9C2',
+            borderRadius: '20px',
+            padding: '4px 14px',
+          }}
+        >
+          ☰ Меню
+        </button>
+        </div>
       </div>
 
       {/* Tab navigation */}
@@ -866,9 +881,9 @@ export function DailyScreen() {
                   />
                   <div className="text-sm">
                     <p>
-                      <span className="font-semibold">{profile.name || 'Привет'}</span>, прежде чем начнём — скажи, что ты точно не хочешь убирать из меню?
+                      <span className="font-semibold">{profile.name || 'Привет'}</span>, прежде чем начнём — скажите, что вы точно не хотите убирать из меню?
                     </p>
-                    <p className="text-muted-foreground mt-1 text-xs">Выбери всё что любишь — я покажу лёгкую версию.</p>
+                    <p className="text-muted-foreground mt-1 text-xs">Выберите всё что любишь — я покажу лёгкую версию.</p>
                   </div>
                 </div>
 
@@ -1070,10 +1085,10 @@ export function DailyScreen() {
           const userName = profile.name || 'Друг';
 
           const ingaMsg = (() => {
-            if (totalMeals === 0) return 'Добавь первый приём пищи — не доводи себя до голода 🧡';
+            if (totalMeals === 0) return 'Добавьте первый приём пищи — не доводите себя до голода 🧡';
             if (waterCount < 4) return `${userName}, выпей ещё воды — пока только ${waterCount} из 6 стаканов 💧`;
-            if (proteinGrams < proteinTarget * 0.6) return 'Белка маловато сегодня. Добавь мясо, рыбу, яичный белок или творог к следующему приёму.';
-            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки. Добавь овощи или ягоды к следующему приёму 🥦';
+            if (proteinGrams < proteinTarget * 0.6) return 'Белка маловато сегодня. Добавьте мясо, рыбу, яичный белок или творог к следующему приёму.';
+            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки. Добавьте овощи или ягоды к следующему приёму 🥦';
             if (waterCount >= 5 && proteinGrams >= proteinTarget * 0.8 && fiberMeals / totalMeals >= 0.6) {
               return 'Хороший день — структура держится. Продолжай в том же духе 🧡';
             }
@@ -1704,7 +1719,7 @@ export function DailyScreen() {
               </div>
               {sweetPoint === 'no' && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Запланируй на завтра — это помогает не срываться
+                  Запланируйте на завтра — это помогает не срываться
                 </p>
               )}
             </div>
@@ -1722,8 +1737,12 @@ export function DailyScreen() {
         )}
       </div>
 
-      <button onClick={() => setStep('menu')} className="mt-6 text-sm text-muted-foreground underline">
-        Открыть меню
+      <button
+        onClick={() => setStep('menu')}
+        className="mt-6 w-full max-w-md inga-btn-secondary font-semibold"
+        style={{ borderRadius: 12 }}
+      >
+        ☰ Открыть меню
       </button>
 
       {/* Fixed bottom chat panel */}
@@ -1743,7 +1762,7 @@ export function DailyScreen() {
             Поговорим?
           </p>
           <p className="text-[12px]" style={{ color: '#A89080' }}>
-            Задай вопрос или расскажи, как проходит день
+            Задайте вопрос или расскажите, как проходит день
           </p>
         </div>
         <span className="text-[18px]" style={{ color: '#FF6200' }}>

@@ -65,7 +65,7 @@ export function TrackingMethodScreen() {
             borderBottomLeftRadius: '3px',
           }}
         >
-          {profile.name ? `${profile.name}, ` : ''}последний шаг! Как тебе удобнее ориентироваться в порциях?
+          {profile.name ? `${profile.name}, ` : ''}последний шаг! Как вам удобнее ориентироваться в порциях?
         </div>
       </div>
 
@@ -140,11 +140,11 @@ export function TrackingMethodScreen() {
             <span className="font-bold" style={{ color: '#3B2A20' }}>Метод ладони</span>
           </div>
           <p className="text-sm mb-3" style={{ color: '#6B5B4E' }}>
-            Измеряешь порции руками — ориентир всегда с тобой
+            Измеряете порции руками — ориентир всегда с вами
           </p>
           <img src={palmMethod} alt="Метод ладони" className="w-full rounded-lg" style={{ maxWidth: '280px', width: '100%', display: 'block', margin: '0 auto' }} />
           <p className="text-xs italic mt-3" style={{ color: '#9B8B7E' }}>
-            Подходит, если часто ешь вне дома
+            Подходит, если часто едите вне дома
           </p>
         </button>
 

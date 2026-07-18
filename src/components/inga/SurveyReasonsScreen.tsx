@@ -28,7 +28,7 @@ export function SurveyReasonsScreen() {
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
       <h2 className="text-2xl font-bold mb-2">Причины набора веса</h2>
-      <p className="text-muted-foreground mb-6 text-center">Выбери всё, что подходит</p>
+      <p className="text-muted-foreground mb-6 text-center">Выберите всё, что подходит</p>
 
       <div className="w-full max-w-sm flex flex-wrap gap-3 justify-center mb-8">
         {reasons.map(r => (

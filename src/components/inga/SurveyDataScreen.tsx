@@ -94,7 +94,7 @@ export function SurveyDataScreen() {
             borderBottomLeftRadius: '3px',
           }}
         >
-          Расскажи о себе — рассчитаю твою личную норму калорий.
+          Расскажите о себе — рассчитаю вашу личную норму калорий.
         </div>
       </div>
 

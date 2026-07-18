@@ -13,7 +13,7 @@ export function FoodTestResultScreen() {
       <h2 className="text-2xl font-bold mb-6">Результаты тестирования</h2>
 
       <div className="inga-bubble mb-4">
-        <p className="text-muted-foreground mb-2">Я посмотрела твои ответы и хочу рассказать, как я вижу твою ситуацию.</p>
+        <p className="text-muted-foreground mb-2">Я посмотрела ваши ответы и хочу рассказать, как я вижу вашу ситуацию.</p>
       </div>
 
       <div className="w-full max-w-sm space-y-4">
@@ -33,7 +33,7 @@ export function FoodTestResultScreen() {
         </div>
 
         <div className="inga-card">
-          <div className="font-bold mb-2">Твой профиль</div>
+          <div className="font-bold mb-2">Ваш профиль</div>
           <div className="text-sm space-y-1">
             <p><span className="text-muted-foreground">Паттерн:</span> {result.pattern}</p>
             <p><span className="text-muted-foreground">Триггер:</span> {result.trigger}</p>

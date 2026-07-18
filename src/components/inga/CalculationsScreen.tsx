@@ -16,11 +16,11 @@ export function CalculationsScreen() {
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
-      <h2 className="text-2xl font-bold mb-2">Твои результаты</h2>
+      <h2 className="text-2xl font-bold mb-2">Ваши результаты</h2>
       <p className="text-muted-foreground text-center mb-6 max-w-sm text-sm">
         {hasName(profile.name)
-          ? withName(profile.name, 'я записала твои данные. Сейчас рассчитаю твою равновесную калорийность.')
-          : 'Я записала твои данные. Сейчас рассчитаю твою равновесную калорийность.'}
+          ? withName(profile.name, 'я записала ваши данные. Сейчас рассчитаю вашу равновесную калорийность.')
+          : 'Я записала ваши данные. Сейчас рассчитаю вашу равновесную калорийность.'}
       </p>
 
       <div className="w-full max-w-sm space-y-4">
