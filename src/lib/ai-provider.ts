@@ -48,7 +48,7 @@ export interface AskIngaResult {
   route: RouteType;
 }
 
-const FALLBACK_MESSAGE = 'Инга сейчас временно не отвечает. Попробуй ещё раз чуть позже.';
+const FALLBACK_MESSAGE = 'Инга сейчас временно не отвечает. Попробуйте ещё раз чуть позже.';
 
 // Lightweight client-side route hint. The server has its own fallback detection,
 // so this only needs to be approximate.
