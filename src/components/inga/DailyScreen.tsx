@@ -9,7 +9,9 @@ import { LIGHT_RECIPES, timesLighter, LightRecipeEntry } from '@/lib/light-versi
 import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
-import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadLightSavings, type MealTag, type LightSavings } from '@/lib/db';
+import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadLightSavings, loadProgramProgress, logUserEvent, type MealTag, type LightSavings, type ProgramProgress } from '@/lib/db';
+import { PROGRAM_MONTH1, type ProgramLink } from '@/lib/program-month1';
+import { ProgramDayCard, currentProgramDay, localDateStr } from './ProgramDayCard';
 import { findSwapHint, registerHintShown, muteSwapPair, kgEquivalent, COPILKA_TEXTS, HINT_TEXTS, type SwapPair } from '@/lib/swap-base';
 import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
@@ -256,6 +258,50 @@ export function DailyScreen() {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [today]);
+
+  // Программа «Месяц 1»: прогресс, раскрытие карточки на Утре
+  const [programProgress, setProgramProgress] = useState<ProgramProgress | null>(null);
+  const [programExpanded, setProgramExpanded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadProgramProgress(1).then(p => { if (!cancelled && p) setProgramProgress(p); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [today]);
+
+  const programDayNum = currentProgramDay(programProgress);
+  const programDay = PROGRAM_MONTH1[programDayNum - 1];
+  const programDayIsNew = !programProgress || !programProgress.opened_days.includes(programDayNum);
+
+  const handleProgramExpand = () => {
+    const next = !programExpanded;
+    setProgramExpanded(next);
+    if (next && programDayIsNew) {
+      // Тап «раскрыла» = день засчитан (правило согласовано)
+      logUserEvent('program_day_opened', { month: 1, day: programDayNum, date: localDateStr() }).catch(() => {});
+      setProgramProgress(prev => ({
+        opened_days: [...(prev?.opened_days ?? []), programDayNum],
+        last_day: programDayNum,
+        last_opened_at: new Date().toISOString(),
+        tasks_done: prev?.tasks_done ?? [],
+      }));
+    }
+  };
+
+  const handleProgramTask = (done: boolean) => {
+    logUserEvent(done ? 'program_task_done' : 'program_task_undone', { month: 1, day: programDayNum }).catch(() => {});
+    setProgramProgress(prev => prev ? {
+      ...prev,
+      tasks_done: done
+        ? [...prev.tasks_done.filter(d => d !== programDayNum), programDayNum]
+        : prev.tasks_done.filter(d => d !== programDayNum),
+    } : prev);
+  };
+
+  const handleProgramJump = (link: ProgramLink) => {
+    try { localStorage.setItem('inga-menu-jump', JSON.stringify(link.jump)); } catch {}
+    setStep('menu');
+  };
 
   // Копилка лёгкости: сумма за текущий месяц
   useEffect(() => {
@@ -792,6 +838,17 @@ export function DailyScreen() {
       <div className="w-full max-w-sm">
         {tab === 'morning' && (
           <div className="space-y-4 animate-fade-in-up">
+            {!showFoodSurvey && programDay && (
+              <ProgramDayCard
+                data={programDay}
+                expanded={programExpanded}
+                taskDone={Boolean(programProgress?.tasks_done.includes(programDayNum))}
+                onToggleExpand={handleProgramExpand}
+                onTaskToggle={handleProgramTask}
+                onJump={handleProgramJump}
+                badge={programDayIsNew ? 'Новое' : undefined}
+              />
+            )}
             {showFoodSurvey && (
               <div className="space-y-4">
                 <div className="inga-bubble flex gap-3 items-start">
