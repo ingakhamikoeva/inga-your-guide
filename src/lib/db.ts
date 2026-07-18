@@ -275,6 +275,23 @@ export async function logUserEvent(type: string, payload?: Json) {
   await apiFetch('/events', { method: 'POST', body: { type, payload: payload ?? null } });
 }
 
+// Прогресс программы «Месяц N»
+export interface ProgramProgress {
+  opened_days: number[];
+  last_day: number;
+  last_opened_at: string | null;
+  tasks_done: number[];
+}
+
+export async function loadProgramProgress(month = 1): Promise<ProgramProgress | null> {
+  try {
+    return await apiFetch<ProgramProgress>(`/events/program-progress?month=${month}`);
+  } catch (e) {
+    console.error('loadProgramProgress failed', e);
+    return null;
+  }
+}
+
 // ============ SUBSCRIPTIONS / CONSULTATIONS ============
 
 export async function startTrial() {
