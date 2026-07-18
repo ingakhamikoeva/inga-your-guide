@@ -11,6 +11,9 @@ import { hasName, cleanName } from '@/lib/user-name';
 import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
 import { FoodCheatsheet } from '@/components/inga/FoodCheatsheet';
+import { PROGRAM_MONTH1 } from '@/lib/program-month1';
+import { ProgramDayCard, currentProgramDay } from './ProgramDayCard';
+import { loadProgramProgress, logUserEvent, type ProgramProgress } from '@/lib/db';
 import recipeOatmeal from '@/assets/breakfast_oatmeal.jpg';
 import recipeOatmealPlain from '@/assets/breakfast_oatmeal_plain.jpg';
 import recipePate from '@/assets/breakfast_pate.jpg';
@@ -150,6 +153,14 @@ export function MenuScreen() {
   const { setStep, weeklyData, profile, dailyReports, medals, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>("main");
   const [nutrientSection, setNutrientSection] = useState<string | null>(null);
+  // Программа «Месяц 1» (библиотека)
+  const [programProgress, setProgramProgress] = useState<ProgramProgress | null>(null);
+  const [libraryDay, setLibraryDay] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadProgramProgress(1).then(p => { if (!cancelled && p) setProgramProgress(p); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
   const [recipeSection, setRecipeSection] = useState<string | null>(null);
   const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [activeRecipe, setActiveRecipe] = useState<string | null>(null);
@@ -161,10 +172,11 @@ export function MenuScreen() {
       const raw = localStorage.getItem('inga-menu-jump');
       if (!raw) return;
       localStorage.removeItem('inga-menu-jump');
-      const jump = JSON.parse(raw) as { section?: MenuSection; recipeSection?: string; activeRecipe?: string };
+      const jump = JSON.parse(raw) as { section?: MenuSection; recipeSection?: string; activeRecipe?: string; nutrientSection?: string };
       if (jump.section) setSection(jump.section);
       if (jump.recipeSection) setRecipeSection(jump.recipeSection);
       if (jump.activeRecipe) setActiveRecipe(jump.activeRecipe);
+      if (jump.nutrientSection) setNutrientSection(jump.nutrientSection);
     } catch { /* некритично */ }
   }, []);
   const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
@@ -1083,6 +1095,90 @@ export function MenuScreen() {
     );
   }
 
+  if (section === 'how-to' && nutrientSection === 'Месяц1') {
+    const opened = new Set(programProgress?.opened_days ?? []);
+    const tasksDone = new Set(programProgress?.tasks_done ?? []);
+    const availableDay = currentProgramDay(programProgress);
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => { setNutrientSection(null); setLibraryDay(null); }} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-1">Месяц 1</h2>
+          <p className="text-sm text-muted-foreground mb-5">
+            Программа на 30 дней: урок, задание и привычка каждый день. Открыто {opened.size} из 30.
+          </p>
+          <div className="space-y-2">
+            {PROGRAM_MONTH1.map(d => {
+              const isOpened = opened.has(d.day);
+              const isAvailable = d.day <= availableDay;
+              if (libraryDay === d.day) {
+                return (
+                  <ProgramDayCard
+                    key={d.day}
+                    data={d}
+                    expanded
+                    taskDone={tasksDone.has(d.day)}
+                    onToggleExpand={() => setLibraryDay(null)}
+                    onTaskToggle={(done) => {
+                      logUserEvent(done ? 'program_task_done' : 'program_task_undone', { month: 1, day: d.day }).catch(() => {});
+                      setProgramProgress(prev => prev ? {
+                        ...prev,
+                        tasks_done: done
+                          ? [...prev.tasks_done.filter(x => x !== d.day), d.day]
+                          : prev.tasks_done.filter(x => x !== d.day),
+                      } : prev);
+                    }}
+                    onJump={(link) => {
+                      setLibraryDay(null);
+                      setSection((link.jump.section || 'main') as MenuSection);
+                      setNutrientSection(link.jump.nutrientSection ?? null);
+                      if (link.jump.recipeSection) setRecipeSection(link.jump.recipeSection);
+                    }}
+                  />
+                );
+              }
+              return (
+                <button
+                  key={d.day}
+                  disabled={!isAvailable}
+                  onClick={() => {
+                    setLibraryDay(d.day);
+                    if (!opened.has(d.day)) {
+                      logUserEvent('program_day_opened', { month: 1, day: d.day, date: new Date().toISOString().slice(0, 10) }).catch(() => {});
+                      setProgramProgress(prev => ({
+                        opened_days: [...(prev?.opened_days ?? []), d.day],
+                        last_day: Math.max(prev?.last_day ?? 0, d.day),
+                        last_opened_at: new Date().toISOString(),
+                        tasks_done: prev?.tasks_done ?? [],
+                      }));
+                    }
+                  }}
+                  className="w-full inga-card text-left flex items-center gap-3"
+                  style={{ opacity: isAvailable ? 1 : 0.45 }}
+                >
+                  <span
+                    className="shrink-0 flex items-center justify-center text-xs font-bold"
+                    style={{
+                      width: 30, height: 30, borderRadius: '50%',
+                      background: isOpened ? '#FF6200' : '#FFF1E8',
+                      color: isOpened ? '#fff' : '#FF6200',
+                    }}
+                  >
+                    {isOpened ? '✓' : d.day}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="text-sm font-semibold block">День {d.day}. {d.theme}</span>
+                    {!isAvailable && <span className="text-[11px] text-muted-foreground">Откроется позже — по одному дню</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (section === 'how-to') {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
@@ -1090,6 +1186,17 @@ export function MenuScreen() {
           <BackButton />
           <h2 className="text-2xl font-bold mb-6">Как похудеть</h2>
           <div className="space-y-2.5">
+            <div
+              className="inga-card cursor-pointer flex items-center justify-between"
+              onClick={() => setNutrientSection('Месяц1')}
+              style={{ border: '1px solid #FFD9C2', background: '#FFF9F4' }}
+            >
+              <div>
+                <span className="font-semibold">🗓️ Месяц 1 — программа 30 дней</span>
+                <p className="text-xs text-muted-foreground font-normal mt-0.5">Урок, задание и привычка на каждый день</p>
+              </div>
+              <ChevronRight size={18} className="text-muted-foreground" />
+            </div>
             {effectiveTopics.map((topic, idx) => (
               <React.Fragment key={topic.title}>
                 {((topic as any).isFixation) && (
@@ -2441,9 +2548,17 @@ export function MenuScreen() {
               ))}
             </div>
 
+            <button
+              onClick={() => window.open('/guides/gaid-sakharozameniteli.html', '_blank')}
+              className="w-full inga-card text-left"
+            >
+              <p className="text-sm font-semibold mb-1">🍬 Гайд по сахарозаменителям</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Какие безопасны, какие избегать — и как выбрать своё.</p>
+            </button>
+
             <div className="inga-card opacity-60">
               <p className="text-sm font-semibold mb-1">📎 Гайды</p>
-              <p className="text-xs text-muted-foreground">Скоро появятся полезные материалы для скачивания.</p>
+              <p className="text-xs text-muted-foreground">Скоро появятся новые материалы для скачивания.</p>
             </div>
 
           </div>
