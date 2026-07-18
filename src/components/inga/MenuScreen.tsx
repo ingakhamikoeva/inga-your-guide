@@ -1392,8 +1392,6 @@ export function MenuScreen() {
 
     // Вторые блюда
 
-    // Несладкая выпечка (пирожки дублируются из завтраков — один источник данных)
-    const pirozhkiRef = breakfastRecipes.find(r => r.id === 'pirozhki')!;
 
     // Напитки
 
