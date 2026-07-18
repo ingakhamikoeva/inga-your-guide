@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<style>
+  /* Обёртка для просмотра вне рамки Claude Design: центрируем и ограничиваем ширину */
+  body { background: #FAF5F0; }
+  x-dc { display: block; max-width: 780px; margin: 0 auto; padding: 8px 16px 40px; box-sizing: border-box; }
+  x-dc img, x-dc table { max-width: 100%; }
+  x-dc * { overflow-wrap: break-word; }
+  /* На узких экранах колонки плюсы/минусы — в столбик */
+  @media (max-width: 640px) {
+    x-dc [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+  }
+</style>
 </head>
 <body>
 <x-dc>
