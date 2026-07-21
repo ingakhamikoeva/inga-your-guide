@@ -24,7 +24,7 @@ services:
       # App schema. Runs once on an empty volume.
       - ./server/migrations:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
       interval: 5s
@@ -74,7 +74,7 @@ services:
       OAUTH_APPLE_CLIENT_ID: ${OAUTH_APPLE_CLIENT_ID}
       OAUTH_APPLE_CLIENT_SECRET: ${OAUTH_APPLE_CLIENT_SECRET}
     ports:
-      - "8787:8787"
+      - "127.0.0.1:8787:8787"
 
   # ── Frontend SPA ──────────────────────────────────────────────────────
   web:
@@ -89,7 +89,7 @@ services:
     depends_on:
       - api
     ports:
-      - "${WEB_HTTP_PORT:-8080}:80"
+      - "127.0.0.1:${WEB_HTTP_PORT:-8080}:80"
 
 # ─────────────────────────────────────────────────────────────────────────
 # Persistent named volumes.
