@@ -1707,13 +1707,13 @@ export function MenuScreen() {
           <p className="text-sm text-muted-foreground mb-5">Подборки блюд по методу «Лёгкая замена».</p>
           <div className="space-y-2.5">
             {[
-              { id: 'breakfasts', icon: '🌅', label: 'Завтраки', count: 8 },
-              { id: 'soups', icon: '🍲', label: 'Супы', count: 1 },
-              { id: 'lunches', icon: '🍽️', label: 'Вторые блюда', count: 2 },
+              { id: 'breakfasts', icon: '🌅', label: 'Завтраки', count: breakfastRecipes.length },
+              { id: 'soups', icon: '🍲', label: 'Супы', count: soupRecipes.length },
+              { id: 'lunches', icon: '🍽️', label: 'Вторые блюда', count: mainDishRecipes.length },
               { id: 'snacks', icon: '🥗', label: 'Перекусы', count: null },
-              { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: 2 },
-              { id: 'drinks', icon: '☕', label: 'Напитки', count: 1 },
-              { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: 10 },
+              { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: bakingRecipes.length },
+              { id: 'drinks', icon: '☕', label: 'Напитки', count: drinksRecipes.length },
+              { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: sweetRecipes.length },
               { id: 'evening', icon: '🌙', label: 'Метаболическая точка', count: null },
             ].map(cat => (
               <button
@@ -1997,21 +1997,57 @@ export function MenuScreen() {
   }
 
   if (section === 'consultation') {
+    // Тексты и цена утверждены Ингой 18.07.2026
+    const CONSULT_LINKS = [
+      { label: 'Написать в Telegram', url: 'https://t.me/Inga_Keosidi' },
+      { label: 'Написать ВКонтакте', url: 'https://vk.ru/inga_keosidi' },
+      { label: 'Написать в MAX', url: 'https://max.ru/u/f9LHodD0cOJutz4kEit4dhKg_zry1MZm1rRaATtzDOs02lyk9S0YlwxEJvU' },
+    ];
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
           <BackButton />
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-2xl font-bold">Консультация с нутрициологом</h2>
-            <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent text-accent-foreground">платно</span>
+          <h2 className="text-2xl font-bold mb-3">Персональная консультация</h2>
+          <div className="inga-bubble mb-4">
+            <p className="font-semibold">Час со мной один на один — разберём именно вашу ситуацию.</p>
           </div>
-          <h3 className="text-base font-semibold mb-3">Индивидуальная консультация</h3>
-          <div className="inga-bubble mb-6">
-            <p>Иногда полезно разобрать ситуацию глубже — лично, с профессиональным нутрициологом.</p>
-            <p className="text-muted-foreground mt-2">Вы можете записаться на индивидуальную консультацию и получить персональный план питания с учётом ваших особенностей, анализов и образа жизни.</p>
+          <div className="inga-card mb-4">
+            <p className="text-sm font-semibold mb-2">Что будет на консультации:</p>
+            <div className="space-y-1.5">
+              {[
+                'разберём ваш рацион и найдём, что именно мешает снижению веса',
+                'составим план под ваш образ жизни, вкусы и здоровье',
+                'отвечу на все вопросы — про питание, замены, плато, анализы',
+                'вы уйдёте с понятными шагами, а не с общими советами',
+              ].map(item => (
+                <div key={item} className="flex gap-2 items-start">
+                  <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                  <span className="text-sm text-muted-foreground leading-relaxed">{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            <button className="inga-btn-primary w-full">Записаться на консультацию</button>
+          <div className="inga-card mb-5">
+            <p className="text-sm"><span className="font-semibold">Формат:</span> видеозвонок или переписка — как вам удобнее, 60 минут.</p>
+            <p className="text-sm mt-1"><span className="font-semibold">Стоимость:</span> 5 000 ₽.</p>
+          </div>
+          <p className="text-sm text-muted-foreground mb-3">Чтобы записаться, напишите мне в удобном мессенджере — отвечаю лично:</p>
+          <div className="space-y-2.5">
+            {CONSULT_LINKS.map(l => (
+              <button
+                key={l.label}
+                onClick={() => window.open(l.url, '_blank')}
+                className="inga-btn-primary w-full"
+              >
+                {l.label}
+              </button>
+            ))}
+            <button
+              onClick={() => window.open('mailto:inga@legche.online?subject=' + encodeURIComponent('Запись на консультацию'), '_blank')}
+              className="inga-btn-secondary w-full"
+            >
+              Написать на почту: inga@legche.online
+            </button>
             <button onClick={() => setSection('main')} className="inga-btn-secondary w-full">Пока не нужно</button>
           </div>
         </div>
@@ -2365,6 +2401,21 @@ ${rows.map(({ date, weight, report }) => `
         <p className="text-xs text-muted-foreground text-center mt-1">
           Отчёт за последние 14 дней — для подготовки к консультации
         </p>
+
+        {/* Помощь и поддержка */}
+        <div className="inga-card mt-4">
+          <p className="text-sm font-semibold mb-1">🛟 Помощь и поддержка</p>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+            Если что-то не работает или есть вопрос по приложению — напишите нам, мы поможем.
+          </p>
+          <button
+            onClick={() => window.open('mailto:support@legche.online?subject=' + encodeURIComponent('Вопрос по приложению legche.online'), '_blank')}
+            className="text-sm font-semibold"
+            style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}
+          >
+            support@legche.online
+          </button>
+        </div>
 
         {/* 8. Выйти из аккаунта */}
         {!confirmSignOut ? (
