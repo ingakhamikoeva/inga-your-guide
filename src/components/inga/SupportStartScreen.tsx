@@ -25,7 +25,7 @@ export function SupportStartScreen() {
 
       <div className="inga-bubble mb-4">
         <p className="mb-3">{withName(profile.name, 'начинаем спокойно. Сегодня просто наблюдаем за питанием и ритмом.')}</p>
-        <p className="mb-3 text-sm text-muted-foreground">С учётом твоих ответов мы будем работать так:</p>
+        <p className="mb-3 text-sm text-muted-foreground">С учётом ваших ответов мы будем работать так:</p>
         {profile.foodProfile?.vulnerableTime === 'вечер' && (
           <ul className="text-sm space-y-1 text-muted-foreground">
             <li>• делать упор на сытые приёмы пищи днём</li>

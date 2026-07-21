@@ -180,7 +180,7 @@ export function DailyScreen() {
     const n = selectedFoods.length;
     if (n <= 2) return `Поняла, запомнила! 🧡 У меня есть рецепт для «${first}». Покажу сегодня — ты удивишься, насколько это просто.`;
     if (n <= 4) return `Хороший список! 🧡 Начнём с «${first}» — покажу сегодня. Остальное разберём по одному в день.`;
-    return `Ты любишь поесть со вкусом — это прекрасно! 😄 Всё это можно оставить. Начнём с «${first}» — уже сегодня.`;
+    return `Вы любите поесть со вкусом — это прекрасно! 😄 Всё это можно оставить. Начнём с «${first}» — уже сегодня.`;
   })();
 
   // Detect "sweet trigger" from weight gain reasons
@@ -883,7 +883,7 @@ export function DailyScreen() {
                     <p>
                       <span className="font-semibold">{profile.name || 'Привет'}</span>, прежде чем начнём — скажите, что вы точно не хотите убирать из меню?
                     </p>
-                    <p className="text-muted-foreground mt-1 text-xs">Выберите всё что любишь — я покажу лёгкую версию.</p>
+                    <p className="text-muted-foreground mt-1 text-xs">Выберите всё, что любите, — я покажу лёгкую версию.</p>
                   </div>
                 </div>
 

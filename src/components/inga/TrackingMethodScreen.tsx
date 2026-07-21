@@ -117,7 +117,7 @@ export function TrackingMethodScreen() {
             </div>
           </div>
           <p className="text-xs italic mt-3" style={{ color: '#9B8B7E' }}>
-            Подходит, если любишь видеть структуру
+            Подходит, если любите видеть структуру
           </p>
         </button>
 
