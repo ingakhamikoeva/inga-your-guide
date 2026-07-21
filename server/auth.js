@@ -7,6 +7,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool, requireAuth } from "./index.js";
+import { sendPasswordResetEmail, sendDay0Email } from "./mailer.js";
 
 const ACCESS_TTL_SEC = 60 * 60;           // 1 hour
 const REFRESH_TTL_SEC = 30 * 24 * 60 * 60; // 30 days
@@ -96,6 +97,19 @@ export async function signupHandler(req, res) {
     );
 
     await client.query("COMMIT");
+
+    // Письмо «День 0» — fire-and-forget, не блокирует и не роняет регистрацию.
+    // Вариант темы (A/B) логируется в user_events для последующей аналитики.
+    sendDay0Email(email, null, userId)
+      .then((r) => {
+        if (r?.sent) {
+          return pool.query(
+            `INSERT INTO public.user_events (user_id, type, payload_json) VALUES ($1, 'email_day0_sent', $2::jsonb)`,
+            [userId, JSON.stringify({ subjectVariant: r.subjectVariant ?? null })]
+          );
+        }
+      })
+      .catch((e) => console.error("day0 email failed:", e.message));
 
     const role = await resolveRole(userId);
     const userObj = {
@@ -244,9 +258,9 @@ export async function forgotPasswordHandler(req, res) {
 
       const link = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}token=${raw}&type=recovery`;
 
-      // TODO(phase later): send via SMTP. For now log to server console so the
-      // operator can copy it during bring-up.
-      console.log(`[auth] password reset for ${email}: ${link}`);
+      sendPasswordResetEmail(email, link).catch((e) =>
+        console.error("password reset email failed:", e.message)
+      );
     }
     return res.json({ ok: true });
   } catch (e) {

@@ -9,6 +9,8 @@ import { handleEstimateNutrition } from "./estimate-nutrition.js";
 import { handleStartTrial } from "./start-trial.js";
 import { registerAuthRoutes } from "./auth.js";
 import { registerRoutes } from "./routes/index.js";
+import { startEmailDripScheduler } from "./email-drip.js";
+import { verifyUnsubscribeToken } from "./mailer.js";
 
 const { PORT = "8787", JWT_SECRET, CORS_ORIGIN = "*" } = process.env;
 if (!JWT_SECRET) console.warn("[boot] JWT_SECRET is not set — auth will fail");
@@ -47,6 +49,27 @@ app.use("/api/v1/estimate-nutrition", aiLimiter);
 
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
+// Публичная отписка от email-цепочки (без авторизации — по требованию закона,
+// ссылка из письма должна работать в один клик). Токен — HMAC от userId,
+// не хранится отдельно, см. server/mailer.js.
+app.get("/api/v1/email/unsubscribe", async (req, res) => {
+  const uid = String(req.query.uid || "");
+  const token = String(req.query.token || "");
+  if (!uid || !verifyUnsubscribeToken(uid, token)) {
+    return res.status(400).send("Ссылка недействительна.");
+  }
+  try {
+    await pool.query(
+      `UPDATE public.users SET email_unsubscribed_at = now() WHERE user_id = $1 AND email_unsubscribed_at IS NULL`,
+      [uid]
+    );
+    res.send("Вы отписались от писем legche.online. Приложением можно пользоваться как обычно.");
+  } catch (e) {
+    console.error("unsubscribe failed:", e.message);
+    res.status(500).send("Не получилось отписаться — попробуйте ещё раз позже.");
+  }
+});
+
 // Auth (Phase 1)
 registerAuthRoutes(app, "/api/v1/auth");
 
@@ -60,4 +83,5 @@ app.post("/api/v1/start-trial", handleStartTrial);
 
 app.listen(Number(PORT), () => {
   console.log(`[boot] legche-api listening on :${PORT}`);
+  startEmailDripScheduler();
 });
