@@ -129,6 +129,11 @@ export const auth = {
   },
 
   // Mirrors supabase.auth.updateUser({ password }) — used by ResetPassword.tsx.
+  // True если при загрузке страницы был перехвачен recovery-токен из ссылки письма.
+  hasRecoveryToken(): boolean {
+    try { return Boolean(sessionStorage.getItem(RECOVERY_KEY)); } catch { return false; }
+  },
+
   // Consumes the recovery token captured at page load.
   async updateUser(args: { password: string }): Promise<AuthResult> {
     const token = sessionStorage.getItem(RECOVERY_KEY);
