@@ -235,7 +235,7 @@ export async function forgotPasswordHandler(req, res) {
   const email = String(req.body?.email || "").trim().toLowerCase();
   const redirectTo =
     String(req.body?.redirect_to || "").trim() ||
-    `${process.env.SITE_URL || ""}/reset-password`;
+    `${process.env.APP_URL || ""}/reset-password`;
   if (!email) return res.status(400).json({ error: "email required" });
 
   try {
