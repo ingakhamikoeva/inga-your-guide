@@ -21,7 +21,7 @@ export function AuthScreen() {
     setError('');
     setInfo('');
     if (!email) {
-      setError('Введи email, на который придёт ссылка для восстановления');
+      setError('Введите email, на который придёт ссылка для восстановления');
       return;
     }
     setLoading(true);
@@ -30,7 +30,7 @@ export function AuthScreen() {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetErr) throw resetErr;
-      setInfo('Письмо с ссылкой для восстановления отправлено на ' + email);
+      setInfo('Письмо со ссылкой для восстановления отправлено на ' + email);
     } catch (err: any) {
       setError(err.message || 'Не удалось отправить письмо');
     } finally {
@@ -99,7 +99,7 @@ export function AuthScreen() {
 
         {isSignup && (
           <p className="text-sm text-muted-foreground mb-4">
-            Создай профиль — и мы начнём прямо сейчас
+            Создайте профиль — и мы начнём прямо сейчас
           </p>
         )}
 
@@ -186,7 +186,7 @@ export function AuthScreen() {
               disabled={loading}
               className="text-sm text-muted-foreground underline"
             >
-              Забыл пароль?
+              Забыли пароль?
             </button>
           </div>
         )}
