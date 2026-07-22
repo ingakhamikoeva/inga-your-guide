@@ -20,6 +20,9 @@ export default function ResetPassword() {
         setReady(true);
       }
     });
+    // Прямая проверка: токен мог быть перехвачен ДО подписки на событие
+    // (гонка при загрузке) — тогда события мы не увидим, но токен уже в кармане.
+    if (auth.hasRecoveryToken()) setReady(true);
     auth.getSession().then(({ data }) => {
       if (data.session) setReady(true);
     });
