@@ -47,7 +47,7 @@ export default function ResetPassword() {
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-10 animate-fade-in-up">
       <h2 className="text-2xl font-bold mb-2">Новый пароль</h2>
       <p className="text-muted-foreground mb-6 text-center max-w-xs">
-        Придумай новый пароль для входа
+        Придумайте новый пароль для входа
       </p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
