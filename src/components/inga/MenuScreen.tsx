@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { UserProfile, AppStep } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -148,6 +148,24 @@ export function MenuScreen() {
   // (карточка дня программы, «Показать лёгкие версии» и т.п.) — первое же
   // нажатие «Назад» на любом уровне вернёт туда, а не в дефолтный список.
   const [returnTo, setReturnTo] = useState<AppStep | null>(null);
+  // «Питательные вещества» — не отдельный экран, а аккордеон в списке «Как
+  // похудеть». Этот флаг раскрывает и прокручивает его при переходе по
+  // ссылке из карточки дня (например, День 3), а не просто открывает список.
+  const [autoOpenNutrients, setAutoOpenNutrients] = useState(false);
+  const nutrientsDetailsRef = useRef<HTMLDetailsElement | null>(null);
+  // Единая логика «Назад»: если попали сюда по ссылке извне — первое нажатие
+  // возвращает туда (returnTo), любое следующее — обычная навигация внутри меню.
+  // ⚠️ Объявлено здесь намеренно, ДО любых условных return ниже по файлу —
+  // иначе на части экранов ссылка на goBack попадает в temporal dead zone.
+  const goBack = (defaultAction: () => void) => {
+    if (returnTo) {
+      const target = returnTo;
+      setReturnTo(null);
+      setStep(target);
+    } else {
+      defaultAction();
+    }
+  };
 
   // Переход из других экранов (например, «Смотреть все лёгкие версии» в первом дне):
   // читаем одноразовый флаг и открываем нужный раздел
@@ -160,10 +178,19 @@ export function MenuScreen() {
       if (jump.section) setSection(jump.section);
       if (jump.recipeSection) setRecipeSection(jump.recipeSection);
       if (jump.activeRecipe) setActiveRecipe(jump.activeRecipe);
-      if (jump.nutrientSection) setNutrientSection(jump.nutrientSection);
+      if (jump.nutrientSection === 'Питательные вещества') {
+        setAutoOpenNutrients(true); // это аккордеон, а не отдельный экран — не setNutrientSection
+      } else if (jump.nutrientSection) {
+        setNutrientSection(jump.nutrientSection);
+      }
       if (jump.returnTo) setReturnTo(jump.returnTo);
     } catch { /* некритично */ }
   }, []);
+  useEffect(() => {
+    if (autoOpenNutrients && section === 'how-to' && nutrientsDetailsRef.current) {
+      nutrientsDetailsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [autoOpenNutrients, section]);
   const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
 
   useEffect(() => {
@@ -235,7 +262,7 @@ export function MenuScreen() {
 
   const BackButton = () => (
     <button onClick={() => goBack(() => setSection('main'))} className="text-sm text-muted-foreground underline mb-6 self-start">
-      ← Назад в меню
+      {returnTo ? '← Назад' : '← Назад в меню'}
     </button>
   );
 
@@ -1202,7 +1229,12 @@ export function MenuScreen() {
                   <ChevronRight size={18} className="text-muted-foreground" />
                 </div>
               ) : (
-              <details className="inga-card group">
+              <details
+                className="inga-card group"
+                open={(topic as any).isNutrientsLesson && autoOpenNutrients ? true : undefined}
+                onToggle={() => { if ((topic as any).isNutrientsLesson && autoOpenNutrients) setAutoOpenNutrients(false); }}
+                ref={(topic as any).isNutrientsLesson && autoOpenNutrients ? nutrientsDetailsRef : undefined}
+              >
                 <summary className="font-semibold cursor-pointer flex items-center justify-between list-none">
                   <div>
                     <span>{topic.title}</span>
@@ -1339,19 +1371,7 @@ export function MenuScreen() {
   if (section === 'recipes') {
 
     // Recipe detail screen
-    // Единая логика «Назад»: если попали сюда по ссылке извне — первое нажатие
-  // возвращает туда (returnTo), любое следующее — обычная навигация внутри меню.
-  const goBack = (defaultAction: () => void) => {
-    if (returnTo) {
-      const target = returnTo;
-      setReturnTo(null);
-      setStep(target);
-    } else {
-      defaultAction();
-    }
-  };
-
-  if (activeRecipe && recipeSection === 'breakfasts') {
+    if (activeRecipe && recipeSection === 'breakfasts') {
       const recipe = breakfastRecipes.find(r => r.id === activeRecipe);
       if (!recipe) return null;
       return (

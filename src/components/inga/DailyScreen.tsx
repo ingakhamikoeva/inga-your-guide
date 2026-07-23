@@ -167,7 +167,10 @@ export function DailyScreen() {
     const raw = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
     return raw.charAt(0).toUpperCase() + raw.slice(1);
   })();
-  const dayNumber = (dailyReports?.length ?? 0) + 1;
+  // dayNumber больше не считается отдельно от dailyReports — раньше он мог
+  // расходиться с «ДЕНЬ N ИЗ 30» на карточке программы (два разных счётчика
+  // на одном экране путали пользователя). Теперь оба места показывают один
+  // и тот же programDayNum, см. ниже.
 
   const showFoodSurvey = !foodSurveyAnswered && (!profile.food_preferences || profile.food_preferences.length === 0) && weeklyData.length === 0;
   const showCheckinFields = !showFoodSurvey || showMorningCheckin;
@@ -828,7 +831,7 @@ export function DailyScreen() {
             fontSize: '12px',
           }}
         >
-          День {dayNumber}
+          День {programDayNum}
         </span>
         <button
           onClick={() => setStep('menu')}
