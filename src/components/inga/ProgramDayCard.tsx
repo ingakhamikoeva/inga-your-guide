@@ -50,9 +50,14 @@ export function ProgramDayCard({ data, expanded, taskDone, onToggleExpand, onTas
         </div>
         <p className="text-base font-semibold" style={{ color: '#2C1A0E' }}>{data.theme}</p>
         {!expanded && (
-          <p className="text-xs mt-1" style={{ color: '#8A7A70', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {paragraphs[0]}
-          </p>
+          <>
+            <p className="text-xs mt-1" style={{ color: '#8A7A70', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {paragraphs[0]}
+            </p>
+            <p className="text-xs font-semibold mt-1.5" style={{ color: '#FF6200' }}>
+              Читать далее →
+            </p>
+          </>
         )}
       </button>
 

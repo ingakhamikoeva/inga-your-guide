@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { getText } from '@/lib/gender-text';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
@@ -115,6 +114,15 @@ export function DailyScreen() {
   const [showMealInput, setShowMealInput] = useState(false);
   // Флажки, отмечаемые прямо при вводе приёма (чтобы не искать карточку внизу)
   const emptyDraftFlags = { protein: false, carbs: false, fiber: false, sweet: false };
+  // Разовая обучающая подсказка про флажки/лёгкие рецепты — показывается,
+  // пока пользователь не нажмёт «Понятно».
+  const [showMealHint, setShowMealHint] = useState(() => {
+    try { return localStorage.getItem('inga-meal-hint-dismissed') !== '1'; } catch { return true; }
+  });
+  const dismissMealHint = () => {
+    setShowMealHint(false);
+    try { localStorage.setItem('inga-meal-hint-dismissed', '1'); } catch {}
+  };
   const [draftFlags, setDraftFlags] = useState(emptyDraftFlags);
   const toggleDraftFlag = (key: keyof typeof emptyDraftFlags) =>
     setDraftFlags(f => ({ ...f, [key]: !f[key] }));
@@ -179,7 +187,7 @@ export function DailyScreen() {
     const first = selectedFoods[0] ?? '';
     const n = selectedFoods.length;
     if (n <= 2) return `Поняла, запомнила! 🧡 У меня есть рецепт для «${first}». Покажу сегодня — вы удивитесь, насколько это просто.`;
-    if (n <= 4) return `Хороший список! 🧡 Начнём с раздела «${first}» — покажу сегодня. Остальное разберём по одному в день.`;
+    if (n <= 4) return `Хороший список! 🧡 Начнём с «${first}» — покажу сегодня. Остальное разберём по одному в день.`;
     return `Вы любите поесть со вкусом — это прекрасно! 😄 Всё это можно оставить. Начнём с «${first}» — уже сегодня.`;
   })();
 
@@ -299,7 +307,9 @@ export function DailyScreen() {
   };
 
   const handleProgramJump = (link: ProgramLink) => {
-    try { localStorage.setItem('inga-menu-jump', JSON.stringify(link.jump)); } catch {}
+    // returnTo: универсальный «откуда пришли» — «Назад» в меню/на карточке
+    // вернёт сюда, на «Утро», независимо от того, какой это день программы.
+    try { localStorage.setItem('inga-menu-jump', JSON.stringify({ ...link.jump, returnTo: 'daily' })); } catch {}
     setStep('menu');
   };
 
@@ -715,7 +725,7 @@ export function DailyScreen() {
 
     let ingaMessage: string;
     if (perfect) {
-      ingaMessage = `${greeting}сегодня ты ${getText('держала', 'держал', profile.gender)} структуру весь день. Это именно то, что меняет привычки 🧡`;
+      ingaMessage = `${greeting}сегодня вы держали структуру весь день. Это именно то, что меняет привычки 🧡`;
     } else {
       const wins: string[] = [];
       if (proteinOk) wins.push('план по белку');
@@ -725,11 +735,11 @@ export function DailyScreen() {
       const improvements: string[] = [];
       if (!fiberOk) improvements.push('добавьте больше клетчатки — свежие овощи к каждому приёму пищи');
       else if (!proteinOk) improvements.push('добавьте белок в каждый приём пищи');
-      else if (!waterOk) improvements.push('выпей побольше воды — хотя бы 6 стаканов');
-      else improvements.push('продолжай в том же духе 🧡');
+      else if (!waterOk) improvements.push('выпейте побольше воды — хотя бы 6 стаканов');
+      else improvements.push('продолжайте в том же духе 🧡');
 
       if (wins.length > 0) {
-        ingaMessage = `Ты ${getText('отлично выполнила', 'отлично выполнил', profile.gender)} ${wins.slice(0, 2).join(' и ')}! Завтра ${improvements[0]}.`;
+        ingaMessage = `Вы отлично выполнили ${wins.slice(0, 2).join(' и ')}! Завтра ${improvements[0]}.`;
       } else {
         ingaMessage = `${greeting}завтра ${improvements[0]}. Один маленький шаг — и день уже другой 🧡`;
       }
@@ -948,11 +958,11 @@ export function DailyScreen() {
                 .filter((r): r is LightRecipeEntry => !!r)
                 .slice(0, 3);
               const openRecipe = (r: LightRecipeEntry) => {
-                try { localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'recipes', recipeSection: r.recipeSection, activeRecipe: r.recipeId })); } catch {}
+                try { localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'recipes', recipeSection: r.recipeSection, activeRecipe: r.recipeId, returnTo: 'daily' })); } catch {}
                 setStep('menu');
               };
               const openLightVersion = () => {
-                try { localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'light-version' })); } catch {}
+                try { localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'light-version', returnTo: 'daily' })); } catch {}
                 setStep('menu');
               };
               return (
@@ -1003,7 +1013,7 @@ export function DailyScreen() {
               <input type="number" value={weight} onChange={e => setWeight(e.target.value)} className="inga-input" placeholder="70.5" step="0.1" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">{getText('Сколько часов спала?', 'Сколько часов спал?', profile.gender)}</label>
+              <label className="block text-sm font-medium mb-1">Сколько часов вы спали?</label>
               <input type="number" value={sleep} onChange={e => setSleep(e.target.value)} className="inga-input" placeholder="7" step="0.5" />
             </div>
             <div>
@@ -1332,7 +1342,7 @@ export function DailyScreen() {
                     onChange={e => setMealText(e.target.value)}
                     autoFocus
                     className="inga-input flex-1"
-                    placeholder="Что ела?"
+                    placeholder="Что вы ели?"
                     onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
                   />
                   <VoiceInput
@@ -1360,6 +1370,14 @@ export function DailyScreen() {
                         {s.name} +{s.savedKcal} 🪙 ✕
                       </button>
                     ))}
+                  </div>
+                )}
+                {showMealHint && (
+                  <div className="text-xs leading-relaxed" style={{ background: '#FFF7F0', border: '1px solid #FFD9C2', borderRadius: 10, padding: '8px 10px', color: '#6A5A50' }}>
+                    Отметьте, что было в приёме — белок, углеводы, клетчатка помогут видеть баланс дня. «Из лёгких рецептов» — если готовили по нашему рецепту, впишем экономию в Копилку лёгкости.
+                    <button onClick={dismissMealHint} className="block mt-1.5 font-semibold" style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}>
+                      Понятно
+                    </button>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 items-center">
@@ -1606,7 +1624,7 @@ export function DailyScreen() {
                       onChange={e => setEveningText(e.target.value)}
                       autoFocus
                       className="inga-input flex-1"
-                      placeholder="Что ела?"
+                      placeholder="Что вы ели?"
                       onKeyDown={e => e.key === 'Enter' && handleAddEveningMeal()}
                     />
                     <VoiceInput

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, AppStep } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles } from 'lucide-react';
 import { LightVersionScreen } from './LightVersionScreen';
@@ -10,6 +10,9 @@ import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/so
 import { hasName, cleanName } from '@/lib/user-name';
 import { getSetting } from '@/lib/app-settings';
 import palmMethodImage from '@/assets/palm-method.png';
+import logoTelegram from '@/assets/logo_telegram.png';
+import logoVk from '@/assets/logo_vk.png';
+import logoMax from '@/assets/logo_max.png';
 import { FoodCheatsheet } from '@/components/inga/FoodCheatsheet';
 import { breakfastRecipes, sweetRecipes, soupRecipes, mainDishRecipes, bakingRecipes, drinksRecipes } from '@/lib/recipes-data';
 import { PROGRAM_MONTH1 } from '@/lib/program-month1';
@@ -141,6 +144,10 @@ export function MenuScreen() {
   const [recipeSection, setRecipeSection] = useState<string | null>(null);
   const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [activeRecipe, setActiveRecipe] = useState<string | null>(null);
+  // Универсальное «откуда пришли»: если в MenuScreen попали по ссылке извне
+  // (карточка дня программы, «Показать лёгкие версии» и т.п.) — первое же
+  // нажатие «Назад» на любом уровне вернёт туда, а не в дефолтный список.
+  const [returnTo, setReturnTo] = useState<AppStep | null>(null);
 
   // Переход из других экранов (например, «Смотреть все лёгкие версии» в первом дне):
   // читаем одноразовый флаг и открываем нужный раздел
@@ -149,11 +156,12 @@ export function MenuScreen() {
       const raw = localStorage.getItem('inga-menu-jump');
       if (!raw) return;
       localStorage.removeItem('inga-menu-jump');
-      const jump = JSON.parse(raw) as { section?: MenuSection; recipeSection?: string; activeRecipe?: string; nutrientSection?: string };
+      const jump = JSON.parse(raw) as { section?: MenuSection; recipeSection?: string; activeRecipe?: string; nutrientSection?: string; returnTo?: AppStep };
       if (jump.section) setSection(jump.section);
       if (jump.recipeSection) setRecipeSection(jump.recipeSection);
       if (jump.activeRecipe) setActiveRecipe(jump.activeRecipe);
       if (jump.nutrientSection) setNutrientSection(jump.nutrientSection);
+      if (jump.returnTo) setReturnTo(jump.returnTo);
     } catch { /* некритично */ }
   }, []);
   const [lessonOverrides, setLessonOverrides] = useState<Record<string, { title?: string; content?: string }>>({});
@@ -226,7 +234,7 @@ export function MenuScreen() {
   }
 
   const BackButton = () => (
-    <button onClick={() => setSection('main')} className="text-sm text-muted-foreground underline mb-6 self-start">
+    <button onClick={() => goBack(() => setSection('main'))} className="text-sm text-muted-foreground underline mb-6 self-start">
       ← Назад в меню
     </button>
   );
@@ -240,7 +248,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Метод тарелки</h2>
 
           <div className="inga-card mb-4">
@@ -308,7 +316,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Метод ладони</h2>
 
           <div className="inga-card mb-4">
@@ -349,7 +357,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Планирование питания</h2>
 
           <div className="inga-card mb-4">
@@ -419,7 +427,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Сладкая точка</h2>
 
           <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
@@ -463,7 +471,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Вечерний перекус</h2>
 
           <div className="inga-card mb-4" style={{ background: '#F4F0F9', border: '1px solid #C9B8E8' }}>
@@ -539,7 +547,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Метод «Лёгкая замена»</h2>
 
           <div className="inga-card mb-4">
@@ -647,7 +655,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Объём еды</h2>
 
           <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
@@ -738,7 +746,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <div className="flex items-center gap-3 mb-5">
             <span style={{ fontSize: 28 }}>🥩</span>
             <h2 className="text-2xl font-bold">Белок</h2>
@@ -846,7 +854,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <div className="flex items-center gap-3 mb-5">
             <span style={{ fontSize: 28 }}>🌾</span>
             <h2 className="text-2xl font-bold">Углеводы</h2>
@@ -914,7 +922,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <div className="flex items-center gap-3 mb-5">
             <span style={{ fontSize: 28 }}>🥦</span>
             <h2 className="text-2xl font-bold">Клетчатка</h2>
@@ -986,7 +994,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <div className="flex items-center gap-3 mb-5">
             <span style={{ fontSize: 28 }}>🫒</span>
             <h2 className="text-2xl font-bold">Жиры</h2>
@@ -1079,7 +1087,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => { setNutrientSection(null); setLibraryDay(null); }} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => { setNutrientSection(null); setLibraryDay(null); })} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-1">Месяц 1</h2>
           <p className="text-sm text-muted-foreground mb-5">
             Программа на 30 дней: урок, задание и привычка каждый день. Открыто {opened.size} из 30.
@@ -1331,13 +1339,25 @@ export function MenuScreen() {
   if (section === 'recipes') {
 
     // Recipe detail screen
-    if (activeRecipe && recipeSection === 'breakfasts') {
+    // Единая логика «Назад»: если попали сюда по ссылке извне — первое нажатие
+  // возвращает туда (returnTo), любое следующее — обычная навигация внутри меню.
+  const goBack = (defaultAction: () => void) => {
+    if (returnTo) {
+      const target = returnTo;
+      setReturnTo(null);
+      setStep(target);
+    } else {
+      defaultAction();
+    }
+  };
+
+  if (activeRecipe && recipeSection === 'breakfasts') {
       const recipe = breakfastRecipes.find(r => r.id === activeRecipe);
       if (!recipe) return null;
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setActiveRecipe(null)} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <button onClick={() => goBack(() => setActiveRecipe(null))} className="text-base text-muted-foreground mb-4 block">← Назад</button>
             <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
             <div className="mb-4">
               <h2 className="text-2xl font-bold">{recipe.name}</h2>
@@ -1401,7 +1421,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setActiveRecipe(null)} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <button onClick={() => goBack(() => setActiveRecipe(null))} className="text-base text-muted-foreground mb-4 block">← Назад</button>
             <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
             <div className="mb-4">
               <h2 className="text-2xl font-bold">{recipe.name}</h2>
@@ -1456,7 +1476,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <button onClick={() => goBack(() => setRecipeSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
             <h2 className="text-2xl font-bold mb-5">Сладкая точка</h2>
             <div className="space-y-3">
               {sweetRecipes.map(recipe => (
@@ -1485,7 +1505,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setActiveRecipe(null)} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <button onClick={() => goBack(() => setActiveRecipe(null))} className="text-base text-muted-foreground mb-4 block">← Назад</button>
             {recipe.image ? (
               <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
             ) : (
@@ -1546,7 +1566,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <button onClick={() => goBack(() => setRecipeSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
             <h2 className="text-2xl font-bold mb-5">Напитки</h2>
             <div className="space-y-3">
               {drinksRecipes.map(recipe => (
@@ -1578,7 +1598,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <button onClick={() => goBack(() => setRecipeSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
             <h2 className="text-2xl font-bold mb-5">Несладкая выпечка</h2>
             <div className="space-y-3">
               {bakingRecipes.map(recipe => (
@@ -1610,7 +1630,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <button onClick={() => goBack(() => setRecipeSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
             <h2 className="text-2xl font-bold mb-5">Супы</h2>
             <div className="space-y-3">
               {soupRecipes.map(recipe => (
@@ -1642,7 +1662,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <button onClick={() => goBack(() => setRecipeSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
             <h2 className="text-2xl font-bold mb-5">Вторые блюда</h2>
             <div className="space-y-3">
               {mainDishRecipes.map(recipe => (
@@ -1674,7 +1694,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => setRecipeSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+            <button onClick={() => goBack(() => setRecipeSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
             <h2 className="text-2xl font-bold mb-5">Завтраки</h2>
             <div className="space-y-3">
               {breakfastRecipes.map(recipe => (
@@ -1950,7 +1970,7 @@ export function MenuScreen() {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
-          <button onClick={() => setNutrientSection(null)} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-2">Примеры меню на 30 дней</h2>
           <p className="text-sm text-muted-foreground mb-6">Примерный рацион по методу «Лёгкая замена». Порции — по методу тарелки или ладони.</p>
 
@@ -1997,11 +2017,15 @@ export function MenuScreen() {
   }
 
   if (section === 'consultation') {
-    // Тексты и цена утверждены Ингой 18.07.2026
+    // Тексты утверждены Ингой 18.07.2026, цена обновлена 22.07.2026 (7 000 ₽)
     const CONSULT_LINKS = [
-      { label: 'Написать в Telegram', url: 'https://t.me/Inga_Keosidi' },
-      { label: 'Написать ВКонтакте', url: 'https://vk.ru/inga_keosidi' },
-      { label: 'Написать в MAX', url: 'https://max.ru/u/f9LHodD0cOJutz4kEit4dhKg_zry1MZm1rRaATtzDOs02lyk9S0YlwxEJvU' },
+      { label: 'Telegram', url: 'https://t.me/Inga_Keosidi', logo: logoTelegram },
+      { label: 'ВКонтакте', url: 'https://vk.ru/inga_keosidi', logo: logoVk },
+      { label: 'MAX', url: 'https://max.ru/u/f9LHodD0cOJutz4kEit4dhKg_zry1MZm1rRaATtzDOs02lyk9S0YlwxEJvU', logo: logoMax },
+      {
+        label: 'Почта', url: 'mailto:inga@legche.online?subject=' + encodeURIComponent('Запись на консультацию'),
+        icon: <span style={{ fontSize: 20 }}>✉️</span>, bg: '#FFFFFF', border: '#EDE5DF',
+      },
     ];
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
@@ -2029,27 +2053,32 @@ export function MenuScreen() {
           </div>
           <div className="inga-card mb-5">
             <p className="text-sm"><span className="font-semibold">Формат:</span> видеозвонок или переписка — как вам удобнее, 60 минут.</p>
-            <p className="text-sm mt-1"><span className="font-semibold">Стоимость:</span> 5 000 ₽.</p>
+            <p className="text-sm mt-1"><span className="font-semibold">Стоимость:</span> 7 000 ₽.</p>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">Чтобы записаться, напишите мне в удобном мессенджере — отвечаю лично:</p>
-          <div className="space-y-2.5">
+          <p className="text-sm text-muted-foreground mb-3 text-center">Чтобы записаться, напишите мне в удобном мессенджере — отвечаю лично:</p>
+          <div className="flex justify-center gap-4 mb-5">
             {CONSULT_LINKS.map(l => (
               <button
                 key={l.label}
                 onClick={() => window.open(l.url, '_blank')}
-                className="inga-btn-primary w-full"
+                className="flex flex-col items-center gap-1.5"
+                style={{ background: 'transparent', border: 'none', padding: 0 }}
               >
-                {l.label}
+                {l.logo ? (
+                  <img src={l.logo} alt={l.label} style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover' }} />
+                ) : (
+                  <span
+                    className="flex items-center justify-center"
+                    style={{ width: 52, height: 52, borderRadius: '50%', background: l.bg, border: l.border ? `1px solid ${l.border}` : 'none' }}
+                  >
+                    {l.icon}
+                  </span>
+                )}
+                <span className="text-[11px]" style={{ color: '#6A5A50' }}>{l.label}</span>
               </button>
             ))}
-            <button
-              onClick={() => window.open('mailto:inga@legche.online?subject=' + encodeURIComponent('Запись на консультацию'), '_blank')}
-              className="inga-btn-secondary w-full"
-            >
-              Написать на почту: inga@legche.online
-            </button>
-            <button onClick={() => setSection('main')} className="inga-btn-secondary w-full">Пока не нужно</button>
           </div>
+          <button onClick={() => setSection('main')} className="inga-btn-secondary w-full">Пока не нужно</button>
         </div>
       </div>
     );

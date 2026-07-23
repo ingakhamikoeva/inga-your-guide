@@ -2,12 +2,20 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
-const OPTIONS = [
+const OPTIONS_FEMALE = [
   { emoji: '🌸', text: 'Хочу чувствовать лёгкость в теле и больше энергии' },
   { emoji: '👗', text: 'Хочу снова носить одежду, которую люблю' },
   { emoji: '❤️', text: 'Хочу позаботиться о здоровье' },
   { emoji: '✨', text: 'Хочу нравиться себе в зеркале' },
   { emoji: '👨‍👩‍👧', text: 'Хочу быть активной для семьи' },
+];
+
+const OPTIONS_MALE = [
+  { emoji: '💪', text: 'Хочу больше силы и энергии' },
+  { emoji: '👔', text: 'Хочу снова носить одежду, которая нравится' },
+  { emoji: '❤️', text: 'Хочу быть здоровым' },
+  { emoji: '✨', text: 'Хочу нравиться себе в зеркале' },
+  { emoji: '👨‍👩‍👧', text: 'Хочу вести активный образ жизни' },
 ];
 
 export function WhyScreen() {
@@ -17,6 +25,7 @@ export function WhyScreen() {
   const [customText, setCustomText] = useState('');
 
   const name = profile.name?.trim();
+  const OPTIONS = profile.gender === 'male' ? OPTIONS_MALE : OPTIONS_FEMALE;
   const bubbleText = name
     ? `${name}, что для вас изменится, когда достигнете цели?`
     : 'Что для вас изменится, когда достигнете цели?';
