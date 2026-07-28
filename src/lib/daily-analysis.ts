@@ -129,10 +129,10 @@ export function analyzeDailyNutrition(meals: string[], sex: UserSex): DailyNutri
   }
   if (!hasProtein || weakFirstHalf) steps.push('завтра начните с белкового завтрака: яйца, творог, омлет, рыба или курица');
   if (hasSweet || hasFastCarbs || hasRedZoneSnack) steps.push(lightSnackSuggestion);
-  if (hasFatty || eveningHeavy) steps.push('самую жирную еду уменьши или замени на куриную грудку, нежирную рыбу и овощи');
+  if (hasFatty || eveningHeavy) steps.push('самую жирную еду уменьшите или замените на куриную грудку, нежирную рыбу и овощи');
   if (hasAlcohol) steps.push('алкоголь лучше не оставлять на обычный будний день, особенно если цель — снижение веса');
   if (!hasVegetables) steps.push('добавьте овощи хотя бы в один приём пищи');
-  if (chaotic) steps.push('запланируй 3 понятных приёма пищи, чтобы не собирать голод к вечеру');
+  if (chaotic) steps.push('запланируйте 3 понятных приёма пищи, чтобы не собирать голод к вечеру');
 
   const fallbackStep = 'завтра оставьте основу дня такой же и улучшите один приём пищи: добавьте белок или овощи';
 
