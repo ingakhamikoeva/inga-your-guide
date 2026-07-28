@@ -38,7 +38,7 @@ export function VoiceInput({ onConfirm, onEdit, lang = 'ru-RU', disabled }: Voic
     setTranscript('');
     const SR = getSpeechRecognition();
     if (!SR) {
-      setError('Голосовой ввод не поддерживается этим браузером. Используй текст 💛');
+      setError('Голосовой ввод не поддерживается этим браузером. Используйте текст 💛');
       setShowDialog(true);
       return;
     }

@@ -1103,9 +1103,9 @@ export function DailyScreen() {
             if (proteinGrams < proteinTarget * 0.6) return 'Белка маловато сегодня. Добавьте мясо, рыбу, яичный белок или творог к следующему приёму.';
             if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки. Добавьте овощи или ягоды к следующему приёму 🥦';
             if (waterCount >= 5 && proteinGrams >= proteinTarget * 0.8 && fiberMeals / totalMeals >= 0.6) {
-              return 'Хороший день — структура держится. Продолжай в том же духе 🧡';
+              return 'Хороший день — структура держится. Продолжайте в том же духе 🧡';
             }
-            return 'Структура дня складывается. Не забывай про воду, белок и клетчатку 🧡';
+            return 'Структура дня складывается. Не забывайте про воду, белок и клетчатку 🧡';
           })();
 
           const regular = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => !m.isEvening);

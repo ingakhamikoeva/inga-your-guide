@@ -24,7 +24,7 @@ const palmMethodCards = [
     title: 'Белок — ладонь без пальцев',
     body: 'Ориентир для белковых продуктов — часть ладони от основания пальцев до запястья, без пальцев.',
     list: ['мясо', 'птица', 'рыба', 'морепродукты', 'яйца', 'творог'],
-    extra: 'На этапе активного снижения веса выбирай нежирный белок калорийностью примерно 100–150 ккал на 100 г.',
+    extra: 'На этапе активного снижения веса выбирайте нежирный белок калорийностью примерно 100–150 ккал на 100 г.',
     examplesLabel: 'Примеры:',
     examples: ['куриная грудка', 'индейка', 'нежирная рыба', 'морепродукты', 'творог 0–2%', 'яичные белки'],
     note: 'Жирный белок тоже может быть полезным, но на этапе снижения веса он быстро повышает калорийность рациона.',
@@ -66,7 +66,7 @@ const howToTopics = [
   },
   {
     title: 'Объём еды',
-    content: 'Голод — ваш главный враг. Не допускай чувства голода. Ешьте каждые 3–4 часа, 4–6 раз в день. Объём каждого приёма пищи — до 500 г вместе с напитком.',
+    content: 'Голод — ваш главный враг. Не допускайте чувства голода. Ешьте каждые 3–4 часа, 4–6 раз в день. Объём каждого приёма пищи — до 500 г вместе с напитком.',
     isVolumeLesson: true,
   },
   {
@@ -2349,7 +2349,7 @@ ${rows.map(({ date, weight, report }) => `
                 maxLength={40}
                 autoFocus
                 className="inga-input"
-                placeholder="Твоё имя"
+                placeholder="Ваше имя"
               />
               <div className="flex gap-2">
                 <button onClick={handleSaveName} className="inga-btn-primary flex-1">Сохранить</button>
@@ -2413,7 +2413,7 @@ ${rows.map(({ date, weight, report }) => `
 
         {/* 4. Замеры */}
         <div className="inga-card mb-3">
-          <div className="text-sm text-muted-foreground mb-2">Замеры (обновляй раз в неделю)</div>
+          <div className="text-sm text-muted-foreground mb-2">Замеры (обновляйте раз в неделю)</div>
           <EditableRow label="Талия" value={profile.waist} suffix="см" field="waist" />
           <div className="border-t border-border" />
           <EditableRow label="Бёдра" value={profile.hips} suffix="см" field="hips" />

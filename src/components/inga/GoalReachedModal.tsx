@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getText, UserSex } from '@/lib/gender-text';
+import { UserSex } from '@/lib/gender-text';
 
 interface Props {
   sex: UserSex;
@@ -53,7 +53,7 @@ function ConfettiBurst() {
   );
 }
 
-export function GoalReachedModal({ sex, onContinue }: Props) {
+export function GoalReachedModal({ onContinue }: Props) {
   const [show, setShow] = useState(true);
   useEffect(() => {
     const t = setTimeout(() => setShow(false), 4500);
@@ -66,14 +66,10 @@ export function GoalReachedModal({ sex, onContinue }: Props) {
       <div className="inga-card w-full max-w-sm space-y-4 text-center relative z-50 animate-fade-in-up">
         <div className="text-5xl">🎉</div>
         <h2 className="text-2xl font-bold">
-          {getText('Ты это сделала 💛', 'Ты это сделал 💛', sex)}
+          Вы это сделали 💛
         </h2>
         <p className="text-sm text-muted-foreground">
-          {getText(
-            'Ты достигла своей цели. Это большой результат. Теперь важно не просто похудеть, а закрепить результат.',
-            'Ты достиг своей цели. Это большой результат. Теперь важно не просто похудеть, а закрепить результат.',
-            sex,
-          )}
+          Вы достигли своей цели. Это большой результат. Теперь важно не просто похудеть, а закрепить результат.
         </p>
         <button onClick={onContinue} className="inga-btn-primary w-full">
           Перейти к фиксации →

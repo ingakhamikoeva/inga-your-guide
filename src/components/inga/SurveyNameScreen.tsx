@@ -73,7 +73,7 @@ export function SurveyNameScreen() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Твоё имя</label>
+          <label className="block text-sm font-medium mb-2">Ваше имя</label>
           <input
             type="text"
             value={name}
