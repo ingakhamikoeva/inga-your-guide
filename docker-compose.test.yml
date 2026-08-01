@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────────
+# ТЕСТОВАЯ СРЕДА — test.legche.online
+#
+# Полная копия боевого стека, но:
+#   • свои контейнеры (суффикс -test), свои порты, СВОЯ база данных
+#   • данные боевой базы не затрагиваются никогда
+#   • живёт в отдельной папке /home/inga-your-guide-test
+#
+# Запуск (из папки /home/inga-your-guide-test):
+#   docker compose -f docker-compose.test.yml --env-file .env up --build -d
+#
+# ⚠️ Обязательно указывать -f docker-compose.test.yml, иначе поднимется
+#    боевая конфигурация с боевыми именами контейнеров.
+# ─────────────────────────────────────────────────────────────────────────
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: legche-db-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - legche_pgdata_test:/var/lib/postgresql/data
+      # Схема приложения. Выполняется один раз на пустом томе —
+      # то есть тестовая база сразу поднимется со всеми миграциями.
+      - ./server/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: legche-api-test:latest
+    container_name: legche-api-test
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: "8787"
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      SITE_URL: ${SITE_URL}
+      APP_URL: ${APP_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Инга}
+      SMTP_INGA_USER: ${SMTP_INGA_USER}
+      SMTP_INGA_PASS: ${SMTP_INGA_PASS}
+      SMTP_SUPPORT_USER: ${SMTP_SUPPORT_USER}
+      SMTP_SUPPORT_PASS: ${SMTP_SUPPORT_PASS}
+      # На тесте автоматическая цепочка писем ВСЕГДА выключена,
+      # чтобы тестовые аккаунты не получали письма как настоящие.
+      EMAIL_DRIP_ENABLED: "false"
+    ports:
+      - "127.0.0.1:8789:8787"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    image: legche-web-test:latest
+    container_name: legche-web-test
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:8081:80"
+
+volumes:
+  legche_pgdata_test:
+    name: legche_pgdata_test
+    driver: local
