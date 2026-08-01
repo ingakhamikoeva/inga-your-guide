@@ -275,6 +275,17 @@ export async function logUserEvent(type: string, payload?: Json) {
   await apiFetch('/events', { method: 'POST', body: { type, payload: payload ?? null } });
 }
 
+// Промокоды
+export interface PromoResult {
+  ok: boolean;
+  days: number;
+  paid_until: string;
+}
+
+export async function redeemPromoCode(code: string): Promise<PromoResult> {
+  return apiFetch<PromoResult>('/promo/redeem', { method: 'POST', body: { code } });
+}
+
 // Прогресс программы «Месяц N»
 export interface ProgramProgress {
   opened_days: number[];
