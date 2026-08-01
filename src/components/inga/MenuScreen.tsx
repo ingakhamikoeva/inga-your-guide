@@ -17,7 +17,7 @@ import { FoodCheatsheet } from '@/components/inga/FoodCheatsheet';
 import { breakfastRecipes, sweetRecipes, soupRecipes, mainDishRecipes, bakingRecipes, drinksRecipes } from '@/lib/recipes-data';
 import { PROGRAM_MONTH1 } from '@/lib/program-month1';
 import { ProgramDayCard, currentProgramDay } from './ProgramDayCard';
-import { loadProgramProgress, logUserEvent, type ProgramProgress } from '@/lib/db';
+import { loadProgramProgress, logUserEvent, redeemPromoCode, type ProgramProgress } from '@/lib/db';
 
 const palmMethodCards = [
   {
@@ -2132,6 +2132,37 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
   // ---------- sign-out ----------
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
+  // ---------- промокод ----------
+  const [promoCode, setPromoCode] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [promoSuccess, setPromoSuccess] = useState('');
+
+  const handleRedeemPromo = async () => {
+    const code = promoCode.trim().toUpperCase();
+    if (!code) return;
+    setPromoLoading(true);
+    setPromoError('');
+    try {
+      const res = await redeemPromoCode(code);
+      const until = res.paid_until
+        ? new Date(res.paid_until).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '';
+      setPromoSuccess(`Готово! Доступ открыт${until ? ` до ${until}` : ''} 🧡`);
+      setPromoCode('');
+    } catch (e: any) {
+      // Тексты ошибок — понятные, без технических кодов
+      const msg = String(e?.message || '');
+      if (msg.includes('not_found')) setPromoError('Такого кода нет. Проверьте, правильно ли он введён.');
+      else if (msg.includes('already_used')) setPromoError('Вы уже применяли этот код.');
+      else if (msg.includes('exhausted')) setPromoError('У этого кода закончились применения.');
+      else if (msg.includes('expired')) setPromoError('Срок действия кода истёк.');
+      else setPromoError('Не получилось применить код. Попробуйте ещё раз позже.');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   const handleDownloadDiary = async () => {
     const today = new Date();
     const days14 = Array.from({ length: 14 }, (_, i) => {
@@ -2450,6 +2481,40 @@ ${rows.map(({ date, weight, report }) => `
         <p className="text-xs text-muted-foreground text-center mt-1">
           Отчёт за последние 14 дней — для подготовки к консультации
         </p>
+
+        {/* Промокод */}
+        <div className="inga-card mt-4">
+          <p className="text-sm font-semibold mb-1">🎁 У меня есть промокод</p>
+          {promoSuccess ? (
+            <p className="text-xs leading-relaxed" style={{ color: '#4A7A45' }}>{promoSuccess}</p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                Введите код, если вам его выдали — он откроет доступ к приложению.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  value={promoCode}
+                  onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
+                  placeholder="Например, FIRST30"
+                  className="flex-1 text-sm bg-white"
+                  style={{ borderRadius: 10, border: '1px solid #EDE5DF', padding: '8px 12px', outline: 'none', textTransform: 'uppercase' }}
+                />
+                <button
+                  onClick={handleRedeemPromo}
+                  disabled={promoLoading || !promoCode.trim()}
+                  className="inga-btn-primary text-sm"
+                  style={{ padding: '8px 16px', opacity: promoLoading || !promoCode.trim() ? 0.5 : 1 }}
+                >
+                  {promoLoading ? '...' : 'Применить'}
+                </button>
+              </div>
+              {promoError && (
+                <p className="text-xs mt-1.5" style={{ color: '#C0563C' }}>{promoError}</p>
+              )}
+            </>
+          )}
+        </div>
 
         {/* Помощь и поддержка */}
         <div className="inga-card mt-4">
