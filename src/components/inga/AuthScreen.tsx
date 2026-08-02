@@ -3,7 +3,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { useApp } from '@/context/AppContext';
 import { AppStep } from '@/lib/types';
-import logoImg from '@/assets/logo.png';
+import girlImg from '@/assets/legche-girl.png';
 
 type AuthMode = 'login' | 'signup';
 
@@ -77,20 +77,59 @@ export function AuthScreen() {
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
-      <div className="w-full max-w-sm flex items-center gap-2 mb-8">
-        <img
-          src={logoImg}
-          alt="legche.online"
-          className="w-9 h-9 object-cover"
-          style={{ borderRadius: '9px' }}
-        />
-        <span className="text-sm text-muted-foreground">legche.online</span>
-      </div>
-
       <div className="w-full max-w-sm">
-        <h2 className="text-2xl font-bold mb-2">
-          {isSignup ? 'Снижать вес — легче, чем кажется' : 'Вход'}
-        </h2>
+        {isSignup ? (
+          /* Заголовок повторяет лендинг: фигурка картинкой, текст — текстом,
+             чтобы на маленьких экранах он оставался крупным и чётким. */
+          <div className="flex items-center gap-3 mb-3" style={{ justifyContent: 'flex-start' }}>
+            <img
+              src={girlImg}
+              alt=""
+              aria-hidden="true"
+              className="shrink-0"
+              style={{ width: '28%', maxWidth: 104, height: 'auto' }}
+            />
+            {/* Замок как на лендинге: Golos Text, ЛЕГЧЕ бордовым (#601645),
+                верхняя и нижняя строки растянуты ровно по ширине этого слова. */}
+            <div style={{ fontFamily: "'Golos Text', system-ui, sans-serif", lineHeight: 1.05, display: 'inline-block' }}>
+              <div
+                style={{
+                  color: '#7A6A5E',
+                  fontSize: 'clamp(12px, 4vw, 16px)',
+                  fontWeight: 500,
+                  textAlign: 'justify',
+                  textAlignLast: 'justify',
+                }}
+              >
+                Снизить вес
+              </div>
+              <div
+                style={{
+                  color: '#601645',
+                  fontSize: 'clamp(30px, 11vw, 44px)',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  lineHeight: 1,
+                }}
+              >
+                ЛЕГЧЕ
+              </div>
+              <div
+                style={{
+                  color: '#7A6A5E',
+                  fontSize: 'clamp(12px, 4vw, 16px)',
+                  fontWeight: 500,
+                  textAlign: 'justify',
+                  textAlignLast: 'justify',
+                }}
+              >
+                чем кажется
+              </div>
+            </div>
+          </div>
+        ) : (
+          <h2 className="text-2xl font-bold mb-2">Вход</h2>
+        )}
         <p className="text-muted-foreground mb-6">
           {isSignup
             ? (<><span className="font-medium text-foreground">Метод «Лёгкая замена»:</span> не убирать любимое, а находить более лёгкую версию. Без запретов и срывов.</>)

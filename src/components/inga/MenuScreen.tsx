@@ -2163,6 +2163,19 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
     }
   };
 
+  // ---------- подтверждение почты (мягкая проверка) ----------
+  const storedUser = getStoredUser();
+  const [emailVerified] = useState(Boolean(storedUser?.email_verified));
+  const [verifySending, setVerifySending] = useState(false);
+  const [verifySent, setVerifySent] = useState(false);
+
+  const handleSendVerification = async () => {
+    setVerifySending(true);
+    const { error } = await auth.sendVerification();
+    setVerifySending(false);
+    if (!error) setVerifySent(true);
+  };
+
   const handleDownloadDiary = async () => {
     const today = new Date();
     const days14 = Array.from({ length: 14 }, (_, i) => {
@@ -2481,6 +2494,32 @@ ${rows.map(({ date, weight, report }) => `
         <p className="text-xs text-muted-foreground text-center mt-1">
           Отчёт за последние 14 дней — для подготовки к консультации
         </p>
+
+        {/* Подтверждение почты — мягкое напоминание, доступ не блокируется */}
+        {!emailVerified && (
+          <div className="inga-card mt-4" style={{ border: '1px solid #FFD9C2', background: '#FFF9F4' }}>
+            <p className="text-sm font-semibold mb-1">✉️ Подтвердите почту</p>
+            {verifySent ? (
+              <p className="text-xs leading-relaxed" style={{ color: '#4A7A45' }}>
+                Письмо отправлено. Загляните в почту — и в папку «Спам», письма иногда попадают туда.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                  Приложением можно пользоваться и так. Но без подтверждения не получится восстановить пароль, если вы его забудете.
+                </p>
+                <button
+                  onClick={handleSendVerification}
+                  disabled={verifySending}
+                  className="text-sm font-semibold"
+                  style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}
+                >
+                  {verifySending ? 'Отправляю…' : 'Отправить письмо ещё раз'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Промокод */}
         <div className="inga-card mt-4">
