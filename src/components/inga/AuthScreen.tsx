@@ -95,10 +95,9 @@ export function AuthScreen() {
               <div
                 style={{
                   color: '#7A6A5E',
-                  fontSize: 'clamp(12px, 4vw, 16px)',
+                  fontSize: 'clamp(13px, 4.4vw, 17px)',
                   fontWeight: 500,
-                  textAlign: 'justify',
-                  textAlignLast: 'justify',
+                  letterSpacing: '0.06em',
                 }}
               >
                 Снизить вес
@@ -117,10 +116,9 @@ export function AuthScreen() {
               <div
                 style={{
                   color: '#7A6A5E',
-                  fontSize: 'clamp(12px, 4vw, 16px)',
+                  fontSize: 'clamp(13px, 4.4vw, 17px)',
                   fontWeight: 500,
-                  textAlign: 'justify',
-                  textAlignLast: 'justify',
+                  letterSpacing: '0.06em',
                 }}
               >
                 чем кажется
