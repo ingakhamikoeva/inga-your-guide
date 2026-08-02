@@ -137,7 +137,7 @@ export function SurveyDataScreen() {
             className="px-4 py-2 text-xs font-bold tracking-wider"
             style={{ background: '#FF6200', color: '#FFFFFF' }}
           >
-            ТВОЙ РАСЧЁТ
+            ВАШ РАСЧЁТ
           </div>
           <div className="px-4 py-3 flex justify-between items-center text-sm" style={{ color: '#3B2A20' }}>
             <span>Суточная норма</span>
