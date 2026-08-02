@@ -115,6 +115,26 @@ export const auth = {
     return { data: { subscription: { unsubscribe: unsub } } };
   },
 
+  // Подтверждение email (мягкая проверка): доступ есть сразу,
+  // подтверждение нужно для восстановления пароля и писем.
+  async sendVerification(): Promise<AuthResult> {
+    try {
+      await apiFetch('/auth/send-verification', { method: 'POST', body: {} });
+      return { error: null };
+    } catch (e) {
+      return { error: toError(e) };
+    }
+  },
+
+  async verifyEmail(token: string): Promise<AuthResult> {
+    try {
+      await apiFetch('/auth/verify-email', { method: 'POST', body: { token }, auth: false });
+      return { error: null };
+    } catch (e) {
+      return { error: toError(e) };
+    }
+  },
+
   async resetPasswordForEmail(email: string, opts?: { redirectTo?: string }): Promise<AuthResult> {
     try {
       await apiFetch('/auth/forgot-password', {
