@@ -70,6 +70,22 @@ export async function signupHandler(req, res) {
   if (!email || !password) return res.status(400).json({ error: "email and password required" });
   if (password.length < 6) return res.status(400).json({ error: "password too short" });
 
+  // Согласие на обработку ПД обязательно (152-ФЗ); на рассылку — нет.
+  const pdConsent = req.body?.pdConsent === true;
+  const marketingConsent = req.body?.marketingConsent === true;
+  if (!pdConsent) return res.status(400).json({ error: "pd_consent_required" });
+
+  // Источник регистрации (UTM с лендинга) — необязательный, просто аналитика.
+  const ALLOWED_UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+  const rawUtm = req.body?.utm && typeof req.body.utm === "object" ? req.body.utm : null;
+  const utm = rawUtm
+    ? Object.fromEntries(
+        ALLOWED_UTM_KEYS
+          .filter((k) => typeof rawUtm[k] === "string" && rawUtm[k])
+          .map((k) => [k, String(rawUtm[k]).slice(0, 200)])
+      )
+    : null;
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -91,10 +107,17 @@ export async function signupHandler(req, res) {
 
     const hash = await bcrypt.hash(password, 10);
     await client.query(
-      `INSERT INTO public.app_credentials (user_id, email, password_hash, email_verified)
-       VALUES ($1, $2, $3, false)`,
-      [userId, email, hash]
+      `INSERT INTO public.app_credentials (user_id, email, password_hash, email_verified, pd_consent_at, marketing_consent)
+       VALUES ($1, $2, $3, false, now(), $4)`,
+      [userId, email, hash, marketingConsent]
     );
+
+    if (utm && Object.keys(utm).length) {
+      await client.query(
+        `INSERT INTO public.user_events (user_id, type, payload_json) VALUES ($1, 'registration_source', $2::jsonb)`,
+        [userId, JSON.stringify(utm)]
+      );
+    }
 
     await client.query("COMMIT");
 
