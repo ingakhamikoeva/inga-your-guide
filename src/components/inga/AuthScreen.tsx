@@ -7,15 +7,19 @@ import girlImg from '@/assets/legche-girl.png';
 
 type AuthMode = 'login' | 'signup';
 
-export function AuthScreen() {
+export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
   const { setStep, hydrateFromDb } = useApp();
-  const [mode, setMode] = useState<AuthMode>('signup');
+  const [mode, setMode] = useState<AuthMode>(initialMode ?? 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  // Согласия при регистрации (152-ФЗ) — раздельно: ПД обязательно, рассылка нет.
+  // ⚠️ Текст ниже — черновик до готовности оферты/политики у юриста, см. чат.
+  const [pdConsent, setPdConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   const handleForgotPassword = async () => {
     setError('');
@@ -44,17 +48,25 @@ export function AuthScreen() {
     setInfo('');
     setLoading(true);
 
+    if (mode === 'signup' && !pdConsent) {
+      setError('Нужно согласие на обработку персональных данных, чтобы продолжить');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (mode === 'signup') {
         const { data, error: signUpError } = await auth.signUp({
           email,
           password,
+          pdConsent,
+          marketingConsent,
         });
         if (signUpError) throw signUpError;
         if (data.session) {
           setStep('survey-name' as AppStep);
         } else {
-          setInfo('Мы отправили письмо для подтверждения на ' + email + '. Перейди по ссылке из письма, затем войди.');
+          setInfo('Мы отправили письмо для подтверждения на ' + email + '. Перейдите по ссылке из письма, затем войдите.');
           setMode('login');
         }
       } else {
@@ -173,6 +185,40 @@ export function AuthScreen() {
               </button>
             </div>
           </div>
+
+          {isSignup && (
+            <div className="space-y-2">
+              {/* ⚠️ Черновик текста — заменить на финальный после утверждения оферты/политики */}
+              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={pdConsent}
+                  onChange={e => setPdConsent(e.target.checked)}
+                  className="mt-0.5 shrink-0"
+                  required
+                />
+                <span>
+                  Я согласен(-на) с{' '}
+                  <a href="https://legche.online/oferta" target="_blank" rel="noreferrer" className="underline">
+                    офертой
+                  </a>{' '}
+                  и даю согласие на{' '}
+                  <a href="https://legche.online/privacy" target="_blank" rel="noreferrer" className="underline">
+                    обработку персональных данных
+                  </a>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={marketingConsent}
+                  onChange={e => setMarketingConsent(e.target.checked)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>Согласен(-на) получать письма с рекомендациями и новостями</span>
+              </label>
+            </div>
+          )}
 
           {error && (
             <div className="text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-2">
