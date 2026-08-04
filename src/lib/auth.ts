@@ -14,6 +14,7 @@ import {
   setTokens,
   subscribe,
 } from './auth-storage';
+import { getStoredUtm, clearStoredUtm } from './utm';
 
 export type { AuthEvent, AppSession, StoredUser } from './auth-storage';
 
@@ -52,15 +53,22 @@ bootstrapRecovery();
 // ── public API ────────────────────────────────────────────────────
 
 export const auth = {
-  async signUp(args: { email: string; password: string }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
+  async signUp(args: { email: string; password: string; pdConsent?: boolean; marketingConsent?: boolean }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
     try {
       const r = await apiFetch<TokenResp>('/auth/signup', {
         method: 'POST',
-        body: { email: args.email, password: args.password },
+        body: {
+          email: args.email,
+          password: args.password,
+          pdConsent: args.pdConsent ?? false,
+          marketingConsent: args.marketingConsent ?? false,
+          utm: getStoredUtm(),
+        },
         auth: false,
       });
       setTokens(r.access_token, r.refresh_token, r.user);
       notifyAuthChange('SIGNED_IN');
+      clearStoredUtm();
       return { data: { session: currentSession(), user: r.user }, error: null };
     } catch (e) {
       return { data: { session: null, user: null }, error: toError(e) };
