@@ -14,7 +14,7 @@ import { WhyScreen } from '@/components/inga/WhyScreen';
 import { HowItWorksScreen } from '@/components/inga/HowItWorksScreen';
 import { RouteReadyScreen } from '@/components/inga/RouteReadyScreen';
 
-function AppFlow() {
+function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) {
   const { step, setStep, hydrateFromDb } = useApp();
   const [authReady, setAuthReady] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -55,7 +55,7 @@ function AppFlow() {
   if (!authReady) return null;
 
   if (!isAuthed || step === 'auth') {
-    return <AuthScreen />;
+    return <AuthScreen initialMode={initialAuthMode} />;
   }
 
   switch (step) {
@@ -73,10 +73,10 @@ function AppFlow() {
   }
 }
 
-const Index = () => (
+const Index = ({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) => (
   <AppProvider>
     <div className="min-h-screen">
-      <AppFlow />
+      <AppFlow initialAuthMode={initialAuthMode} />
     </div>
   </AppProvider>
 );
