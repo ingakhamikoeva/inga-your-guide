@@ -2,7 +2,7 @@
 const {
   DEEPSEEK_API_KEY,
   DEEPSEEK_BASE_URL = "https://api.deepseek.com",
-  DEEPSEEK_MODEL = "deepseek-chat",
+  DEEPSEEK_MODEL = "deepseek-v4-flash",
 } = process.env;
 
 export async function deepseekChat(messages, opts = {}) {
@@ -16,6 +16,11 @@ export async function deepseekChat(messages, opts = {}) {
     temperature: opts.temperature ?? 0.4,
     max_tokens: opts.maxTokens ?? 700,
     stream: false,
+    // deepseek-v4-flash/pro думают перед ответом по умолчанию. Для короткого
+    // чат-ответа по готовым правилам это не нужно и опасно: на сложных
+    // запросах (разбор целого дня питания) модель может потратить весь
+    // max_tokens на размышления и вернуть пустой content. Отключаем явно.
+    thinking: { type: "disabled" },
   };
   if (opts.jsonMode) body.response_format = { type: "json_object" };
 
@@ -34,5 +39,9 @@ export async function deepseekChat(messages, opts = {}) {
     throw new Error("provider_error");
   }
   const j = await resp.json();
-  return j?.choices?.[0]?.message?.content ?? "";
+  const content = j?.choices?.[0]?.message?.content ?? "";
+  if (!content) {
+    console.error("deepseek returned empty content, finish_reason:", j?.choices?.[0]?.finish_reason);
+  }
+  return content;
 }
