@@ -17,7 +17,8 @@ interface PendingMeal {
 
 // Lightweight food/symptom detection used to offer meal-save and to flag safety chat events.
 const FOOD_HINT = /(съел|съела|поел|поела|завтрак|обед|ужин|перекус|выпил|выпила|скушал|скушала)/i;
-const SAFETY_HINT = /(обморок|сильная слабость|головокруж|боль в груди|рвота|вызвать рвоту|хочу голодать)/i;
+const ANALYSIS_HINT = /(оцени|оцените|разбери|разберите|проанализируй|проанализируйте|дай оценку)/i;
+const SAFETY_HINT = /(обморок|предобморок|сильная слабость|головокруж|кружится голова|голова кружится|темнеет в глазах|тошнит|тошнота|боль в груди|рвота|вызвать рвоту|хочу голодать)/i;
 
 function stripMarkers(text: string): string {
   return text
@@ -117,8 +118,9 @@ export function ChatScreen() {
       const display = stripMarkers(answer);
       setMessages(prev => prev.map((m, i) => i === assistantIndex ? { ...m, content: display } : m));
 
-      // Offer to save the user's message as a meal if it sounds like a meal description.
-      if (FOOD_HINT.test(trimmed)) {
+      // Offer to save the user's message as a meal if it sounds like a meal description —
+      // but not if they're asking for an analysis/review of a day already eaten.
+      if (FOOD_HINT.test(trimmed) && !ANALYSIS_HINT.test(trimmed)) {
         setPending(prev => ({
           ...prev,
           [assistantIndex]: { msgIndex: assistantIndex, description: trimmed, saved: false, dismissed: false },
@@ -186,9 +188,10 @@ export function ChatScreen() {
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] px-4 py-3 rounded-[18px] whitespace-pre-wrap break-words text-[17px] leading-[1.5] ${
                 m.role === 'user'
-                  ? 'bg-primary text-primary-foreground rounded-br-[4px]'
+                  ? 'rounded-br-[4px]'
                   : 'bg-secondary text-secondary-foreground rounded-bl-[4px]'
-              }`}>
+              }`}
+              style={m.role === 'user' ? { backgroundColor: '#FBE0CC', color: '#2C1A0E' } : undefined}>
                 {m.content || (loading && i === messages.length - 1 ? '...' : '')}
               </div>
             </div>
