@@ -45,8 +45,7 @@ export interface Calculations {
   idealWeight: number;
   maxHealthyWeight: number;
   minHealthyWeight: number;
-  deficit20: number;
-  deficit40: number;
+  deficit25: number;
   corridorMin: number;
   corridorMax: number;
 }
