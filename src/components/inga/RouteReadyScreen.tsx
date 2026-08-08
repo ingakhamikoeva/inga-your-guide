@@ -68,7 +68,7 @@ export function RouteReadyScreen() {
         >
           <div className="font-medium">
             {name ? `${name}, всё готово. ` : 'Всё готово. '}
-            Я знаю вашу цель, ваш темп и ваш метод.
+            Я знаю вашу цель и ваш метод.
           </div>
           <div className="mt-2">
             Теперь моя задача — быть рядом каждый день и помогать вам двигаться вперёд.
@@ -162,12 +162,6 @@ export function RouteReadyScreen() {
             <div>
               <div className="text-sm font-medium" style={{ color: '#5C4A3D' }}>
                 {proteinText}
-              </div>
-              <div
-                className="text-xs italic mt-1"
-                style={{ color: '#9E9E9E' }}
-              >
-                Дальше я расскажу, как выбирать белок.
               </div>
             </div>
           </div>
