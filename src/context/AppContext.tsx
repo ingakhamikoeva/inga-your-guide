@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport, Medal } from '@/lib/types';
-import { calculateAll, getCorridorForPace } from '@/lib/calculations';
+import { calculateAll, roundTo50 } from '@/lib/calculations';
 import {
   isAuthenticated,
   saveUserProfile,
@@ -105,11 +105,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const runCalculations = useCallback(() => {
     const calc = calculateAll(profile);
-    if (profile.paceChoice) {
-      const corridor = getCorridorForPace(calc.totalCalories, profile.paceChoice);
-      calc.corridorMin = corridor.corridorMin;
-      calc.corridorMax = corridor.corridorMax;
-    }
     setCalculations(calc);
     // Sync plan to DB
     saveUserPlan(profile, calc).catch(() => {});
@@ -186,15 +181,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let calc = calculations;
     if (merged.height && merged.weight && merged.age) {
       calc = calculateAll(merged);
-      if (merged.paceChoice) {
-        const corridor = getCorridorForPace(calc.totalCalories, merged.paceChoice);
-        calc.corridorMin = corridor.corridorMin;
-        calc.corridorMax = corridor.corridorMax;
-      } else if (dbPlan?.corridorMin && dbPlan?.corridorMax) {
-        calc.corridorMin = dbPlan.corridorMin;
-        calc.corridorMax = dbPlan.corridorMax;
+      // Если калорийность удержания задана вручную в плане — пересчитываем
+      // от неё, чтобы коридор остался дефицитом 25% ±100, а не разъехался.
+      if (dbPlan?.calorieTarget) {
+        calc.totalCalories = roundTo50(dbPlan.calorieTarget);
+        calc.deficit25 = roundTo50(dbPlan.calorieTarget * 0.75);
+        calc.corridorMin = calc.deficit25 - 100;
+        calc.corridorMax = calc.deficit25 + 100;
       }
-      if (dbPlan?.calorieTarget) calc.totalCalories = dbPlan.calorieTarget;
       setCalculations(calc);
     }
 
