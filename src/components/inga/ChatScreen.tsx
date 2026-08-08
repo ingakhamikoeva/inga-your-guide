@@ -18,6 +18,7 @@ interface PendingMeal {
 // Lightweight food/symptom detection used to offer meal-save and to flag safety chat events.
 const FOOD_HINT = /(съел|съела|поел|поела|завтрак|обед|ужин|перекус|выпил|выпила|скушал|скушала)/i;
 const ANALYSIS_HINT = /(оцени|оцените|разбери|разберите|проанализируй|проанализируйте|дай оценку)/i;
+const QUESTION_HINT = /\?/;
 const SAFETY_HINT = /(обморок|предобморок|сильная слабость|головокруж|кружится голова|голова кружится|темнеет в глазах|тошнит|тошнота|боль в груди|рвота|вызвать рвоту|хочу голодать)/i;
 
 function stripMarkers(text: string): string {
@@ -96,11 +97,14 @@ export function ChatScreen() {
       calorieTarget: calculations?.totalCalories,
     };
 
+    const now = new Date();
+    const partOfDay = (h => h < 6 ? 'ночь' : h < 12 ? 'утро' : h < 18 ? 'день' : 'вечер')(now.getHours());
     const dayContext = {
       todayMeals: todayReport?.meals.map(m => m.description) ?? [],
       sleepHours: todayReport?.sleepHours,
       stepsYesterday: todayReport?.stepsYesterday,
       yesterdayConclusion: yesterdayReport?.hardestPart,
+      now: `${partOfDay}, ${now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`,
     };
 
     const route = classifyRoute(trimmed, userContext);
@@ -119,8 +123,8 @@ export function ChatScreen() {
       setMessages(prev => prev.map((m, i) => i === assistantIndex ? { ...m, content: display } : m));
 
       // Offer to save the user's message as a meal if it sounds like a meal description —
-      // but not if they're asking for an analysis/review of a day already eaten.
-      if (FOOD_HINT.test(trimmed) && !ANALYSIS_HINT.test(trimmed)) {
+      // but not if they're asking for an analysis/review, or just asking a question.
+      if (FOOD_HINT.test(trimmed) && !ANALYSIS_HINT.test(trimmed) && !QUESTION_HINT.test(trimmed)) {
         setPending(prev => ({
           ...prev,
           [assistantIndex]: { msgIndex: assistantIndex, description: trimmed, saved: false, dismissed: false },
