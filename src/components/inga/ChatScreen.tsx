@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { saveFoodLog, saveChatEvent } from '@/lib/db';
+import { saveChatEvent } from '@/lib/db';
 import { detectStage } from '@/lib/soft-swap';
 import { withName, hasName } from '@/lib/user-name';
 import { askInga, classifyRoute } from '@/lib/ai-provider';
@@ -8,17 +8,7 @@ import { VoiceInput } from './VoiceInput';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-interface PendingMeal {
-  msgIndex: number;
-  description: string;
-  saved: boolean;
-  dismissed: boolean;
-}
-
-// Lightweight food/symptom detection used to offer meal-save and to flag safety chat events.
-const FOOD_HINT = /(съел|съела|поел|поела|завтрак|обед|ужин|перекус|выпил|выпила|скушал|скушала)/i;
-const ANALYSIS_HINT = /(оцени|оцените|разбери|разберите|проанализируй|проанализируйте|дай оценку)/i;
-const QUESTION_HINT = /\?/;
+// Symptom detection used to flag safety chat events.
 const SAFETY_HINT = /(обморок|предобморок|сильная слабость|головокруж|кружится голова|голова кружится|темнеет в глазах|тошнит|тошнота|боль в груди|рвота|вызвать рвоту|хочу голодать)/i;
 
 function stripMarkers(text: string): string {
@@ -26,11 +16,6 @@ function stripMarkers(text: string): string {
     .replace(/\[OFFER_SAVE_MEAL:[^\]]*\]/g, '')
     .replace(/\[CHAT_EVENT:[^\]]*\]/g, '')
     .trim();
-}
-
-function extractOfferMeal(text: string): string | null {
-  const m = text.match(/\[OFFER_SAVE_MEAL:\s*([^\]]+)\]/);
-  return m ? m[1].trim() : null;
 }
 
 function extractChatEvent(text: string): { type: string; summary: string } | null {
@@ -44,7 +29,6 @@ export function ChatScreen() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState<Record<number, PendingMeal>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -122,29 +106,12 @@ export function ChatScreen() {
       const display = stripMarkers(answer);
       setMessages(prev => prev.map((m, i) => i === assistantIndex ? { ...m, content: display } : m));
 
-      // Offer to save the user's message as a meal if it sounds like a meal description —
-      // but not if they're asking for an analysis/review, or just asking a question.
-      if (FOOD_HINT.test(trimmed) && !ANALYSIS_HINT.test(trimmed) && !QUESTION_HINT.test(trimmed)) {
-        setPending(prev => ({
-          ...prev,
-          [assistantIndex]: { msgIndex: assistantIndex, description: trimmed, saved: false, dismissed: false },
-        }));
-      }
-
       // Log a safety chat event when symptoms are detected.
       if (route === 'safety' || SAFETY_HINT.test(trimmed)) {
         saveChatEvent('safety', trimmed.slice(0, 200)).catch(() => {});
       }
 
-      // Also honour any markers the model may emit (kept for forward-compat).
-      const offer = extractOfferMeal(answer);
       const event = extractChatEvent(answer);
-      if (offer && !FOOD_HINT.test(trimmed)) {
-        setPending(prev => ({
-          ...prev,
-          [assistantIndex]: { msgIndex: assistantIndex, description: offer, saved: false, dismissed: false },
-        }));
-      }
       if (event) saveChatEvent(event.type, event.summary).catch(() => {});
     } catch (e) {
       console.error(e);
@@ -154,17 +121,6 @@ export function ChatScreen() {
       setLoading(false);
       requestAnimationFrame(() => inputRef.current?.focus());
     }
-  };
-
-  const handleSaveMeal = async (idx: number) => {
-    const p = pending[idx];
-    if (!p) return;
-    await saveFoodLog(p.description, 'unknown');
-    setPending(prev => ({ ...prev, [idx]: { ...p, saved: true } }));
-  };
-
-  const handleDismissMeal = (idx: number) => {
-    setPending(prev => ({ ...prev, [idx]: { ...prev[idx], dismissed: true } }));
   };
 
   return (
@@ -199,28 +155,6 @@ export function ChatScreen() {
                 {m.content || (loading && i === messages.length - 1 ? '...' : '')}
               </div>
             </div>
-          ))}
-
-          {/* Save-meal offer cards */}
-          {Object.values(pending).map(p => (
-            !p.dismissed && (
-              <div key={p.msgIndex} className="inga-card border-primary/40 bg-primary/5 max-w-[85%]">
-                <p className="text-base mb-2">Хотите, сохраню это как приём пищи в дневник?</p>
-                <p className="text-sm text-muted-foreground italic mb-3">«{p.description}»</p>
-                {p.saved ? (
-                  <p className="text-base text-primary font-medium">✓ Сохранено в дневник</p>
-                ) : (
-                  <div className="flex gap-2">
-                    <button onClick={() => handleSaveMeal(p.msgIndex)} className="inga-btn-primary text-base py-2 px-3 flex-1">
-                      Да, сохранить
-                    </button>
-                    <button onClick={() => handleDismissMeal(p.msgIndex)} className="inga-btn-secondary text-base py-2 px-3 flex-1">
-                      Нет, обсуждаем
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
           ))}
 
           {error && (
