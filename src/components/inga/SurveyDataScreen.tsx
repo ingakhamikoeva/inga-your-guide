@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Slider } from '@/components/ui/slider';
 import ingaPhoto from '@/assets/inga-photo.jpg';
+import { roundTo50 } from '@/lib/calculations';
 
 export function SurveyDataScreen() {
   const { profile, updateProfile, setStep } = useApp();
@@ -26,7 +27,7 @@ export function SurveyDataScreen() {
       ? 655.1 + 9.563 * weightN + 1.85 * heightN - 4.676 * ageN
       : 66.5 + 13.75 * weightN + 5.003 * heightN - 6.775 * ageN;
     const t = Math.round(bmr + stepCalories);
-    return { tdee: t, deficit: Math.round(t * 0.75) };
+    return { tdee: roundTo50(t), deficit: roundTo50(t * 0.75) };
   }, [ageN, heightN, weightN, stepCalories, sex]);
 
   const canProceed = ageN > 0 && heightN > 0 && weightN > 0;
@@ -137,7 +138,7 @@ export function SurveyDataScreen() {
             className="px-4 py-2 text-xs font-bold tracking-wider"
             style={{ background: '#FF6200', color: '#FFFFFF' }}
           >
-            ВАШ РАСЧЁТ
+            ТВОЙ РАСЧЁТ
           </div>
           <div className="px-4 py-3 flex justify-between items-center text-sm" style={{ color: '#3B2A20' }}>
             <span>Суточная норма</span>
