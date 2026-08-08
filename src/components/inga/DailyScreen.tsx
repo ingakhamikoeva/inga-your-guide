@@ -1099,7 +1099,7 @@ export function DailyScreen() {
 
           const ingaMsg = (() => {
             if (totalMeals === 0) return 'Добавьте первый приём пищи — не доводите себя до голода 🧡';
-            if (waterCount < 4) return `${userName}, выпей ещё воды — пока только ${waterCount} из 6 стаканов 💧`;
+            if (waterCount < 4) return `${userName}, выпейте ещё воды — пока только ${waterCount} из 6 стаканов 💧`;
             if (proteinGrams < proteinTarget * 0.6) return 'Белка маловато сегодня. Добавьте мясо, рыбу, яичный белок или творог к следующему приёму.';
             if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки. Добавьте овощи или ягоды к следующему приёму 🥦';
             if (waterCount >= 5 && proteinGrams >= proteinTarget * 0.8 && fiberMeals / totalMeals >= 0.6) {
