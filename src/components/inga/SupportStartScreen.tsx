@@ -47,10 +47,7 @@ export function SupportStartScreen() {
         <div className="inga-card w-full max-w-sm mb-6">
           <div className="font-bold mb-2">Ваш коридор калорийности</div>
           <div className="text-2xl font-bold text-primary">
-            {profile.paceChoice === 'fast'
-              ? `${Math.round((calculations.totalCalories * 0.6) - 100)} – ${Math.round((calculations.totalCalories * 0.6) + 100)}`
-              : `${Math.round((calculations.totalCalories * 0.8) - 100)} – ${Math.round((calculations.totalCalories * 0.8) + 100)}`
-            }
+            {`${calculations.corridorMin} – ${calculations.corridorMax}`}
             <span className="text-base font-normal text-muted-foreground"> ккал/день</span>
           </div>
         </div>
