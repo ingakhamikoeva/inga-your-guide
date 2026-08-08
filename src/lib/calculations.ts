@@ -1,5 +1,11 @@
 import { Calculations, UserProfile } from './types';
 
+// Калорийность округляем до полусотни — «1200» и «1250» запоминаются,
+// «1192» и «1248» нет. Используется везде, где цифру видит пользователь.
+export function roundTo50(value: number): number {
+  return Math.round(value / 50) * 50;
+}
+
 export function calculateAll(profile: Partial<UserProfile>): Calculations {
   const { gender = 'female', age = 30, weight = 70, height = 165, stepsPerDay = 5000 } = profile;
 
@@ -19,26 +25,22 @@ export function calculateAll(profile: Partial<UserProfile>): Calculations {
   const maxHealthyWeight = Math.round(25 * heightM * heightM);
   const minHealthyWeight = Math.round(18.5 * heightM * heightM);
 
-  const deficit20 = Math.round(totalCalories * 0.8);
-  const deficit40 = Math.round(totalCalories * 0.6);
+  // Дефицит 25% — единый для всех (выбор темпа убран из онбординга).
+  // Коридор: ±100 ккал от этой цифры. Ровно то же значение показывается
+  // пользователю на экране «ВАШ РАСЧЁТ» (SurveyDataScreen).
+  const deficit25 = roundTo50(totalCalories * 0.75);
 
   return {
     bmi,
     bmr: Math.round(bmr),
-    totalCalories,
+    totalCalories: roundTo50(totalCalories),
     idealWeight,
     maxHealthyWeight,
     minHealthyWeight,
-    deficit20,
-    deficit40,
-    corridorMin: 0,
-    corridorMax: 0,
+    deficit25,
+    corridorMin: deficit25 - 100,
+    corridorMax: deficit25 + 100,
   };
-}
-
-export function getCorridorForPace(totalCalories: number, pace: 'fast' | 'slow') {
-  const base = pace === 'fast' ? Math.round(totalCalories * 0.6) : Math.round(totalCalories * 0.8);
-  return { corridorMin: base - 100, corridorMax: base + 100 };
 }
 
 export function checkGoalBmi(goalWeight: number, height: number) {
