@@ -78,7 +78,14 @@ export function ChatScreen() {
       trackingMethod: profile.trackingMethod,
       triggers: [profile.foodProfile?.trigger, profile.emotionalTrigger].filter(Boolean) as string[],
       pattern: profile.foodProfile?.pattern,
-      calorieTarget: calculations?.totalCalories,
+      // totalCalories — это калорийность УДЕРЖАНИЯ (основной обмен + шаги).
+      // Пока человек не достиг цели, ориентир — коридор дефицита, иначе ИИ
+      // советует цифру, на которой вес стоит на месте.
+      maintenanceCalories: calculations?.totalCalories,
+      deficitCorridor:
+        stage === 'loss' && calculations?.corridorMin && calculations?.corridorMax
+          ? { min: calculations.corridorMin, max: calculations.corridorMax }
+          : undefined,
     };
 
     const now = new Date();
