@@ -9,6 +9,7 @@ import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
 import { getSetting } from '@/lib/app-settings';
+import { getStoredUser } from '@/lib/auth-storage';
 import palmMethodImage from '@/assets/palm-method.png';
 import logoTelegram from '@/assets/logo_telegram.png';
 import logoVk from '@/assets/logo_vk.png';
