@@ -38,6 +38,7 @@ interface AppContextValue extends AppState {
   addAwardedMedal: (medal: Medal) => void;
   syncToDb: () => Promise<void>;
   hydrateFromDb: () => Promise<AppStep>;
+  resetLocalState: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -156,6 +157,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [profile, calculations]);
 
   // Hydrate state from DB after auth (essential for cross-domain login where localStorage is empty)
+  // Полный сброс локального состояния. Нужен при регистрации нового аккаунта:
+  // иначе профиль предыдущего пользователя остаётся в localStorage, подмешивается
+  // в hydrateFromDb и новичок проскакивает онбординг сразу в дневник.
+  const resetLocalState = useCallback(() => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    setProfile({});
+    setCalculations(null);
+    setDailyReports([]);
+    setWeeklyData([]);
+    setMedals([]);
+  }, []);
+
   const hydrateFromDb = useCallback(async (): Promise<AppStep> => {
     const authed = await isAuthenticated();
     if (!authed) return 'auth';
@@ -234,6 +247,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         medals, addAwardedMedal,
         syncToDb,
         hydrateFromDb,
+        resetLocalState,
       }}
     >
       {children}
