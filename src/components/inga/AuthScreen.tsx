@@ -8,7 +8,7 @@ import girlImg from '@/assets/legche-girl.png';
 type AuthMode = 'login' | 'signup';
 
 export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
-  const { setStep, hydrateFromDb } = useApp();
+  const { setStep, hydrateFromDb, resetLocalState } = useApp();
   const [mode, setMode] = useState<AuthMode>(initialMode ?? 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,6 +63,9 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
           marketingConsent,
         });
         if (signUpError) throw signUpError;
+        // Новый аккаунт — чистим состояние прежнего пользователя из этого браузера,
+        // иначе его профиль подмешается и онбординг будет пропущен.
+        resetLocalState();
         if (data.session) {
           setStep('survey-name' as AppStep);
         } else {

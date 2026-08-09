@@ -2113,7 +2113,7 @@ export function MenuScreen() {
 }
 
 function ProfileSection({ onBack }: { onBack: () => void }) {
-  const { profile, calculations, updateProfile, setStep, weeklyData, dailyReports } = useApp();
+  const { profile, calculations, updateProfile, setStep, weeklyData, dailyReports, resetLocalState } = useApp();
 
   // ---------- name ----------
   const [editingName, setEditingName] = useState(false);
@@ -2304,6 +2304,9 @@ ${rows.map(({ date, weight, report }) => `
 
   const doSignOut = async () => {
     try { const { auth } = await import('@/lib/auth'); await auth.signOut(); } catch {}
+    // Чистим данные этого пользователя из браузера, чтобы они не подмешались
+    // следующему, кто войдёт или зарегистрируется на этом устройстве.
+    resetLocalState();
     setConfirmSignOut(false);
     setStep('auth');
   };
