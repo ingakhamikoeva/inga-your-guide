@@ -16,8 +16,10 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  // Согласия при регистрации (152-ФЗ) — раздельно: ПД обязательно, рассылка нет.
-  // ⚠️ Текст ниже — черновик до готовности оферты/политики у юриста, см. чат.
+  // Согласия при регистрации (152-ФЗ): обязательное — оферта + обработка ПД,
+  // необязательное — рекламная рассылка. Отдельное согласие на трансграничную
+  // передачу не требуется: КНР входит в перечень стран с адекватной защитой
+  // (приказ РКН от 05.08.2022 № 128), см. ст. 12 152-ФЗ.
   const [pdConsent, setPdConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
 
@@ -49,7 +51,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
     setLoading(true);
 
     if (mode === 'signup' && !pdConsent) {
-      setError('Нужно согласие на обработку персональных данных, чтобы продолжить');
+      setError('Чтобы продолжить, примите условия оферты и согласие на обработку персональных данных');
       setLoading(false);
       return;
     }
@@ -191,7 +193,6 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
 
           {isSignup && (
             <div className="space-y-2">
-              {/* ⚠️ Черновик текста — заменить на финальный после утверждения оферты/политики */}
               <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
@@ -201,13 +202,13 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
                   required
                 />
                 <span>
-                  Я согласен(-на) с{' '}
+                  Я принимаю условия{' '}
                   <a href="https://legche.online/oferta" target="_blank" rel="noreferrer" className="underline">
-                    офертой
+                    оферты
                   </a>{' '}
-                  и даю согласие на{' '}
+                  и даю согласие на обработку персональных данных в соответствии с{' '}
                   <a href="https://legche.online/privacy" target="_blank" rel="noreferrer" className="underline">
-                    обработку персональных данных
+                    политикой
                   </a>
                 </span>
               </label>
@@ -218,7 +219,13 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
                   onChange={e => setMarketingConsent(e.target.checked)}
                   className="mt-0.5 shrink-0"
                 />
-                <span>Согласен(-на) получать письма с рекомендациями и новостями</span>
+                <span>
+                  Согласен(-на) получать{' '}
+                  <a href="https://legche.online/consent-marketing.html" target="_blank" rel="noreferrer" className="underline">
+                    письма
+                  </a>{' '}
+                  с рекомендациями и новостями — необязательно
+                </span>
               </label>
             </div>
           )}
