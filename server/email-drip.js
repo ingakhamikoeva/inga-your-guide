@@ -62,10 +62,13 @@ async function founderPricingAvailable() {
 
 // ── Кандидаты на письмо: триал стартовал >= N дней назад, письмо не отправлено,
 // от рассылки не отписывались. Опционально — только неоплатившие (для дня 10). ─
-async function findDue(dayOffset, eventType, { onlyUnpaid = false } = {}) {
+async function findDue(dayOffset, eventType, { onlyUnpaid = false, requireMarketingConsent = false } = {}) {
   const unpaidClause = onlyUnpaid ? "AND s.paid_until IS NULL" : "";
+  // Рекламные письма уходят только тем, кто дал отдельное согласие на рассылку
+  // (ст. 18 38-ФЗ). Сервисные письма от этого условия не зависят.
+  const consentClause = requireMarketingConsent ? "AND c.marketing_consent = true" : "";
   const { rows } = await pool.query(
-    `SELECT s.user_id, c.email, u.name
+    `SELECT s.user_id, c.email, u.name, c.marketing_consent
      FROM public.subscriptions s
      JOIN public.app_credentials c ON c.user_id = s.user_id
      JOIN public.users u ON u.user_id = s.user_id
@@ -73,6 +76,7 @@ async function findDue(dayOffset, eventType, { onlyUnpaid = false } = {}) {
        AND s.trial_started_at <= now() - ($1 || ' days')::interval
        AND u.email_unsubscribed_at IS NULL
        ${unpaidClause}
+       ${consentClause}
        AND NOT EXISTS (
          SELECT 1 FROM public.user_events e
          WHERE e.user_id = s.user_id AND e.type = $2
@@ -108,13 +112,14 @@ async function runOnce() {
       const founderAvailable = await founderPricingAvailable();
       for (const u of day6) {
         const stats = await computeUserStats(u.user_id);
-        const r = await sendDay6Email(u.email, u.name || null, u.user_id, stats, founderAvailable);
+        const r = await sendDay6Email(u.email, u.name || null, u.user_id, stats, founderAvailable, u.marketing_consent === true);
         if (r.sent) await markSent(u.user_id, "email_day6_sent");
       }
     }
 
-    // День 10 — только для тех, кто не оплатил
-    const day10 = await findDue(10, "email_day10_sent", { onlyUnpaid: true });
+    // День 10 — рекламное письмо целиком: только неоплатившим и только тем,
+    // кто дал согласие на рассылку.
+    const day10 = await findDue(10, "email_day10_sent", { onlyUnpaid: true, requireMarketingConsent: true });
     for (const u of day10) {
       const r = await sendDay10Email(u.email, u.name || null, u.user_id);
       if (r.sent) await markSent(u.user_id, "email_day10_sent");

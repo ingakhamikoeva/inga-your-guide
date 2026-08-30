@@ -203,8 +203,44 @@ async function sendDay6B(to, name, userId, founderPricingAvailable) {
   return send(ingaTransport, process.env.SMTP_INGA_USER, SENDER_NAME, to, "Ваша неделя заканчивается — и это не страшно", html, null, "day6b");
 }
 
-export async function sendDay6Email(to, name, userId, stats, founderPricingAvailable) {
+// День 6 — сервисный вариант А (была активна, согласия на рекламу нет).
+// Только факты об окончании пробной недели: без цен, спецпредложений,
+// счётчика мест и призывов оформить подписку (ст. 18 38-ФЗ «О рекламе»).
+async function sendDay6ServiceA(to, name, userId, stats) {
+  const g = greet(name);
+  const kopilkaLine = stats.kopilka_kcal > 0 ? `${stats.kopilka_kcal} ккал в копилке, ` : "";
+  const html = wrapHtml(`
+    <p style="margin:0 0 16px;">${g}</p>
+    <p style="margin:0 0 16px;">Завтра заканчивается ваша бесплатная неделя. Списаний не будет: карту вы не оставляли.</p>
+    <p style="margin:0 0 16px;">Что у вас накопилось за неделю: ${kopilkaLine}${stats.dish_count} блюд в лёгкой версии, ${stats.diary_days} дней с дневником.</p>
+    <p style="margin:0 0 16px;">Дневник, копилка и история замен сохранятся — они никуда не денутся. Программа и AI-помощник со следующего дня будут недоступны. Если захотите продолжить, условия есть на сайте: <a href="${SITE_URL}" style="color:#C2410C;">legche.online</a>.</p>
+    ${ctaButton("Открыть приложение", APP_URL)}
+    <p style="margin:0;">Инга</p>
+  `, unsubscribeFooter(userId));
+  return send(ingaTransport, process.env.SMTP_INGA_USER, SENDER_NAME, to, "Завтра заканчивается ваша бесплатная неделя", html, null, "day6-service-a");
+}
+
+// День 6 — сервисный вариант Б (не активировалась, согласия на рекламу нет)
+async function sendDay6ServiceB(to, name, userId) {
+  const g = greet(name);
+  const html = wrapHtml(`
+    <p style="margin:0 0 16px;">${g}</p>
+    <p style="margin:0 0 16px;">Завтра заканчивается ваша пробная неделя. До приложения руки так и не дошли — бывает, неделя выдалась не та.</p>
+    <p style="margin:0 0 16px;">Списаний не будет: карту вы не оставляли, ничего делать не нужно.</p>
+    <p style="margin:0 0 16px;">Сегодня ещё можно посмотреть, ради чего всё затевалось. Это 5 секунд: введите блюдо, от которого не готовы отказаться, и увидите его лёгкую версию.</p>
+    ${ctaButton("Ввести блюдо", APP_URL)}
+    <p style="margin:0;">Инга</p>
+  `, unsubscribeFooter(userId));
+  return send(ingaTransport, process.env.SMTP_INGA_USER, SENDER_NAME, to, "Завтра заканчивается пробная неделя", html, null, "day6-service-b");
+}
+
+// marketingConsent решает, какая ветка уходит: с ценами (реклама — только
+// по согласию) или сервисная. Каждый пользователь получает ровно одно письмо.
+export async function sendDay6Email(to, name, userId, stats, founderPricingAvailable, marketingConsent = false) {
   const inactive = stats.diary_days === 0 && stats.dish_count === 0;
+  if (!marketingConsent) {
+    return inactive ? sendDay6ServiceB(to, name, userId) : sendDay6ServiceA(to, name, userId, stats);
+  }
   return inactive ? sendDay6B(to, name, userId, founderPricingAvailable) : sendDay6A(to, name, userId, stats, founderPricingAvailable);
 }
 

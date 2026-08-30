@@ -62,6 +62,11 @@ function sha256(s) {
   return crypto.createHash("sha256").update(s).digest("hex");
 }
 
+// Редакция оферты и политики, действующая на момент регистрации. Меняется
+// вместе с текстами на legche.online — тогда же поднять дату здесь (или в
+// LEGAL_DOCS_VERSION в .env), чтобы согласия ссылались на нужную версию.
+const LEGAL_DOCS_VERSION = process.env.LEGAL_DOCS_VERSION || "2026-08-12";
+
 // ── handlers ──────────────────────────────────────────────────────
 
 export async function signupHandler(req, res) {
@@ -107,9 +112,12 @@ export async function signupHandler(req, res) {
 
     const hash = await bcrypt.hash(password, 10);
     await client.query(
-      `INSERT INTO public.app_credentials (user_id, email, password_hash, email_verified, pd_consent_at, marketing_consent)
-       VALUES ($1, $2, $3, false, now(), $4)`,
-      [userId, email, hash, marketingConsent]
+      `INSERT INTO public.app_credentials
+         (user_id, email, password_hash, email_verified, pd_consent_at,
+          marketing_consent, marketing_consent_at, consent_doc_version)
+       VALUES ($1, $2, $3, false, now(),
+          $4, CASE WHEN $4 THEN now() ELSE NULL END, $5)`,
+      [userId, email, hash, marketingConsent, LEGAL_DOCS_VERSION]
     );
 
     if (utm && Object.keys(utm).length) {
