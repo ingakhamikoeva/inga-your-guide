@@ -2539,7 +2539,7 @@ ${rows.map(({ date, weight, report }) => `
                 <input
                   value={promoCode}
                   onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
-                  placeholder="Например, FIRST30"
+                  placeholder="Введите код"
                   className="flex-1 text-sm bg-white"
                   style={{ borderRadius: 10, border: '1px solid #EDE5DF', padding: '8px 12px', outline: 'none', textTransform: 'uppercase' }}
                 />
