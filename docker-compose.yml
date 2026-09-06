@@ -57,6 +57,8 @@ services:
       SMTP_SUPPORT_USER: ${SMTP_SUPPORT_USER}
       SMTP_SUPPORT_PASS: ${SMTP_SUPPORT_PASS}
       EMAIL_DRIP_ENABLED: ${EMAIL_DRIP_ENABLED}
+      # Редакция юрдокументов, пишется в consent_doc_version при регистрации
+      LEGAL_DOCS_VERSION: ${LEGAL_DOCS_VERSION:-2026-09-01}
       # AI provider
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
       DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
