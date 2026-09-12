@@ -6,14 +6,18 @@ import ingaPhoto from '@/assets/inga-photo.jpg';
 export function SurveyNameScreen() {
   const { profile, updateProfile, setStep } = useApp();
   const [name, setName] = useState(profile.name ?? '');
-  const [gender, setGender] = useState<'female' | 'male'>(
-    (profile.gender as 'female' | 'male') ?? 'female'
+  // Пол не предвыбран: от него зависит формула расчёта калорийности, поэтому
+  // выбор должен быть осознанным, а не следствием того, что человек прошёл
+  // экран не глядя. У вернувшегося пользователя подставляется его сохранённый пол.
+  const [gender, setGender] = useState<'female' | 'male' | null>(
+    (profile.gender as 'female' | 'male') ?? null
   );
 
   const trimmed = cleanName(name);
-  const canProceed = trimmed.length > 0;
+  const canProceed = trimmed.length > 0 && gender !== null;
 
   const handleNext = () => {
+    if (!canProceed || gender === null) return;
     updateProfile({ name: trimmed, gender });
     setStep('goal');
   };
