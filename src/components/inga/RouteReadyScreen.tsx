@@ -6,7 +6,18 @@ import ingaPhoto from '@/assets/inga-photo.jpg';
 
 
 export function RouteReadyScreen() {
-  const { profile, setStep } = useApp();
+  const { profile, setStep, calculations, runCalculations } = useApp();
+
+  // Расчёты считались только на экранах выбора темпа и «ВАШ РАСЧЁТ», а они
+  // из онбординга убраны. Из-за этого у нового пользователя calculations
+  // оставались null: коридор дефицита не уходил в чат, и Инга отвечала, что
+  // цифры у неё нет. Считаем здесь — на последнем экране онбординга все
+  // нужные поля профиля уже заполнены.
+  useEffect(() => {
+    if (!calculations && profile.height && profile.weight && profile.age) {
+      runCalculations();
+    }
+  }, [calculations, profile.height, profile.weight, profile.age, runCalculations]);
 
   const name = profile.name?.trim() || '';
 
