@@ -9,7 +9,6 @@ import {
   saveBehaviorProfile,
   saveDailyCheckin,
   saveEveningReflection,
-  saveFoodLog,
   loadUserProfile,
   loadUserPlan,
   loadBehaviorProfile,
@@ -119,11 +118,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (report.weight || report.sleepHours || report.stepsYesterday) {
       saveDailyCheckin(report.date, report.weight, report.sleepHours, report.stepsYesterday, report.stoolYesterday).catch(() => {});
     }
-    if (report.meals.length > 0) {
-      report.meals.forEach(m => {
-        saveFoodLog(m.description, m.type).catch(() => {});
-      });
-    }
+    // Meals are already persisted by DailyScreen.addMealEntry.
+    // Saving a report must not create or overwrite food logs.
     if (report.eveningEmotion || report.hungerLevel || report.hardestPart || report.dayWin || report.sweetPointDone !== undefined) {
       saveEveningReflection(report.date, report.eveningEmotion, report.hungerLevel, report.hardestPart, report.sweetPointDone ?? null, report.dayWin).catch(() => {});
     }
