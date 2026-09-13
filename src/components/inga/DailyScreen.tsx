@@ -701,20 +701,27 @@ export function DailyScreen() {
     );
   }
 
+  // Use the same protein amount and target in the diary and evening summary.
+  const portionGrams: Record<ProteinPortion, number> = { small: 15, palm: 25, large: 40 };
+  const proteinGrams = mealMeta.reduce(
+    (sum, m) => sum + (m.proteinAi ?? (m.protein ? portionGrams[m.proteinPortion] : 0)),
+    0
+  );
+  const anyProteinLoading = mealMeta.some(m => m.proteinLoading);
+  const proteinTarget = Math.round((profile.weight || 80) * 1.5);
+
   if (saved) {
     // Achievement calculations
     const mealCount = mealMeta.length;
-    const proteinCount = mealMeta.filter(m => m.protein).length;
     const fiberCount = mealMeta.filter(m => m.fiber).length;
     const eveningSnack = mealMeta.some(m => m.isEvening);
-    const proteinPct = mealCount > 0 ? proteinCount / mealCount : 0;
     const fiberPct = mealCount > 0 ? fiberCount / mealCount : 0;
 
     const waterOk = waterCount >= 6;
-    const proteinOk = proteinPct >= 0.8;
+    const proteinOk = !anyProteinLoading && proteinGrams >= proteinTarget;
     const fiberOk = fiberPct >= 0.6;
     const sweetOk = sweetPoint === 'yes';
-    const perfect = waterOk && proteinOk && fiberOk;
+    const perfect = mealCount > 1 && waterOk && proteinOk && fiberOk;
 
     const achievements: { icon: string; label: string }[] = [];
     if (waterOk) achievements.push({ icon: '💧', label: 'Вода' });
@@ -727,7 +734,9 @@ export function DailyScreen() {
     const greeting = userName ? `${userName}, ` : '';
 
     let ingaMessage: string;
-    if (perfect) {
+    if (mealCount === 1 && !anyProteinLoading) {
+      ingaMessage = `Сегодня в дневнике один приём пищи: примерно ${proteinGrams} г белка из цели ${proteinTarget} г. Если были другие приёмы пищи, добавьте их — тогда итог будет точнее`;
+    } else if (perfect) {
       ingaMessage = `${greeting}сегодня вы держали структуру весь день. Это именно то, что меняет привычки 🧡`;
     } else {
       const wins: string[] = [];
@@ -1085,13 +1094,6 @@ export function DailyScreen() {
           const totalMeals = mealMeta.length;
           const carbsMeals = mealMeta.filter(m => m.carbs).length;
           const fiberMeals = mealMeta.filter(m => m.fiber).length;
-          const portionGrams: Record<ProteinPortion, number> = { small: 15, palm: 25, large: 40 };
-          const proteinGrams = mealMeta.reduce(
-            (sum, m) => sum + (m.proteinAi ?? (m.protein ? portionGrams[m.proteinPortion] : 0)),
-            0
-          );
-          const anyProteinLoading = mealMeta.some(m => m.proteinLoading);
-          const proteinTarget = Math.round((profile.weight || 80) * 1.5);
           const carbsTarget = Math.max(3, totalMeals || 3);
           const fiberTarget = Math.max(3, totalMeals || 3);
           const pct = (v: number, t: number) => Math.min(100, Math.round((v / Math.max(1, t)) * 100));
