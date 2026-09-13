@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { saveBehaviorProfile, saveAssessmentAnswers, logUserEvent, startTrial } from '@/lib/db';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
 
 
 
 export function RouteReadyScreen() {
-  const { profile, setStep, calculations, runCalculations } = useApp();
+  const { profile, setStep, calculations, runCalculations, syncToDb } = useApp();
+  const [starting, setStarting] = useState(false);
 
   // Расчёты считались только на экранах выбора темпа и «ВАШ РАСЧЁТ», а они
   // из онбординга убраны. Из-за этого у нового пользователя calculations
@@ -26,6 +28,29 @@ export function RouteReadyScreen() {
       (profile.weight || (profile as any).current_weight_kg || 70) -
       ((profile as any).goal_weight_kg || profile.goalWeight || 65)
     )), 1);
+
+  // Завершение онбординга: сохранить профиль и ответы, создать пробный период.
+  // Раньше это делал SupportStartScreen, но его нет в списке экранов Index.tsx —
+  // из-за этого триал не создавался, а письма дня 3, 6 и 10 считаются от
+  // trial_started_at и никому не уходили. Ошибки не блокируют переход: человек
+  // должен попасть в приложение в любом случае, данные досохранятся при входе.
+  const handleStart = async () => {
+    if (starting) return;
+    setStarting(true);
+    try {
+      await syncToDb().catch(() => {});
+      if (profile.foodProfile) {
+        await saveBehaviorProfile(profile.foodProfile).catch(() => {});
+      }
+      if (profile.foodTestAnswers) {
+        await saveAssessmentAnswers(profile.foodTestAnswers).catch(() => {});
+      }
+      await startTrial().catch(() => {});
+      await logUserEvent('first_day', { step: 'route-ready' }).catch(() => {});
+    } finally {
+      setStep('daily');
+    }
+  };
 
   const roundHalf = (n: number) => Math.round(n * 2) / 2;
   const X = Math.max(roundHalf(goalKg / 3.5), 0.5);
@@ -182,14 +207,15 @@ export function RouteReadyScreen() {
       {/* CTA */}
       <div className="w-full max-w-sm mt-auto pt-2 pb-safe">
         <button
-          onClick={() => setStep('daily')}
-          className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97]"
+          onClick={handleStart}
+          disabled={starting}
+          className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] disabled:opacity-60"
           style={{
             backgroundColor: '#FF6200',
             color: '#FFFFFF',
           }}
         >
-          {name ? `Начнём, ${name} →` : 'Начнём →'}
+          {starting ? 'Секунду…' : name ? `Начнём, ${name} →` : 'Начнём →'}
         </button>
       </div>
     </div>
