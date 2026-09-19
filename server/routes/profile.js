@@ -33,7 +33,7 @@ function rowToProfile(p, u) {
   if (!p && !u) return null;
   return {
     name: u?.name ?? undefined,
-    gender: p?.sex === "male" ? "male" : "female",
+    gender: p?.sex === "male" || p?.sex === "female" ? p.sex : null,
     age: p?.age ?? undefined,
     height: p?.height_cm ?? undefined,
     weight: p?.current_weight_kg != null ? Number(p.current_weight_kg) : undefined,

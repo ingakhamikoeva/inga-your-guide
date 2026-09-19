@@ -89,7 +89,7 @@ export function TrackingMethodScreen() {
             <span className="font-bold" style={{ color: '#3B2A20' }}>Метод тарелки</span>
           </div>
           <p className="text-sm mb-3" style={{ color: '#6B5B4E' }}>
-            Делишь тарелку на части на глаз — без взвешивания
+            Делите тарелку на части на глаз — без взвешивания
           </p>
           <div className="flex items-center gap-4">
             <svg width="72" height="72" viewBox="0 0 72 72">

@@ -6,7 +6,7 @@ import { roundTo50 } from '@/lib/calculations';
 
 export function SurveyDataScreen() {
   const { profile, updateProfile, setStep } = useApp();
-  const sex: 'female' | 'male' = (profile as any).sex || profile.gender || 'female';
+  const sex = profile.gender === 'female' || profile.gender === 'male' ? profile.gender : null;
 
   const [age, setAge] = useState<string>(profile.age ? String(profile.age) : '');
   const [height, setHeight] = useState<string>(profile.height ? String(profile.height) : '');
@@ -22,7 +22,7 @@ export function SurveyDataScreen() {
   }, [steps, sex]);
 
   const { tdee, deficit } = useMemo(() => {
-    if (!ageN || !heightN || !weightN) return { tdee: 0, deficit: 0 };
+    if (!sex || !ageN || !heightN || !weightN) return { tdee: 0, deficit: 0 };
     const bmr = sex === 'female'
       ? 655.1 + 9.563 * weightN + 1.85 * heightN - 4.676 * ageN
       : 66.5 + 13.75 * weightN + 5.003 * heightN - 6.775 * ageN;
@@ -30,9 +30,10 @@ export function SurveyDataScreen() {
     return { tdee: roundTo50(t), deficit: roundTo50(t * 0.75) };
   }, [ageN, heightN, weightN, stepCalories, sex]);
 
-  const canProceed = ageN > 0 && heightN > 0 && weightN > 0;
+  const canProceed = sex !== null && ageN > 0 && heightN > 0 && weightN > 0;
 
   const handleNext = () => {
+    if (!canProceed || sex === null) return;
     const enteredWeight = Number(weight) || 70;
     const kgToLose = profile.kgToLose || 5;
     const correctGoalWeight = Math.max(enteredWeight - kgToLose, 45);
@@ -54,6 +55,11 @@ export function SurveyDataScreen() {
   const fmt = (n: number) => n.toLocaleString('ru-RU').replace(/,/g, ' ');
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => {
+    if (sex === null) setStep('survey-name');
+  }, [sex, setStep]);
+
+  if (sex === null) return null;
 
   return (
     <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
@@ -138,7 +144,7 @@ export function SurveyDataScreen() {
             className="px-4 py-2 text-xs font-bold tracking-wider"
             style={{ background: '#FF6200', color: '#FFFFFF' }}
           >
-            ТВОЙ РАСЧЁТ
+            ВАШ РАСЧЁТ
           </div>
           <div className="px-4 py-3 flex justify-between items-center text-sm" style={{ color: '#3B2A20' }}>
             <span>Суточная норма</span>

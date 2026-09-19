@@ -641,6 +641,11 @@ export function DailyScreen() {
     setShowPlanning(false);
     setPlanText('');
     setPlanSavedMessage(false);
+    // Planning does not advance the calendar date or erase today's diary.
+    if (new Date().toISOString().slice(0, 10) === today) {
+      setTab('meals');
+      return;
+    }
     setTab('morning');
     setMeals([]);
     setMealMeta([]);

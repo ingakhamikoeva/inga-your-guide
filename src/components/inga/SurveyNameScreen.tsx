@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { cleanName } from '@/lib/user-name';
 import ingaPhoto from '@/assets/inga-photo.jpg';
@@ -10,8 +10,13 @@ export function SurveyNameScreen() {
   // выбор должен быть осознанным, а не следствием того, что человек прошёл
   // экран не глядя. У вернувшегося пользователя подставляется его сохранённый пол.
   const [gender, setGender] = useState<'female' | 'male' | null>(
-    (profile.gender as 'female' | 'male') ?? null
+    profile.gender === 'female' || profile.gender === 'male' ? profile.gender : null
   );
+
+  // Auth hydration may arrive after this screen has mounted from local state.
+  useEffect(() => {
+    setGender(profile.gender === 'female' || profile.gender === 'male' ? profile.gender : null);
+  }, [profile.gender]);
 
   const trimmed = cleanName(name);
   const canProceed = trimmed.length > 0 && gender !== null;

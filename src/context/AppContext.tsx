@@ -180,12 +180,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const merged: Partial<UserProfile> = {
       ...profile,
       ...(dbProfile ?? {}),
+      // A loaded profile is authoritative, including an absent sex.
+      ...(dbProfile ? { gender: dbProfile.gender === 'male' || dbProfile.gender === 'female' ? dbProfile.gender : undefined } : {}),
       ...(dbPlan?.paceChoice ? { paceChoice: dbPlan.paceChoice } : {}),
       ...(dbPlan?.trackingMethod ? { trackingMethod: dbPlan.trackingMethod } : {}),
       ...(dbBehavior ? { foodProfile: dbBehavior } : {}),
       ...(dbAnswers ? { foodTestAnswers: dbAnswers } : {}),
     };
     setProfile(merged);
+
+    // Require an explicit saved choice before resuming onboarding or the diary.
+    if (merged.gender !== 'male' && merged.gender !== 'female') {
+      setCalculations(null);
+      setStep('survey-name');
+      return 'survey-name';
+    }
 
     let calc = calculations;
     if (merged.height && merged.weight && merged.age) {
