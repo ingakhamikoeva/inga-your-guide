@@ -1,19 +1,19 @@
 // JWT auth + admin gating, as Express middleware.
-import jwt from "jsonwebtoken";
+import { authenticateAccess } from "../sessions.js";
 import { pool } from "../db.js";
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const h = req.headers.authorization || "";
   if (!h.startsWith("Bearer ")) return res.status(401).json({ error: "unauthorized" });
   try {
-    const payload = jwt.verify(h.slice(7), process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    const payload = await authenticateAccess(h.slice(7));
     if (!payload?.sub) return res.status(401).json({ error: "unauthorized" });
     req.userId = payload.sub;
     req.userEmail = payload.email || null;
     req.authPayload = payload;
     next();
   } catch {
-    return res.status(401).json({ error: "unauthorized" });
+    return res.status(503).json({ error: "auth_unavailable" });
   }
 }
 
@@ -39,11 +39,11 @@ export async function requireAuthInline(req, res) {
   const h = req.headers.authorization || "";
   if (!h.startsWith("Bearer ")) { res.status(401).json({ error: "unauthorized" }); return null; }
   try {
-    const payload = jwt.verify(h.slice(7), process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    const payload = await authenticateAccess(h.slice(7));
     if (!payload?.sub) { res.status(401).json({ error: "unauthorized" }); return null; }
     return { authId: payload.sub, payload };
   } catch {
-    res.status(401).json({ error: "unauthorized" });
+    res.status(503).json({ error: "auth_unavailable" });
     return null;
   }
 }
