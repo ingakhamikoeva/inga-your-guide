@@ -2178,6 +2178,14 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
   };
 
   const handleDownloadDiary = async () => {
+    // Values inserted into the HTML report must remain plain text.
+    const escapeHtml = (value: unknown) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
     const today = new Date();
     const days14 = Array.from({ length: 14 }, (_, i) => {
       const d = new Date(today);
@@ -2228,7 +2236,7 @@ h1 { font-size: 18px; color: #FF6200; margin-bottom: 2px; }
 .print-btn { display: block; margin: 16px auto; padding: 10px 30px; background: #FF6200; color: white; border: none; border-radius: 20px; font-size: 14px; cursor: pointer; }
 </style></head><body>
 <button class="print-btn no-print" onclick="window.print()">📥 Сохранить как PDF</button>
-<h1>Дневник питания — ${profile.name ?? 'Пользователь'}</h1>
+<h1>Дневник питания — ${escapeHtml(profile.name ?? 'Пользователь')}</h1>
 <div class="sub">Отчёт за последние 14 дней · ${today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
 <div class="summary">
   <span>📅 Дней с данными: <b>${daysWithData} из 14</b></span>
@@ -2240,13 +2248,13 @@ ${rows.map(({ date, weight, report }) => `
 <div class="day">
   <div class="day-title">${formatDate(date)}</div>
   <div class="meta">
-    <span>⚖️ ${weight ? weight.weight + ' кг' : '—'}</span>
-    <span>😴 ${report?.sleepHours ? report.sleepHours + ' ч' : '—'}</span>
-    <span>👟 ${report?.stepsYesterday ? report.stepsYesterday.toLocaleString('ru-RU') : '—'}</span>
+    <span>⚖️ ${escapeHtml(weight ? weight.weight + ' кг' : '—')}</span>
+    <span>😴 ${escapeHtml(report?.sleepHours ? report.sleepHours + ' ч' : '—')}</span>
+    <span>👟 ${escapeHtml(report?.stepsYesterday ? report.stepsYesterday.toLocaleString('ru-RU') : '—')}</span>
     <span>🚿 Стул: ${report?.stoolYesterday === true ? 'Да' : report?.stoolYesterday === false ? 'Нет' : '—'}</span>
   </div>
   ${report?.meals?.length
-    ? report.meals.map((m: any) => `<div class="meal">• ${typeof m === 'string' ? m : (m.description || '')}</div>`).join('')
+    ? report.meals.map((m: any) => `<div class="meal">• ${escapeHtml(typeof m === 'string' ? m : (m?.description || ''))}</div>`).join('')
     : '<div class="empty">Приёмы пищи не записаны</div>'
   }
 </div>`).join('')}
@@ -2254,7 +2262,7 @@ ${rows.map(({ date, weight, report }) => `
 </body></html>`;
 
     const w = window.open('', '_blank');
-    if (w) { w.document.write(html); w.document.close(); }
+    if (w) { w.opener = null; w.document.write(html); w.document.close(); }
 
     // window.open already called above
   };
