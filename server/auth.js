@@ -1,43 +1,21 @@
 // Stand-alone auth: signup/login/refresh/me/forgot-password/reset-password,
 // OAuth redirect stubs. JWT HS256, signed with JWT_SECRET.
 //
-// JWT payload: { sub: user_id, email, role: 'user' | 'admin', iat, exp }
+// JWT payload includes typ (access/refresh) and sid (revocable server session).
 
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { pool, requireAuth } from "./index.js";
+import { pool } from "./db.js";
+import { requireAuthInline as requireAuth } from "./middleware/auth.js";
+import { ACCESS_TTL_SEC, createSession, signAccess, verifyToken, activeSession } from "./sessions.js";
+import { passwordResetUrl } from "./password-reset-url.js";
 import { sendPasswordResetEmail, sendDay0Email } from "./mailer.js";
 
-const ACCESS_TTL_SEC = 60 * 60;           // 1 hour
-const REFRESH_TTL_SEC = 30 * 24 * 60 * 60; // 30 days
-const RESET_TTL_MS = 60 * 60 * 1000;       // 1 hour
+const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-function jwtSecret() {
-  const s = process.env.JWT_SECRET;
-  if (!s) throw new Error("JWT_SECRET is not set");
-  return s;
-}
-
-function signAccess(user) {
-  return jwt.sign(
-    { sub: user.user_id, email: user.email, role: user.role || "user" },
-    jwtSecret(),
-    { algorithm: "HS256", expiresIn: ACCESS_TTL_SEC }
-  );
-}
-
-function signRefresh(user) {
-  return jwt.sign(
-    { sub: user.user_id, typ: "refresh" },
-    jwtSecret(),
-    { algorithm: "HS256", expiresIn: REFRESH_TTL_SEC }
-  );
-}
-
-async function resolveRole(userId) {
+async function resolveRole(userId, db = pool) {
   try {
-    const r = await pool.query(
+    const r = await db.query(
       `SELECT 1 FROM public.user_roles WHERE user_id = $1 AND role = 'admin' LIMIT 1`,
       [userId]
     );
@@ -93,8 +71,9 @@ export async function signupHandler(req, res) {
       )
     : null;
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query("BEGIN");
 
     const exists = await client.query(
@@ -129,6 +108,16 @@ export async function signupHandler(req, res) {
       );
     }
 
+    const role = "user";
+    const userObj = {
+      user_id: userId,
+      email,
+      email_verified: false,
+      created_at: userIns.rows[0].created_at,
+      role,
+    };
+    const { access_token, refresh_token } = await createSession(client, userObj);
+
     await client.query("COMMIT");
 
     // Письмо «День 0» — fire-and-forget, не блокирует и не роняет регистрацию.
@@ -144,16 +133,6 @@ export async function signupHandler(req, res) {
       })
       .catch((e) => console.error("day0 email failed:", e.message));
 
-    const role = await resolveRole(userId);
-    const userObj = {
-      user_id: userId,
-      email,
-      email_verified: false,
-      created_at: userIns.rows[0].created_at,
-      role,
-    };
-    const access_token = signAccess(userObj);
-    const refresh_token = signRefresh(userObj);
     return res.status(201).json({
       access_token,
       refresh_token,
@@ -162,11 +141,11 @@ export async function signupHandler(req, res) {
       user: publicUser(userObj, role),
     });
   } catch (e) {
-    await client.query("ROLLBACK").catch(() => {});
+    if (client) await client.query("ROLLBACK").catch(() => {});
     console.error("signup failed:", e);
     return res.status(500).json({ error: "signup_failed" });
   } finally {
-    client.release();
+    client?.release();
   }
 }
 
@@ -175,72 +154,85 @@ export async function loginHandler(req, res) {
   const password = String(req.body?.password || "");
   if (!email || !password) return res.status(400).json({ error: "email and password required" });
 
+  let client;
   try {
-    const r = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const r = await client.query(
       `SELECT c.user_id, c.email, c.password_hash, c.email_verified, u.created_at
          FROM public.app_credentials c
          JOIN public.users u ON u.user_id = c.user_id
         WHERE lower(c.email) = $1
-        LIMIT 1`,
-      [email]
+        LIMIT 1 FOR UPDATE OF c`, [email]
     );
-    if (!r.rowCount) return res.status(401).json({ error: "invalid_credentials" });
     const row = r.rows[0];
-    if (!row.password_hash) return res.status(401).json({ error: "invalid_credentials" });
-
-    const ok = await bcrypt.compare(password, row.password_hash);
-    if (!ok) return res.status(401).json({ error: "invalid_credentials" });
-
-    const role = await resolveRole(row.user_id);
-    const userObj = { ...row, role };
-    const access_token = signAccess(userObj);
-    const refresh_token = signRefresh(userObj);
+    if (!row?.password_hash || !(await bcrypt.compare(password, row.password_hash))) {
+      await client.query("ROLLBACK");
+      return res.status(401).json({ error: "invalid_credentials" });
+    }
+    const role = await resolveRole(row.user_id, client);
+    const { access_token, refresh_token } = await createSession(client, { ...row, role });
+    await client.query("COMMIT");
     return res.json({
-      access_token,
-      refresh_token,
+      access_token, refresh_token,
       expires_in: ACCESS_TTL_SEC,
       token_type: "Bearer",
       user: publicUser(row, role),
     });
   } catch (e) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     console.error("login failed:", e);
     return res.status(500).json({ error: "login_failed" });
+  } finally {
+    client?.release();
   }
 }
 
-export async function logoutHandler(_req, res) {
-  // Stateless JWT — nothing to invalidate server-side without a session store.
-  // The client drops its tokens.
-  return res.json({ ok: true });
+export async function logoutHandler(req, res) {
+  const header = req.headers.authorization || "";
+  // Even an expired access token may revoke its own session. It grants no access.
+  const payload = header.startsWith("Bearer ")
+    ? verifyToken(header.slice(7), "access", { allowExpired: true }) : null;
+  if (!payload) return res.json({ ok: true });
+  try {
+    await pool.query(
+      `UPDATE public.app_sessions SET revoked_at = COALESCE(revoked_at, now())
+       WHERE session_id = $1 AND user_id = $2`, [payload.sid, payload.sub]
+    );
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("logout failed:", e);
+    return res.status(500).json({ error: "logout_failed" });
+  }
 }
 
 export async function refreshHandler(req, res) {
   const token = String(req.body?.refresh_token || "");
   if (!token) return res.status(400).json({ error: "refresh_token required" });
+  const payload = verifyToken(token, "refresh");
+  if (!payload) return res.status(401).json({ error: "invalid_refresh" });
   try {
-    const payload = jwt.verify(token, jwtSecret(), { algorithms: ["HS256"] });
-    if (payload.typ !== "refresh" || !payload.sub) {
-      return res.status(401).json({ error: "invalid_refresh" });
-    }
+    if (!(await activeSession(payload))) return res.status(401).json({ error: "invalid_refresh" });
     const r = await pool.query(
       `SELECT c.user_id, c.email, c.email_verified, u.created_at
          FROM public.app_credentials c JOIN public.users u ON u.user_id = c.user_id
-        WHERE c.user_id = $1 LIMIT 1`,
-      [payload.sub]
+        WHERE c.user_id = $1 LIMIT 1`, [payload.sub]
     );
     if (!r.rowCount) return res.status(401).json({ error: "invalid_refresh" });
     const row = r.rows[0];
     const role = await resolveRole(row.user_id);
-    const userObj = { ...row, role };
+    // Refresh keeps the same session and its original 30-day deadline.
+    // Concurrent tabs can renew access without invalidating each other's tokens.
     return res.json({
-      access_token: signAccess(userObj),
-      refresh_token: signRefresh(userObj),
+      access_token: signAccess({ ...row, role }, payload.sid),
+      refresh_token: token,
       expires_in: ACCESS_TTL_SEC,
       token_type: "Bearer",
       user: publicUser(row, role),
     });
-  } catch {
-    return res.status(401).json({ error: "invalid_refresh" });
+  } catch (e) {
+    console.error("refresh failed:", e);
+    return res.status(503).json({ error: "auth_unavailable" });
   }
 }
 
@@ -266,12 +258,11 @@ export async function meHandler(req, res) {
 
 export async function forgotPasswordHandler(req, res) {
   const email = String(req.body?.email || "").trim().toLowerCase();
-  const redirectTo =
-    String(req.body?.redirect_to || "").trim() ||
-    `${process.env.APP_URL || ""}/reset-password`;
   if (!email) return res.status(400).json({ error: "email required" });
 
   try {
+    // Validate configuration even for an unknown email, without leaking account existence.
+    passwordResetUrl("configuration-check");
     const r = await pool.query(
       `SELECT user_id FROM public.app_credentials WHERE lower(email) = $1 LIMIT 1`,
       [email]
@@ -289,7 +280,7 @@ export async function forgotPasswordHandler(req, res) {
         [hash, userId, expires]
       );
 
-      const link = `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}token=${raw}&type=recovery`;
+      const link = passwordResetUrl(raw);
 
       sendPasswordResetEmail(email, link).catch((e) =>
         console.error("password reset email failed:", e.message)
@@ -309,33 +300,57 @@ export async function resetPasswordHandler(req, res) {
   if (newPassword.length < 6) return res.status(400).json({ error: "password too short" });
 
   const hash = sha256(token);
+  let client;
   try {
-    const r = await pool.query(
-      `SELECT user_id, expires_at, used_at FROM public.password_reset_tokens
-        WHERE token_hash = $1 LIMIT 1`,
-      [hash]
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const owner = await client.query(
+      `SELECT user_id FROM public.password_reset_tokens WHERE token_hash = $1`, [hash]
     );
-    if (!r.rowCount) return res.status(400).json({ error: "invalid_token" });
-    const row = r.rows[0];
-    if (row.used_at) return res.status(400).json({ error: "token_used" });
-    if (new Date(row.expires_at).getTime() < Date.now()) {
-      return res.status(400).json({ error: "token_expired" });
+    if (!owner.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "invalid_token" });
     }
-
+    const userId = owner.rows[0].user_id;
+    // Serialize password changes with login and other resets of this account.
+    const credential = await client.query(
+      `SELECT user_id FROM public.app_credentials WHERE user_id = $1 FOR UPDATE`, [userId]
+    );
+    if (!credential.rowCount) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "invalid_token" });
+    }
+    const r = await client.query(
+      `SELECT used_at, expires_at > clock_timestamp() AS valid
+       FROM public.password_reset_tokens WHERE token_hash = $1 FOR UPDATE`, [hash]
+    );
+    const row = r.rows[0];
+    const error = !row ? "invalid_token" : row.used_at ? "token_used" : !row.valid ? "token_expired" : null;
+    if (error) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error });
+    }
     const ph = await bcrypt.hash(newPassword, 10);
-    await pool.query(
+    await client.query(
       `UPDATE public.app_credentials SET password_hash = $1, updated_at = now()
-        WHERE user_id = $2`,
-      [ph, row.user_id]
+        WHERE user_id = $2`, [ph, userId]
     );
-    await pool.query(
-      `UPDATE public.password_reset_tokens SET used_at = now() WHERE token_hash = $1`,
-      [hash]
+    await client.query(
+      `UPDATE public.password_reset_tokens SET used_at = now()
+       WHERE user_id = $1 AND used_at IS NULL`, [userId]
     );
+    await client.query(
+      `UPDATE public.app_sessions SET revoked_at = now()
+       WHERE user_id = $1 AND revoked_at IS NULL`, [userId]
+    );
+    await client.query("COMMIT");
     return res.json({ ok: true });
   } catch (e) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     console.error("reset-password failed:", e);
     return res.status(500).json({ error: "reset_password_failed" });
+  } finally {
+    client?.release();
   }
 }
 
