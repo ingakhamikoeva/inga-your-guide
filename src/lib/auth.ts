@@ -173,7 +173,8 @@ export const auth = {
         auth: false,
       });
       sessionStorage.removeItem(RECOVERY_KEY);
-      notifyAuthChange('USER_UPDATED');
+      clearTokens();
+      notifyAuthChange('SIGNED_OUT');
       return { error: null };
     } catch (e) {
       return { error: toError(e) };
