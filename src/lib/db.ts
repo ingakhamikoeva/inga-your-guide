@@ -109,14 +109,17 @@ export async function saveDailyCheckin(
   stepsYesterday?: number,
   stoolYesterday?: boolean | null,
 ) {
+  // An unanswered field must not erase an earlier check-in value.
+  const body: Record<string, number | boolean> = {};
+  if (weight != null) body.weight = weight;
+  if (sleepHours != null) body.sleepHours = sleepHours;
+  if (stepsYesterday != null) body.stepsYesterday = stepsYesterday;
+  if (stoolYesterday != null) body.stoolYesterday = stoolYesterday;
+  if (!Object.keys(body).length) return;
+
   await apiFetch(`/checkins/${date}`, {
     method: 'PUT',
-    body: {
-      weight: weight ?? null,
-      sleepHours: sleepHours ?? null,
-      stepsYesterday: stepsYesterday ?? null,
-      stoolYesterday: stoolYesterday ?? null,
-    },
+    body,
   });
 }
 
