@@ -1027,7 +1027,10 @@ export function DailyScreen() {
             <h3 className="text-xl font-bold">Доброе утро! ☀️</h3>
             <div>
               <label className="block text-sm font-medium mb-1">Вес сегодня (кг)</label>
-              <input type="number" value={weight} onChange={e => setWeight(e.target.value)} className="inga-input" placeholder="70.5" step="0.1" />
+              <input type="number" value={weight} onChange={e => {
+                setWeight(e.target.value);
+                setMorningAnalysis(null);
+              }} className="inga-input" placeholder="70.5" step="0.1" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Сколько часов вы спали?</label>
