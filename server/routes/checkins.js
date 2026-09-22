@@ -46,13 +46,28 @@ r.get("/:date", async (req, res) => {
 
 r.put("/:date", async (req, res) => {
   const { date } = req.params;
-  const { weight = null, sleepHours = null, stepsYesterday = null, stoolYesterday = null } = req.body || {};
+  const body = req.body || {};
+  // Missing/null fields are unanswered, including requests from older clients.
+  // Update only supplied values; keep valid zero and false values.
+  const row = {};
+  const fields = {
+    weight: "weight_kg",
+    sleepHours: "sleep_hours",
+    stepsYesterday: "steps_yesterday",
+    stoolYesterday: "stool_yesterday",
+  };
+  for (const [field, column] of Object.entries(fields)) {
+    if (Object.prototype.hasOwnProperty.call(body, field) && body[field] != null) {
+      row[column] = body[field];
+    }
+  }
+  if (!Object.keys(row).length) return res.json({ ok: true });
   try {
     await upsert(
       "public.daily_checkins",
       ["user_id", "date"],
       [req.userId, date],
-      { weight_kg: weight, sleep_hours: sleepHours, steps_yesterday: stepsYesterday, stool_yesterday: stoolYesterday }
+      row
     );
     res.json({ ok: true });
   } catch (e) {
