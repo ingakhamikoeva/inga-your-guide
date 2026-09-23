@@ -95,12 +95,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
 
   const updateProfile = useCallback((data: Partial<UserProfile>) => {
-    setProfile(prev => {
-      const updated = { ...prev, ...data };
-      // Async DB sync — fire and forget
-      saveUserProfile(updated).catch(() => {});
-      return updated;
-    });
+    setProfile(prev => ({ ...prev, ...data }));
+    // Send only the edit: unrelated updates must not resubmit a legacy goal.
+    saveUserProfile(data).catch(() => {});
   }, []);
 
   const runCalculations = useCallback(() => {
