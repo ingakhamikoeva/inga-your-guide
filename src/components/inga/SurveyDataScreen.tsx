@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Slider } from '@/components/ui/slider';
 import ingaPhoto from '@/assets/inga-photo.jpg';
-import { roundTo50 } from '@/lib/calculations';
+import { roundTo50, checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
 
 export function SurveyDataScreen() {
   const { profile, updateProfile, setStep } = useApp();
@@ -12,6 +12,8 @@ export function SurveyDataScreen() {
   const [height, setHeight] = useState<string>(profile.height ? String(profile.height) : '');
   const [weight, setWeight] = useState<string>(profile.weight ? String(profile.weight) : '');
   const [steps, setSteps] = useState<number>(profile.stepsPerDay ?? 5000);
+  const [goalDraft, setGoalDraft] = useState<string | null>(null);
+  const [showGoalError, setShowGoalError] = useState(false);
 
   const ageN = parseInt(age) || 0;
   const heightN = parseInt(height) || 0;
@@ -30,21 +32,25 @@ export function SurveyDataScreen() {
     return { tdee: roundTo50(t), deficit: roundTo50(t * 0.75) };
   }, [ageN, heightN, weightN, stepCalories, sex]);
 
-  const canProceed = sex !== null && ageN > 0 && heightN > 0 && weightN > 0;
+  const canProceed = sex !== null && [ageN, heightN, weightN].every(n => Number.isFinite(n) && n > 0);
+  const requestedGoal = goalDraft === null
+    ? Math.round((weightN - (profile.kgToLose ?? 5)) * 10) / 10
+    : Number(goalDraft);
+  const goalIsUnsafe = canProceed && checkGoalBmi(requestedGoal, heightN).isUnsafe;
 
   const handleNext = () => {
     if (!canProceed || sex === null) return;
-    const enteredWeight = Number(weight) || 70;
-    const kgToLose = profile.kgToLose || 5;
-    const correctGoalWeight = Math.max(enteredWeight - kgToLose, 45);
+    if (goalIsUnsafe) { setShowGoalError(true); return; }
+    const enteredWeight = weightN;
 
     updateProfile({
       age: ageN,
       height: heightN,
       weight: enteredWeight,
       current_weight_kg: enteredWeight,
-      goal_weight_kg: correctGoalWeight,
-      goalWeight: correctGoalWeight,
+      goal_weight_kg: requestedGoal,
+      goalWeight: requestedGoal,
+      kgToLose: Math.round((enteredWeight - requestedGoal) * 10) / 10,
       stepsPerDay: steps,
       gender: sex,
       ...({ calorie_target: deficit } as any),
@@ -156,6 +162,29 @@ export function SurveyDataScreen() {
           </div>
         </div>
 
+        {showGoalError && goalIsUnsafe && (
+          <div className="inga-bubble" role="alert">
+            <p>{goalWeightWarning(heightN)}</p>
+            {goalDraft === null && (
+              <button
+                type="button"
+                onClick={() => setGoalDraft(String(requestedGoal))}
+                className="inga-btn-secondary w-full mt-3"
+              >
+                Изменить цель
+              </button>
+            )}
+          </div>
+        )}
+        {goalDraft !== null && (
+          <div>
+            <label htmlFor="survey-goal-weight" className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Цель</label>
+            <div className="flex items-center gap-2">
+              <input id="survey-goal-weight" type="number" step="0.1" autoFocus value={goalDraft} onChange={e => setGoalDraft(e.target.value)} className="inga-input" />
+              <span>кг</span>
+            </div>
+          </div>
+        )}
         <button
           onClick={handleNext}
           className="inga-btn-primary w-full mt-6"

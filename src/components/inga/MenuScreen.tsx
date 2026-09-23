@@ -8,6 +8,7 @@ import { ProgressPhotosSection } from './ProgressPhotosSection';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
+import { checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
 import { getSetting } from '@/lib/app-settings';
 import { getStoredUser } from '@/lib/auth-storage';
 import palmMethodImage from '@/assets/palm-method.png';
@@ -2123,6 +2124,8 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
   type EditField = null | 'age' | 'height' | 'weight' | 'goal' | 'waist' | 'hips';
   const [editField, setEditField] = useState<EditField>(null);
   const [draft, setDraft] = useState('');
+  const [goalErrorHeight, setGoalErrorHeight] = useState<number | null>(null);
+  const [pendingHeight, setPendingHeight] = useState<number | null>(null);
 
   // ---------- photo & measurements-updated meta (client-side persistence) ----------
   const MEAS_KEY = 'inga-measurements-updated';
@@ -2273,6 +2276,8 @@ ${rows.map(({ date, weight, report }) => `
   };
 
   const startEdit = (field: Exclude<EditField, null>, current: number | undefined) => {
+    setGoalErrorHeight(null);
+    setPendingHeight(null);
     setDraft(current ? String(current) : '');
     setEditField(field);
   };
@@ -2281,6 +2286,19 @@ ${rows.map(({ date, weight, report }) => `
     if (!editField) return;
     const num = parseFloat(draft.replace(',', '.'));
     if (!Number.isFinite(num) || num <= 0) { setEditField(null); return; }
+    const nextHeight = editField === 'height' ? Math.round(num) : (pendingHeight ?? profile.height);
+    const nextGoal = editField === 'goal' ? num : (profile.goalWeight ?? profile.goal_weight_kg);
+    if ((editField === 'goal' || editField === 'height') && nextGoal != null) {
+      if (!nextHeight || !Number.isFinite(nextHeight)) {
+        setEditField('height');
+        setDraft('');
+        return;
+      }
+      if (checkGoalBmi(nextGoal, nextHeight).isUnsafe) {
+        setGoalErrorHeight(nextHeight);
+        return;
+      }
+    }
     const patch: Partial<UserProfile> = {};
     switch (editField) {
       case 'age': patch.age = Math.round(num); break;
@@ -2291,6 +2309,7 @@ ${rows.map(({ date, weight, report }) => `
         break;
       case 'goal':
         patch.goalWeight = num;
+        patch.height = nextHeight;
         (patch as any).goal_weight_kg = num;
         break;
       case 'waist':
@@ -2303,6 +2322,8 @@ ${rows.map(({ date, weight, report }) => `
         break;
     }
     updateProfile(patch);
+    setGoalErrorHeight(null);
+    setPendingHeight(null);
     setEditField(null);
   };
 
@@ -2349,7 +2370,7 @@ ${rows.map(({ date, weight, report }) => `
   };
 
   // ---------- small reusable row ----------
-  const EditableRow = ({
+  const editableRow = ({
     label, value, suffix, field,
   }: { label: string; value: number | undefined; suffix: string; field: Exclude<EditField, null> }) => {
     const isEditing = editField === field;
@@ -2365,7 +2386,7 @@ ${rows.map(({ date, weight, report }) => `
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commitEdit}
-              onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditField(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') { setEditField(null); setPendingHeight(null); setGoalErrorHeight(null); } }}
               className="w-20 text-right border border-border rounded-lg px-2 py-1 text-sm bg-background"
             />
             <span className="text-sm text-muted-foreground">{suffix}</span>
@@ -2385,6 +2406,22 @@ ${rows.map(({ date, weight, report }) => `
       <div className="w-full max-w-md">
         <button onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
         <h2 className="text-2xl font-bold mb-5">Профиль</h2>
+        {goalErrorHeight !== null && (
+          <div className="inga-bubble mb-3" role="alert">
+            <p>{goalWeightWarning(goalErrorHeight)}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingHeight(goalErrorHeight);
+                setDraft(String(profile.goalWeight ?? profile.goal_weight_kg ?? ''));
+                setEditField('goal');
+              }}
+              className="inga-btn-secondary w-full mt-3"
+            >
+              Изменить цель
+            </button>
+          </div>
+        )}
 
         {/* 1. Имя */}
         <div className="inga-card space-y-3 mb-3">
@@ -2434,9 +2471,9 @@ ${rows.map(({ date, weight, report }) => `
           </div>
 
           <div className="border-t border-border" />
-          <EditableRow label="Возраст" value={profile.age} suffix="лет" field="age" />
+          {editableRow({ label: 'Возраст', value: profile.age, suffix: 'лет', field: 'age' })}
           <div className="border-t border-border" />
-          <EditableRow label="Рост" value={profile.height} suffix="см" field="height" />
+          {editableRow({ label: 'Рост', value: pendingHeight ?? profile.height, suffix: 'см', field: 'height' })}
         </div>
 
         {/* 3. Прогресс в весе */}
@@ -2448,9 +2485,9 @@ ${rows.map(({ date, weight, report }) => `
             <span className="text-sm font-medium">{startWeight ? `${startWeight} кг` : 'не указано'}</span>
           </div>
           <div className="border-t border-border" />
-          <EditableRow label="Текущий вес" value={currentWeight} suffix="кг" field="weight" />
+          {editableRow({ label: 'Текущий вес', value: currentWeight, suffix: 'кг', field: 'weight' })}
           <div className="border-t border-border" />
-          <EditableRow label="Цель" value={goalWeight} suffix="кг" field="goal" />
+          {editableRow({ label: 'Цель', value: goalWeight, suffix: 'кг', field: 'goal' })}
 
           {progressPct > 0 && (
             <div className="mt-3">
@@ -2470,9 +2507,9 @@ ${rows.map(({ date, weight, report }) => `
         {/* 4. Замеры */}
         <div className="inga-card mb-3">
           <div className="text-sm text-muted-foreground mb-2">Замеры (обновляйте раз в неделю)</div>
-          <EditableRow label="Талия" value={profile.waist} suffix="см" field="waist" />
+          {editableRow({ label: 'Талия', value: profile.waist, suffix: 'см', field: 'waist' })}
           <div className="border-t border-border" />
-          <EditableRow label="Бёдра" value={profile.hips} suffix="см" field="hips" />
+          {editableRow({ label: 'Бёдра', value: profile.hips, suffix: 'см', field: 'hips' })}
           {measUpdated && (
             <div className="text-[11px] text-muted-foreground mt-2">Обновлено: {fmtDate(measUpdated)}</div>
           )}

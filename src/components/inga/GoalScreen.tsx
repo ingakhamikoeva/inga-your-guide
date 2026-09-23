@@ -16,7 +16,7 @@ function monthWordForY(y: number): string {
 
 export function GoalScreen() {
   const { profile, updateProfile, setStep } = useApp();
-  const [value, setValue] = useState<number[]>([10]);
+  const [value, setValue] = useState<number[]>([Math.min(40, Math.max(3, profile.kgToLose ?? 10))]);
 
   const sliderValue = value[0];
 
@@ -37,13 +37,10 @@ export function GoalScreen() {
     : 'На сколько кг вы хотите похудеть?';
 
   const handleNext = () => {
-    const currentWeight = profile.weight || (profile as any).current_weight_kg || 70;
-    const targetWeight = Math.max(currentWeight - sliderValue, 45);
+    // Height and current weight are entered later; do not invent a target yet.
     updateProfile({
       kgToLose: sliderValue,
-      goal_weight_kg: targetWeight,
-      goalWeight: targetWeight,
-    } as any);
+    });
     setStep('why');
   };
 
