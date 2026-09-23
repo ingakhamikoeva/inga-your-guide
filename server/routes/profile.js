@@ -71,36 +71,68 @@ r.get("/", async (req, res) => {
 
 r.put("/", async (req, res) => {
   const body = req.body || {};
+  const has = key => Object.prototype.hasOwnProperty.call(body, key);
+  const asNumber = value => (typeof value === "number" || (typeof value === "string" && value.trim()))
+    ? Number(value) : NaN;
+  let client;
   try {
-    if (Object.prototype.hasOwnProperty.call(body, "name")) {
-      const trimmed = String(body.name ?? "").trim();
-      await pool.query(
-        `UPDATE public.users SET name = $1 WHERE user_id = $2`,
-        [trimmed || null, req.userId]
-      );
+    client = await pool.connect();
+    await client.query("BEGIN");
+    // Serialize height/goal changes, including the first profile insert.
+    const user = await client.query("SELECT user_id FROM public.users WHERE user_id = $1 FOR UPDATE", [req.userId]);
+    if (!user.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "user_not_found" });
     }
-
+    const existing = await client.query(
+      "SELECT height_cm, goal_weight_kg, start_weight_kg FROM public.user_profile WHERE user_id = $1",
+      [req.userId]
+    );
+    const previous = existing.rows[0];
     const row = {};
     for (const [camel, col] of Object.entries(TO_DB)) {
-      if (Object.prototype.hasOwnProperty.call(body, camel)) row[col] = body[camel];
+      if (has(camel)) row[col] = body[camel];
     }
-    if (Object.prototype.hasOwnProperty.call(body, "weight")) {
-      // Ensure start_weight_kg gets set on first save too.
-      const existing = await pool.query(
-        `SELECT start_weight_kg FROM public.user_profile WHERE user_id = $1`,
-        [req.userId]
-      );
-      if (!existing.rows[0] || existing.rows[0].start_weight_kg == null) {
-        row.start_weight_kg = body.weight;
+
+    if (has("height") || has("goalWeight")) {
+      const rawHeight = has("height") ? body.height : previous?.height_cm;
+      const rawGoal = has("goalWeight") ? body.goalWeight : previous?.goal_weight_kg;
+      const height = asNumber(rawHeight);
+      const goal = asNumber(rawGoal);
+      if ((rawHeight != null && (!Number.isInteger(height) || height <= 0))
+        || (rawGoal != null && (!Number.isFinite(goal) || goal <= 0 || !Number.isInteger(height) || height <= 0))) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "invalid_goal_profile" });
       }
+      if (rawGoal != null) {
+        const minGoalWeight = Math.ceil(18.5 * (height / 100) ** 2 * 10) / 10;
+        if (goal < minGoalWeight) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({ error: "goal_weight_too_low", height, minGoalWeight });
+        }
+      }
+      if (has("height") && rawHeight != null) row.height_cm = height;
+      if (has("goalWeight") && rawGoal != null) row.goal_weight_kg = goal;
+    }
+
+    if (has("name")) {
+      const trimmed = String(body.name ?? "").trim();
+      await client.query("UPDATE public.users SET name = $1 WHERE user_id = $2", [trimmed || null, req.userId]);
+    }
+    if (has("weight") && (!previous || previous.start_weight_kg == null)) {
+      row.start_weight_kg = body.weight;
     }
     if (Object.keys(row).length) {
-      await upsert("public.user_profile", ["user_id"], [req.userId], row);
+      await upsert("public.user_profile", ["user_id"], [req.userId], row, client);
     }
+    await client.query("COMMIT");
     res.json({ ok: true });
   } catch (e) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     console.error("PUT /profile:", e);
     res.status(500).json({ error: "save_failed" });
+  } finally {
+    client?.release();
   }
 });
 

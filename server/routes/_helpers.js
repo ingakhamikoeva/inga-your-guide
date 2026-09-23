@@ -1,7 +1,7 @@
 // Tiny shared upsert helper. ON CONFLICT requires a matching unique index.
 import { pool } from "../db.js";
 
-export async function upsert(table, keyCols, keyVals, row) {
+export async function upsert(table, keyCols, keyVals, row, db = pool) {
   const setEntries = Object.entries(row).filter(([k]) => !keyCols.includes(k));
   const allCols = [...keyCols, ...setEntries.map(([k]) => k)];
   const allVals = [...keyVals, ...setEntries.map(([, v]) => v)];
@@ -15,7 +15,7 @@ export async function upsert(table, keyCols, keyVals, row) {
     ON CONFLICT (${keyCols.join(", ")})
     DO ${updates ? `UPDATE SET ${updates}` : "NOTHING"}
     RETURNING *`;
-  const r = await pool.query(sql, allVals);
+  const r = await db.query(sql, allVals);
   return r.rows[0];
 }
 
