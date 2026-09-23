@@ -46,17 +46,23 @@ export function calculateAll(profile: Partial<UserProfile>): Calculations {
 export function checkGoalBmi(goalWeight: number, height: number) {
   const heightM = height / 100;
   const goalBmi = goalWeight / (heightM * heightM);
-  const minHealthyWeight = Math.round(18.5 * heightM * heightM * 10) / 10;
+  const minHealthyWeight = Math.ceil(18.5 * heightM * heightM * 10) / 10;
   const comfortableWeight = Math.round((minHealthyWeight + 2) * 10) / 10;
+  const isUnsafe = !Number.isFinite(goalWeight) || !Number.isFinite(height)
+    || height <= 0 || goalWeight < minHealthyWeight;
 
   return {
     goalBmi: Math.round(goalBmi * 10) / 10,
-    isUnsafe: goalBmi < 18.5,
+    isUnsafe,
     isBorderlineLow: goalBmi >= 18.5 && goalBmi < 19.5,
     isHealthy: goalBmi >= 19.5 && goalBmi <= 24.99,
     isAboveNormal: goalBmi >= 25,
-    isTooLow: goalBmi < 18.5,
+    isTooLow: isUnsafe,
     minHealthyWeight,
     comfortableWeight,
   };
+}
+
+export function goalWeightWarning(height: number): string {
+  return `При росте ${height.toLocaleString('ru-RU')} см выбранная цель соответствует ИМТ ниже 18,5. Приложение не рассчитывает снижение веса до такой цели. Укажите другой целевой вес; индивидуальную цель можно обсудить с врачом.`;
 }
