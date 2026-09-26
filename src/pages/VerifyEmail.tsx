@@ -2,28 +2,38 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { auth } from '@/lib/auth';
 
-type State = 'checking' | 'ok' | 'expired' | 'invalid';
+type State = 'checking' | 'ok' | 'expired' | 'invalid' | 'error';
 
 export default function VerifyEmail() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [state, setState] = useState<State>('checking');
+  const [token] = useState(() => params.get('token'));
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    const token = params.get('token');
+    let active = true;
+    // Remove the bearer secret from the address bar/history before navigation.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('token');
+    window.history.replaceState(window.history.state, '', url.toString());
     if (!token) {
       setState('invalid');
       return;
     }
+    setState('checking');
     auth.verifyEmail(token).then(({ error }) => {
+      if (!active) return;
       if (!error) {
         setState('ok');
         return;
       }
       const msg = String(error.message || '');
-      setState(msg.includes('expired') ? 'expired' : 'invalid');
+      setState(msg === 'token_expired' ? 'expired'
+        : ['invalid_token', 'token_used'].includes(msg) ? 'invalid' : 'error');
     });
-  }, [params]);
+    return () => { active = false; };
+  }, [token, attempt]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 animate-fade-in-up">
@@ -67,6 +77,12 @@ export default function VerifyEmail() {
               Открыть приложение →
             </button>
           </>
+        )}
+        {state === 'error' && (
+          <div role="alert">
+            <p className="text-sm text-muted-foreground mb-6">Не удалось проверить ссылку. Попробуйте ещё раз.</p>
+            <button onClick={() => setAttempt(n => n + 1)} className="inga-btn-primary w-full">Повторить</button>
+          </div>
         )}
       </div>
     </div>
