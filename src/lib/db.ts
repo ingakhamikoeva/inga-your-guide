@@ -5,7 +5,7 @@ type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 import type { UserProfile, Calculations, FoodProfile } from './types';
 import { apiFetch } from './api-client';
 import { currentSession } from './auth-storage';
-import { invokeFunction } from './api-invoke';
+import { beginTrial } from './subscription';
 
 export async function isAuthenticated(): Promise<boolean> {
   return !!currentSession();
@@ -309,7 +309,7 @@ export async function loadProgramProgress(month = 1): Promise<ProgramProgress | 
 // ============ SUBSCRIPTIONS / CONSULTATIONS ============
 
 export async function startTrial() {
-  await invokeFunction('start-trial', {});
+  return beginTrial();
 }
 
 export async function requestConsultation() {

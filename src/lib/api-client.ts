@@ -5,6 +5,7 @@
 
 import {
   getAccessToken,
+  getStoredUser,
   getRefreshToken,
   setTokens,
   clearTokens,
@@ -85,6 +86,7 @@ async function attemptRefresh(): Promise<string | null> {
 
 export async function apiFetch<T = unknown>(path: string, opts: ApiOptions = {}): Promise<T> {
   if (!HAS_API) throw new ApiError(0, null, 'API base URL not configured');
+  const requestOwner = getStoredUser()?.id || getStoredUser()?.user_id;
   const useAuth = opts.auth !== false;
   const token = useAuth ? getAccessToken() : null;
 
@@ -106,6 +108,16 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiOptions = {})
     try { json = JSON.parse(text); } catch { json = text; }
   }
 
-  if (!res.ok) throw new ApiError(res.status, json);
+  if (!res.ok) {
+    const code = (json as { error?: string } | null)?.error;
+    const currentOwner = getStoredUser()?.id || getStoredUser()?.user_id;
+    if (useAuth && requestOwner && requestOwner === currentOwner
+      && ((res.status === 403 && code === 'access_required') || (res.status === 503 && code === 'access_unavailable'))) {
+      window.dispatchEvent(new CustomEvent('legche:access-denied', {
+        detail: { userId: requestOwner, access: (json as { access?: unknown })?.access ?? null },
+      }));
+    }
+    throw new ApiError(res.status, json);
+  }
   return json as T;
 }
