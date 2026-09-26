@@ -1,3 +1,4 @@
+import { checkAccess } from "./access.js";
 import { requireAuth } from "./index.js";
 import { deepseekChat } from "./deepseek.js";
 
@@ -15,6 +16,7 @@ const SYSTEM_PROMPT = `Ты — нутриционный калькулятор.
 export async function handleEstimateNutrition(req, res) {
   const auth = await requireAuth(req, res);
   if (!auth) return;
+  if (!await checkAccess(auth.authId, res)) return;
 
   const text = ((req.body?.text) || "").toString().trim();
   if (!text) return res.json({ estimate: FALLBACK, source: "empty" });

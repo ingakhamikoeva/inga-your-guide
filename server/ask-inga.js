@@ -1,3 +1,4 @@
+import { checkAccess } from "./access.js";
 // Chat endpoint: standalone safety response, bounded input and fixed method rules.
 // Compatible with the existing { answer, route, provider } API and marker parser.
 import { requireAuth, pool } from "./index.js";
@@ -275,6 +276,8 @@ export async function handleAskInga(req, res) {
     // После аутентификации safety не зависит от настроек БД или доступности AI.
     // Не добавляем события/приветствия/продажи: клиент сам обрабатывает свои метки.
     if (route === "safety") return res.json({ answer: safetyAnswer(message), route, provider: "local_safety" });
+
+    if (!await checkAccess(auth.authId, res)) return;
 
     const { overrides, limits, model } = await loadSettings();
     checkSize(body, limits);

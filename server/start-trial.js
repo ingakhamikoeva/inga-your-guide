@@ -1,28 +1,27 @@
-import { pool } from "./db.js";
-import { requireAuthInline } from "./middleware/auth.js";
+import { pool } from './db.js';
+import { requireAuthInline } from './middleware/auth.js';
+import { getAccess } from './access.js';
 
 export async function handleStartTrial(req, res) {
   const auth = await requireAuthInline(req, res);
   if (!auth) return;
-  const userId = auth.authId;
-
   try {
-    const { rows: existing } = await pool.query(
-      `SELECT id FROM public.subscriptions WHERE user_id = $1 LIMIT 1`,
-      [userId]
-    );
-    if (existing.length) return res.json({ ok: true, message: "Trial already exists" });
-
-    const now = new Date();
-    const trialEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    await pool.query(
-      `INSERT INTO public.subscriptions (user_id, trial_started_at, trial_ends_at, subscription_status)
-       VALUES ($1, $2, $3, 'active')`,
-      [userId, now.toISOString(), trialEnd.toISOString()]
-    );
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("start-trial failed:", e);
-    res.status(500).json({ error: "Failed to start trial" });
+    // Atomic first start, including an empty placeholder row. Retries cannot
+    // reset dates or overwrite access previously granted by a promo/payment.
+    await pool.query(`
+      INSERT INTO public.subscriptions (user_id, trial_started_at, trial_ends_at, subscription_status)
+      VALUES ($1, now(), now() + interval '168 hours', 'active')
+      ON CONFLICT (user_id) DO UPDATE
+        SET trial_started_at = EXCLUDED.trial_started_at,
+            trial_ends_at = EXCLUDED.trial_ends_at,
+            subscription_status = EXCLUDED.subscription_status
+        WHERE public.subscriptions.trial_started_at IS NULL
+          AND public.subscriptions.trial_ends_at IS NULL
+          AND public.subscriptions.paid_until IS NULL`, [auth.authId]);
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, access: await getAccess(auth.authId) });
+  } catch {
+    console.error('start-trial failed');
+    res.status(503).json({ error: 'trial_start_failed' });
   }
 }
