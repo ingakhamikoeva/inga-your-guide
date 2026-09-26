@@ -2195,15 +2195,40 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
 
   // ---------- подтверждение почты (мягкая проверка) ----------
   const storedUser = getStoredUser();
-  const [emailVerified] = useState(Boolean(storedUser?.email_verified));
+  const [emailVerified, setEmailVerified] = useState(Boolean(storedUser?.email_verified));
   const [verifySending, setVerifySending] = useState(false);
   const [verifySent, setVerifySent] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    const refreshEmail = () => {
+      void auth.getUser({ refresh: true }).then(({ data }) => {
+        if (active && data.user) setEmailVerified(Boolean(data.user.email_verified));
+      });
+    };
+    const { data: { subscription: authSubscription } } = auth.onAuthStateChange((_event, session) => {
+      if (active) setEmailVerified(Boolean(session?.user?.email_verified));
+    });
+    refreshEmail();
+    window.addEventListener('focus', refreshEmail);
+    return () => { active = false; authSubscription.unsubscribe(); window.removeEventListener('focus', refreshEmail); };
+  }, []);
 
   const handleSendVerification = async () => {
+    if (verifySending) return;
+    setVerifyError('');
     setVerifySending(true);
     const { error } = await auth.sendVerification();
     setVerifySending(false);
-    if (!error) setVerifySent(true);
+    if (!error) {
+      setVerifySent(true);
+      await auth.getUser({ refresh: true });
+    } else {
+      setVerifyError(error.message === 'verification_rate_limited'
+        ? 'Подтверждение уже запрошено. Повторите попытку позже'
+        : 'Не удалось отправить письмо. Попробуйте ещё раз позже');
+    }
   };
 
   const handleDownloadDiary = async () => {
@@ -2581,7 +2606,7 @@ ${rows.map(({ date, weight, report }) => `
             ) : (
               <>
                 <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                  Приложением можно пользоваться и так. Но без подтверждения не получится восстановить пароль, если вы его забудете.
+                  Подтвердите почту, чтобы мы знали, что этот адрес принадлежит вам. Приложением можно пользоваться и до подтверждения.
                 </p>
                 <button
                   onClick={handleSendVerification}
@@ -2591,6 +2616,7 @@ ${rows.map(({ date, weight, report }) => `
                 >
                   {verifySending ? 'Отправляю…' : 'Отправить письмо ещё раз'}
                 </button>
+                {verifyError && <p role="alert" className="text-xs mt-2 text-destructive">{verifyError}</p>}
               </>
             )}
           </div>
