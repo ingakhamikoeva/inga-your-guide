@@ -104,11 +104,21 @@ export const auth = {
     return { data: { session: currentSession() }, error: null };
   },
 
-  async getUser(): Promise<UserResult> {
+  async getUser(opts: { refresh?: boolean } = {}): Promise<UserResult> {
     const cached = getStoredUser();
-    if (cached) return { data: { user: cached }, error: null };
+    if (cached && !opts.refresh) return { data: { user: cached }, error: null };
+    const owner = currentSession()?.user.id;
+    if (opts.refresh && !owner) return { data: { user: null }, error: null };
     try {
-      const r = await apiFetch<{ user: StoredUser }>('/auth/me', { method: 'GET' });
+      const r = await apiFetch<{ user: StoredUser }>('/auth/me', { method: 'GET', cache: 'no-store' });
+      const session = currentSession();
+      if (opts.refresh && (session?.user.id !== owner || r.user.id !== owner)) {
+        return { data: { user: null }, error: null };
+      }
+      if (session && session.user.id === r.user.id) {
+        setTokens(session.access_token, session.refresh_token, r.user);
+        notifyAuthChange('USER_UPDATED');
+      }
       return { data: { user: r.user }, error: null };
     } catch (e) {
       return { data: { user: null }, error: toError(e) };
@@ -123,8 +133,7 @@ export const auth = {
     return { data: { subscription: { unsubscribe: unsub } } };
   },
 
-  // Подтверждение email (мягкая проверка): доступ есть сразу,
-  // подтверждение нужно для восстановления пароля и писем.
+  // Email confirmation does not grant or revoke subscription access.
   async sendVerification(): Promise<AuthResult> {
     try {
       await apiFetch('/auth/send-verification', { method: 'POST', body: {} });
@@ -137,6 +146,8 @@ export const auth = {
   async verifyEmail(token: string): Promise<AuthResult> {
     try {
       await apiFetch('/auth/verify-email', { method: 'POST', body: { token }, auth: false });
+      // Refresh only the signed-in account; a link is not an authentication token.
+      if (currentSession()) await auth.getUser({ refresh: true });
       return { error: null };
     } catch (e) {
       return { error: toError(e) };
@@ -188,4 +199,3 @@ function toError(e: unknown): Error {
   if (e instanceof ApiError) return new Error(String((e.body as any)?.error || e.message));
   return new Error(String(e));
 }
-
