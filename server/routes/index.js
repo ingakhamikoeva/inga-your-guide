@@ -1,3 +1,5 @@
+import diary from "./diary.js";
+import subscription from "./subscription.js";
 // Mounts every data route under a single base prefix.
 import profile from "./profile.js";
 import plan from "./plan.js";
@@ -16,6 +18,8 @@ import profilePhotos from "./profile-photos.js";
 import promo from "./promo.js";
 
 export function registerRoutes(app, base = "/api/v1") {
+  app.use(`${base}/subscription`, subscription);
+  app.use(`${base}/diary`, diary);
   app.use(`${base}/profile`, profile);
   app.use(`${base}/plan`, plan);
   app.use(`${base}/behavior`, behavior);

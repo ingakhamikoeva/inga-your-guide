@@ -1,9 +1,11 @@
+import { requireAccessForWrite } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { upsert } from "./_helpers.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireAccessForWrite);
 
 r.put("/:date", async (req, res) => {
   const {

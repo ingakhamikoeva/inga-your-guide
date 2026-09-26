@@ -1,3 +1,4 @@
+import { requireAccessForProgramEvent } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { pool } from "./_helpers.js";
@@ -40,7 +41,7 @@ r.get("/program-progress", async (req, res) => {
   }
 });
 
-r.post("/", async (req, res) => {
+r.post("/", requireAccessForProgramEvent, async (req, res) => {
   const { type, payload = null } = req.body || {};
   if (!type) return res.status(400).json({ error: "type required" });
   try {

@@ -1,9 +1,11 @@
+import { requireAccessForWrite } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { pool } from "./_helpers.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireAccessForWrite);
 
 r.post("/", async (req, res) => {
   const { eventType, summary, relatedFoodLogId = null } = req.body || {};

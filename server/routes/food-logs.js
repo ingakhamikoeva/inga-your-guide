@@ -1,9 +1,11 @@
+import { requireAccessForWrite } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { pool } from "./_helpers.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireAccessForWrite);
 
 // Resolve internal user_id (public.users) from the JWT auth_id
 async function resolveUserId(req) {

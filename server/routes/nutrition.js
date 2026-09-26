@@ -1,9 +1,11 @@
+import { requireAccessForWrite, requireAccess } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { pool, upsert } from "./_helpers.js";
 
 const r = Router();
 r.use(requireAuth);
+r.use(requireAccessForWrite);
 
 // Daily nutrition summary
 function rowToSummary(d) {
@@ -66,6 +68,7 @@ r.put("/summary/:date", async (req, res) => {
 // Mounted at /api/v1/food-reference (not under /nutrition).
 export const foodReferenceRouter = Router();
 foodReferenceRouter.use(requireAuth);
+foodReferenceRouter.use(requireAccess);
 foodReferenceRouter.get("/", async (req, res) => {
   const q = String(req.query?.q ?? "").trim().toLowerCase();
   if (!q) return res.json(null);
