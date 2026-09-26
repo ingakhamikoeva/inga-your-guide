@@ -1,3 +1,4 @@
+import { useSubscription } from '@/context/SubscriptionContext';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { saveBehaviorProfile, saveAssessmentAnswers, logUserEvent, startTrial } from '@/lib/db';
@@ -9,6 +10,8 @@ import ingaPhoto from '@/assets/inga-photo.jpg';
 export function RouteReadyScreen() {
   const { profile, setStep, calculations, runCalculations, syncToDb } = useApp();
   const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState(false);
+  const { refresh } = useSubscription();
 
   // Расчёты считались только на экранах выбора темпа и «ВАШ РАСЧЁТ», а они
   // из онбординга убраны. Из-за этого у нового пользователя calculations
@@ -32,11 +35,12 @@ export function RouteReadyScreen() {
   // Завершение онбординга: сохранить профиль и ответы, создать пробный период.
   // Раньше это делал SupportStartScreen, но его нет в списке экранов Index.tsx —
   // из-за этого триал не создавался, а письма дня 3, 6 и 10 считаются от
-  // trial_started_at и никому не уходили. Ошибки не блокируют переход: человек
-  // должен попасть в приложение в любом случае, данные досохранятся при входе.
+  // trial_started_at и никому не уходили. При ошибке создания триала остаёмся
+  // здесь и предлагаем повторить; повторный запрос не продлевает срок.
   const handleStart = async () => {
     if (starting) return;
     setStarting(true);
+    setStartError(false);
     try {
       await syncToDb().catch(() => {});
       if (profile.foodProfile) {
@@ -45,10 +49,14 @@ export function RouteReadyScreen() {
       if (profile.foodTestAnswers) {
         await saveAssessmentAnswers(profile.foodTestAnswers).catch(() => {});
       }
-      await startTrial().catch(() => {});
+      await startTrial();
+      await refresh();
       await logUserEvent('first_day', { step: 'route-ready' }).catch(() => {});
-    } finally {
       setStep('daily');
+    } catch {
+      setStartError(true);
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -204,6 +212,7 @@ export function RouteReadyScreen() {
         </div>
       </div>
 
+      {startError && <p role="alert" className="inga-bubble w-full max-w-sm mb-3">Не удалось запустить пробный период. Попробуйте ещё раз.</p>}
       {/* CTA */}
       <div className="w-full max-w-sm mt-auto pt-2 pb-safe">
         <button
@@ -215,7 +224,7 @@ export function RouteReadyScreen() {
             color: '#FFFFFF',
           }}
         >
-          {starting ? 'Секунду…' : name ? `Начнём, ${name} →` : 'Начнём →'}
+          {starting ? 'Секунду…' : startError ? 'Повторить' : name ? `Начнём, ${name} →` : 'Начнём →'}
         </button>
       </div>
     </div>

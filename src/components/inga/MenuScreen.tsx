@@ -1,3 +1,7 @@
+import { useSubscription } from '@/context/SubscriptionContext';
+import { AccessScreen } from './AccessScreen';
+import { DiaryHistoryScreen } from './DiaryHistoryScreen';
+import { auth } from '@/lib/auth';
 import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { UserProfile, AppStep } from '@/lib/types';
@@ -134,6 +138,8 @@ const paceLabels: Record<string, string> = {
 export function MenuScreen() {
   const { setStep, weeklyData, profile, dailyReports, medals, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>("main");
+  const subscription = useSubscription();
+  const [showDiaryHistory, setShowDiaryHistory] = useState(false);
   const [nutrientSection, setNutrientSection] = useState<string | null>(null);
   // Программа «Месяц 1» (библиотека)
   const [programProgress, setProgramProgress] = useState<ProgramProgress | null>(null);
@@ -178,6 +184,7 @@ export function MenuScreen() {
       localStorage.removeItem('inga-menu-jump');
       const jump = JSON.parse(raw) as { section?: MenuSection; recipeSection?: string; activeRecipe?: string; nutrientSection?: string; returnTo?: AppStep };
       if (jump.section) setSection(jump.section);
+      if ((jump as any).promo) sessionStorage.setItem('inga-focus-promo', '1');
       if (jump.recipeSection) setRecipeSection(jump.recipeSection);
       if (jump.activeRecipe) setActiveRecipe(jump.activeRecipe);
       if (jump.nutrientSection === 'Питательные вещества') {
@@ -212,6 +219,15 @@ export function MenuScreen() {
   const formatDelta = (value: number | null) => value === null ? 'пока мало данных' : value > 0 ? `+${value} кг` : `${value} кг`;
   const stage = detectStage(profile.weight, profile.goalWeight, profile.currentStage);
 
+  if (showDiaryHistory) return <DiaryHistoryScreen onBack={() => setShowDiaryHistory(false)} />;
+  if (!['main', 'profile', 'progress', 'consultation'].includes(section)
+    && (subscription.error || !subscription.access?.active)) {
+    return <AccessScreen onProfile={promo => {
+      if (promo) sessionStorage.setItem('inga-focus-promo', '1');
+      setSection('profile');
+    }} />;
+  }
+
   if (section === 'main') {
     const items = [
       { id: 'how-to' as const, icon: BookOpen, label: 'Как похудеть', hint: 'Метод и принципы' },
@@ -228,6 +244,7 @@ export function MenuScreen() {
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <h2 className="text-2xl font-bold mb-6">Меню</h2>
         <div className="w-full max-w-md space-y-2.5">
+          <button onClick={() => setShowDiaryHistory(true)} className="inga-btn-secondary w-full">Посмотреть дневник</button>
           {items.map(item => {
             const Icon = item.icon;
             return (
@@ -2116,6 +2133,8 @@ export function MenuScreen() {
 function ProfileSection({ onBack }: { onBack: () => void }) {
   const { profile, calculations, updateProfile, setStep, weeklyData, dailyReports, resetLocalState } = useApp();
 
+  const subscription = useSubscription();
+
   // ---------- name ----------
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(profile.name ?? '');
@@ -2138,6 +2157,12 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
 
   // ---------- промокод ----------
   const [promoCode, setPromoCode] = useState('');
+  useEffect(() => {
+    if (sessionStorage.getItem('inga-focus-promo') === '1') {
+      sessionStorage.removeItem('inga-focus-promo');
+      document.getElementById('profile-promo-code')?.focus();
+    }
+  }, []);
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState('');
@@ -2154,6 +2179,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
         : '';
       setPromoSuccess(`Готово! Доступ открыт${until ? ` до ${until}` : ''} 🧡`);
       setPromoCode('');
+      await subscription.refresh();
     } catch (e: any) {
       // Тексты ошибок — понятные, без технических кодов
       const msg = String(e?.message || '');
@@ -2530,7 +2556,7 @@ ${rows.map(({ date, weight, report }) => `
         </div>
 
         {/* 6. Фото прогресса */}
-        <ProgressPhotosSection />
+        <ProgressPhotosSection readOnly={subscription.error || !subscription.access?.active} />
 
         {/* 7.5 Скачать дневник */}
         <button
@@ -2582,6 +2608,7 @@ ${rows.map(({ date, weight, report }) => `
               </p>
               <div className="flex gap-2">
                 <input
+                  id="profile-promo-code"
                   value={promoCode}
                   onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
                   placeholder="Введите код"

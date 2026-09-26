@@ -19,7 +19,7 @@ function fmtDate(iso: string) {
   }
 }
 
-export function ProgressPhotosSection() {
+export function ProgressPhotosSection({ readOnly = false }: { readOnly?: boolean }) {
   const [photos, setPhotos] = useState<PhotoMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -46,7 +46,7 @@ export function ProgressPhotosSection() {
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file) return;
+    if (!file || readOnly) return;
     if (photos.length >= MAX_PHOTOS) {
       setError(`Можно хранить не больше ${MAX_PHOTOS} фото`);
       return;
@@ -68,6 +68,7 @@ export function ProgressPhotosSection() {
   };
 
   const deletePhoto = async (id: string) => {
+    if (readOnly) return;
     try {
       await apiFetch(`/profile-photos/${id}`, { method: 'DELETE' });
       setSelected(sel => sel.filter(s => s !== id));
@@ -124,7 +125,7 @@ export function ProgressPhotosSection() {
       ) : (
         <>
           {photos.length === 0 ? (
-            <p className="text-xs text-muted-foreground mb-3">
+            !readOnly && <p className="text-xs text-muted-foreground mb-3">
               Загружайте фото время от времени — потом сможете собрать коллаж «было / стало».
             </p>
           ) : (
@@ -147,12 +148,12 @@ export function ProgressPhotosSection() {
                     <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[9px] py-0.5 text-center">
                       {fmtDate(p.taken_at)}
                     </span>
-                    <span
+                    {!readOnly && <span
                       onClick={(e) => { e.stopPropagation(); deletePhoto(p.id); }}
                       className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/50 flex items-center justify-center"
                     >
                       <X size={10} className="text-white" />
-                    </span>
+                    </span>}
                   </button>
                 ))}
               </div>
@@ -185,7 +186,7 @@ export function ProgressPhotosSection() {
 
           {error && <p className="text-xs text-destructive mb-2">{error}</p>}
 
-          <label className="flex items-center justify-center gap-2 cursor-pointer inga-btn-secondary w-full">
+          {!readOnly && <label className="flex items-center justify-center gap-2 cursor-pointer inga-btn-secondary w-full">
             <Camera size={14} />
             {uploading ? 'Загружаю…' : 'Добавить фото'}
             <input
@@ -196,7 +197,7 @@ export function ProgressPhotosSection() {
               onChange={onFileChange}
               disabled={uploading || photos.length >= MAX_PHOTOS}
             />
-          </label>
+          </label>}
         </>
       )}
     </div>
