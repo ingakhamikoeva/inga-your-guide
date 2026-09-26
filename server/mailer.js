@@ -18,18 +18,22 @@ const SITE_URL = process.env.SITE_URL || "https://legche.online";
 // кнопки в письмах ведут на корень приложения.
 const APP_URL = process.env.APP_URL || "https://app.legche.online";
 
-function makeTransport(user, pass) {
+function makeTransport(user, pass, options = {}) {
   if (!HOST || !user || !pass) return null;
   return nodemailer.createTransport({
     host: HOST,
     port: PORT,
     secure: PORT === 465,
     auth: { user, pass },
+    ...options,
   });
 }
 
 const supportTransport = makeTransport(process.env.SMTP_SUPPORT_USER, process.env.SMTP_SUPPORT_PASS);
 const ingaTransport = makeTransport(process.env.SMTP_INGA_USER, process.env.SMTP_INGA_PASS);
+const verificationTransport = makeTransport(process.env.SMTP_SUPPORT_USER, process.env.SMTP_SUPPORT_PASS, {
+  connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000,
+});
 
 async function send(transport, fromAddress, fromName, to, subject, html, text, logLabel) {
   if (!transport) {
@@ -100,6 +104,30 @@ export async function sendPasswordResetEmail(to, link) {
   `);
   const text = `Восстановление пароля legche.online.\n\nПерейдите по ссылке, чтобы задать новый пароль:\n${link}\n\nЕсли это были не вы — проигнорируйте это письмо.`;
   return send(supportTransport, process.env.SMTP_SUPPORT_USER, SENDER_NAME + " · Поддержка", to, "Восстановление пароля — legche.online", html, text, "password-reset");
+}
+
+// ── support@ — подтверждение почты (текст согласован 26.09.2026) ─────────
+export async function sendVerificationEmail(to, link) {
+  if (!verificationTransport) return { sent: false };
+  const safeLink = String(link).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const html = wrapHtml(`
+    <p style="margin:0 0 16px;">Здравствуйте!</p>
+    <p style="margin:0 0 20px;">Подтвердите адрес электронной почты для вашего аккаунта в legche.online.</p>
+    ${ctaButton("Подтвердить почту", safeLink)}
+    <p style="margin:0 0 16px;">Ссылка действует 7 дней. Если она устареет, новое письмо можно запросить в разделе «Профиль».</p>
+    <p style="margin:0;color:#8A7A70;font-size:13px;">Если вы не создавали аккаунт и не запрашивали это письмо, просто проигнорируйте его.</p>
+  `);
+  const text = `Здравствуйте!\n\nПодтвердите адрес электронной почты для вашего аккаунта в legche.online.\n\nПодтвердить почту:\n${link}\n\nСсылка действует 7 дней. Если она устареет, новое письмо можно запросить в разделе «Профиль».\n\nЕсли вы не создавали аккаунт и не запрашивали это письмо, просто проигнорируйте его.`;
+  try {
+    const result = await verificationTransport.sendMail({
+      from: `"${SENDER_NAME} · Поддержка" <${process.env.SMTP_SUPPORT_USER}>`,
+      to: { address: to, name: '' }, subject: 'Подтвердите почту — legche.online', html, text,
+    });
+    return { sent: Array.isArray(result.accepted) && result.accepted.length > 0 };
+  } catch {
+    // Never log verification links or SMTP credentials.
+    return { sent: false };
+  }
 }
 
 // ── inga@ — цепочка триала (тексты утверждены 20.07.2026) ──────────────────

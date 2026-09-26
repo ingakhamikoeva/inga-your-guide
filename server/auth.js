@@ -10,6 +10,7 @@ import { requireAuthInline as requireAuth } from "./middleware/auth.js";
 import { ACCESS_TTL_SEC, createSession, signAccess, verifyToken, activeSession } from "./sessions.js";
 import { passwordResetUrl } from "./password-reset-url.js";
 import { sendPasswordResetEmail, sendDay0Email } from "./mailer.js";
+import { requestEmailVerification, sendVerificationHandler, verifyEmailHandler } from "./email-verification.js";
 
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -119,6 +120,10 @@ export async function signupHandler(req, res) {
     const { access_token, refresh_token } = await createSession(client, userObj);
 
     await client.query("COMMIT");
+
+    // Transactional confirmation is separate from the welcome/marketing email.
+    // A delivery failure does not undo signup; the profile can retry sending.
+    requestEmailVerification(userId).catch(() => console.error("signup verification email failed"));
 
     // Письмо «День 0» — fire-and-forget, не блокирует и не роняет регистрацию.
     // Вариант темы (A/B) логируется в user_events для последующей аналитики.
@@ -364,5 +369,6 @@ export function registerAuthRoutes(app, prefix = "/api/v1/auth") {
   app.get(`${prefix}/me`, meHandler);
   app.post(`${prefix}/forgot-password`, forgotPasswordHandler);
   app.post(`${prefix}/reset-password`, resetPasswordHandler);
+  app.post(`${prefix}/send-verification`, sendVerificationHandler);
+  app.post(`${prefix}/verify-email`, verifyEmailHandler);
 }
-
