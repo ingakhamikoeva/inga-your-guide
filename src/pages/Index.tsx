@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { SubscriptionProvider, useSubscription } from '@/context/SubscriptionContext';
+import { AccessScreen } from '@/components/inga/AccessScreen';
 import { auth } from '@/lib/auth';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AppStep } from '@/lib/types';
@@ -16,6 +18,7 @@ import { RouteReadyScreen } from '@/components/inga/RouteReadyScreen';
 
 function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) {
   const { step, setStep, hydrateFromDb } = useApp();
+  const subscription = useSubscription();
   const [authReady, setAuthReady] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const hydratedRef = useState({ done: false })[0];
@@ -58,6 +61,14 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
     return <AuthScreen initialMode={initialAuthMode} />;
   }
 
+  if ((step === 'daily' || step === 'chat')
+    && (subscription.error || !subscription.access?.active)) {
+    return <AccessScreen onProfile={(promo) => {
+      localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'profile', promo: !!promo }));
+      setStep('menu');
+    }} />;
+  }
+
   switch (step) {
     case 'survey-name': return <SurveyNameScreen />;
     case 'goal': return <GoalScreen />;
@@ -75,9 +86,11 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
 
 const Index = ({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) => (
   <AppProvider>
+    <SubscriptionProvider>
     <div className="min-h-screen">
       <AppFlow initialAuthMode={initialAuthMode} />
     </div>
+    </SubscriptionProvider>
   </AppProvider>
 );
 
