@@ -40,8 +40,13 @@ export function SubscriptionCheckout({ quotes, onContinue }: {
             <input type="radio" name="subscription-plan" value={item.plan} checked={plan === item.plan}
               onChange={() => { setAccepted(null); setPlan(item.plan); }} aria-label={heading(item.plan)} className="h-4 w-4 accent-[#FF6200]" />
           </span>
-          <span className="block mt-3 text-2xl font-extrabold whitespace-nowrap">{formatMoney(item.amount)}</span>
-          <span className="block mt-1 text-xs text-muted-foreground">{item.plan === 'month' ? 'за календарный месяц' : 'за календарный год'}</span>
+          <span className="block mt-3 text-2xl font-extrabold whitespace-nowrap">
+            {formatMoney(item.plan === 'year' ? Math.round(item.amount / 12 / 100) * 100 : item.amount)}
+          </span>
+          <span className="block mt-1 text-xs text-muted-foreground">{item.plan === 'month' ? 'за календарный месяц' : 'в месяц'}</span>
+          {item.plan === 'year' && <span className="block mt-2 text-sm leading-snug">
+            при оплате <strong className="whitespace-nowrap">{formatMoney(item.amount)}</strong> за год
+          </span>}
         </label>)}
       </div>
     </fieldset>
