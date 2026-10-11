@@ -24,15 +24,22 @@ export function SubscriptionCheckout({ quotes, onContinue }: {
   return <section aria-labelledby="checkout-heading" className="space-y-5">
     <div>
       <p className="text-sm font-bold tracking-widest text-primary mb-2">ЛЕГЧЕ</p>
-      <h1 id="checkout-heading" className="text-3xl font-bold">Оформление подписки</h1>
+      <h1 id="checkout-heading" className="text-3xl font-bold leading-tight">Снизить вес и сохранить результат</h1>
+      <p className="mt-4 text-sm leading-relaxed text-muted-foreground">Осваивайте лёгкие замены, находите любимые рецепты и выстраивайте питание, которое подходит вашей жизни. Инга поможет разобраться с повседневными вопросами, а дневник — видеть изменения.</p>
     </div>
     <div className="inga-card !bg-white space-y-3">
       <p className="font-bold">В подписку входят</p>
-      {['Дневник питания и отслеживание прогресса', 'Общение с ИИ-помощником Ингой', 'Программа «Лёгкая замена», рецепты и материалы'].map(text =>
-        <p key={text} className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 shrink-0 text-primary mt-0.5" aria-hidden="true" />{text}</p>)}
+      {[
+        ['ИИ-помощник Инга', 'обсудить питание, подобрать замену привычному блюду и получить поддержку.'],
+        ['Дневник питания и веса', 'отслеживать свой путь и возвращаться к записям.'],
+        ['Рецепты лёгких блюд', 'находить идеи для завтраков, обедов, ужинов и десертов.'],
+        ['Программа «Лёгкая замена»', 'короткие уроки и практические задания, которые помогают разбираться в питании и постепенно менять привычки.'],
+        ['Гайды, таблицы и шпаргалки', 'держать полезные подсказки под рукой.'],
+      ].map(([title, text]) =>
+        <p key={title} className="flex items-start gap-2 text-sm leading-relaxed"><Check className="h-4 w-4 shrink-0 text-primary mt-1" aria-hidden="true" /><span><strong>{title}</strong> — {text}</span></p>)}
     </div>
     <fieldset>
-      <legend className="font-bold mb-3">Выберите период</legend>
+      <legend className="font-bold mb-3">Выберите срок доступа</legend>
       <div className="grid grid-cols-2 gap-3">
         {quotes.map(item => <label key={item.plan} className={`relative cursor-pointer rounded-2xl border-2 p-4 transition-colors ${plan === item.plan ? 'border-primary bg-primary/5' : 'border-border bg-white'}`}>
           <span className="flex items-center justify-between gap-2">
@@ -47,9 +54,15 @@ export function SubscriptionCheckout({ quotes, onContinue }: {
           {item.plan === 'year' && <span className="block mt-2 text-sm leading-snug">
             при оплате <strong className="whitespace-nowrap">{formatMoney(item.amount)}</strong> за год
           </span>}
+          <span className="block mt-3 text-xs leading-relaxed text-muted-foreground">{item.plan === 'year' ? 'Для снижения и поддержания веса.' : 'Чтобы начать и освоиться.'}</span>
         </label>)}
       </div>
     </fieldset>
+    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-3">
+      <h2 className="font-bold text-lg leading-snug">Зачем оставаться после достижения цели?</h2>
+      <p className="text-sm leading-relaxed">После снижения веса наступают важные этапы: фиксация и сохранение результата. Впереди обычная жизнь: семейные ужины, праздники, поездки. На этапе фиксации вы учитесь постепенно расширять рацион, сохраняя привычки, которые помогли снизить вес.</p>
+      <p className="text-sm leading-relaxed">С годовой подпиской рецепты, уроки, гайды, шпаргалки и разборы вашего рациона с ИИ-помощником Ингой доступны весь оплаченный период. Можно продолжать вести дневник, наблюдать за весом и обращаться к Инге по вопросам питания — в том числе после достижения цели.</p>
+    </div>
     {quote && <>
       {quote.special && <div className="space-y-2">
         <p className="font-bold text-[#601645]">Спеццена для первых 100 участников</p>
