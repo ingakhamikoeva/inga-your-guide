@@ -16,10 +16,8 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  // Согласия при регистрации (152-ФЗ): обязательное — оферта + обработка ПД,
-  // необязательное — рекламная рассылка. Отдельное согласие на трансграничную
-  // передачу не требуется: КНР входит в перечень стран с адекватной защитой
-  // (приказ РКН от 05.08.2022 № 128), см. ст. 12 152-ФЗ.
+  // Обязательные согласия раздельны; рассылка остаётся необязательной.
+  const [termsConsent, setTermsConsent] = useState(false);
   const [pdConsent, setPdConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
 
@@ -50,7 +48,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
     setInfo('');
     setLoading(true);
 
-    if (mode === 'signup' && !pdConsent) {
+    if (mode === 'signup' && (!termsConsent || !pdConsent)) {
       setError('Чтобы продолжить, примите условия оферты и согласие на обработку персональных данных');
       setLoading(false);
       return;
@@ -61,6 +59,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
         const { data, error: signUpError } = await auth.signUp({
           email,
           password,
+          termsConsent,
           pdConsent,
           marketingConsent,
         });
@@ -196,22 +195,34 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
               <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
+                  checked={termsConsent}
+                  onChange={e => setTermsConsent(e.target.checked)}
+                  className="mt-0.5 shrink-0"
+                  required
+                />
+                <span>
+                  Принимаю условия{' '}
+                  <a href="https://legche.online/oferta" target="_blank" rel="noreferrer" className="underline">Оферты</a>
+                  {' '}и{' '}
+                  <a href="https://legche.online/user-agreement.html" target="_blank" rel="noreferrer" className="underline">Пользовательского соглашения</a>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
                   checked={pdConsent}
                   onChange={e => setPdConsent(e.target.checked)}
                   className="mt-0.5 shrink-0"
                   required
                 />
                 <span>
-                  Я принимаю условия{' '}
-                  <a href="https://legche.online/oferta" target="_blank" rel="noreferrer" className="underline">
-                    оферты
-                  </a>{' '}
-                  и даю согласие на обработку персональных данных в соответствии с{' '}
-                  <a href="https://legche.online/privacy" target="_blank" rel="noreferrer" className="underline">
-                    политикой
-                  </a>
+                  Даю{' '}
+                  <a href="https://legche.online/consent-personal-data.html" target="_blank" rel="noreferrer" className="underline">согласие на обработку персональных данных</a>
                 </span>
               </label>
+              <p className="pl-5 text-xs text-muted-foreground">
+                <a href="https://legche.online/privacy" target="_blank" rel="noreferrer" className="underline">Политика конфиденциальности</a>
+              </p>
               <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
@@ -243,7 +254,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (isSignup && (!termsConsent || !pdConsent))}
             className="inga-btn-primary w-full"
           >
             {loading ? '...' : isSignup ? 'Начать →' : 'Войти'}
