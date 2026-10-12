@@ -53,14 +53,16 @@ bootstrapRecovery();
 // ── public API ────────────────────────────────────────────────────
 
 export const auth = {
-  async signUp(args: { email: string; password: string; pdConsent?: boolean; marketingConsent?: boolean }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
+  async signUp(args: { email: string; password: string; termsConsent?: boolean; pdConsent?: boolean; marketingConsent?: boolean }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
     try {
       const r = await apiFetch<TokenResp>('/auth/signup', {
         method: 'POST',
         body: {
           email: args.email,
           password: args.password,
-          pdConsent: args.pdConsent ?? false,
+          termsConsent: args.termsConsent === true,
+          registrationConsentVersion: "registration-2026-10-11-v1",
+          pdConsent: args.pdConsent === true,
           marketingConsent: args.marketingConsent ?? false,
           utm: getStoredUtm(),
         },
