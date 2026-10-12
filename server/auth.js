@@ -4,6 +4,7 @@
 // JWT payload includes typ (access/refresh) and sid (revocable server session).
 
 import crypto from "crypto";
+import { REGISTRATION_CONSENT_VERSION, registrationConsentProof } from "./registration-consents.js";
 import bcrypt from "bcryptjs";
 import { pool } from "./db.js";
 import { requireAuthInline as requireAuth } from "./middleware/auth.js";
@@ -41,13 +42,6 @@ function sha256(s) {
   return crypto.createHash("sha256").update(s).digest("hex");
 }
 
-// Редакция оферты и политики, действующая на момент регистрации. Обязана
-// совпадать с датой в шапке документов на legche.online: именно она пишется
-// в consent_doc_version и служит доказательством согласия (ч. 3 ст. 9 152-ФЗ).
-// Меняется в .env (LEGAL_DOCS_VERSION) одновременно с текстами; значение ниже —
-// запасное, на случай если переменная не задана.
-const LEGAL_DOCS_VERSION = process.env.LEGAL_DOCS_VERSION || "2026-09-01";
-
 // ── handlers ──────────────────────────────────────────────────────
 
 export async function signupHandler(req, res) {
@@ -56,10 +50,16 @@ export async function signupHandler(req, res) {
   if (!email || !password) return res.status(400).json({ error: "email and password required" });
   if (password.length < 6) return res.status(400).json({ error: "password too short" });
 
-  // Согласие на обработку ПД обязательно (152-ФЗ); на рассылку — нет.
+  // Принимаем только явные отдельные согласия из текущей формы регистрации.
+  const termsConsent = req.body?.termsConsent === true;
   const pdConsent = req.body?.pdConsent === true;
   const marketingConsent = req.body?.marketingConsent === true;
+  if (!termsConsent) return res.status(400).json({ error: "terms_consent_required" });
   if (!pdConsent) return res.status(400).json({ error: "pd_consent_required" });
+
+  if (req.body?.registrationConsentVersion !== REGISTRATION_CONSENT_VERSION) {
+    return res.status(400).json({ error: "registration_consent_version_mismatch" });
+  }
 
   // Источник регистрации (UTM с лендинга) — необязательный, просто аналитика.
   const ALLOWED_UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
@@ -96,10 +96,12 @@ export async function signupHandler(req, res) {
     await client.query(
       `INSERT INTO public.app_credentials
          (user_id, email, password_hash, email_verified, pd_consent_at,
-          marketing_consent, marketing_consent_at, consent_doc_version)
+          marketing_consent, marketing_consent_at, consent_doc_version,
+          terms_consent_at, registration_consent_proof)
        VALUES ($1, $2, $3, false, now(),
-          $4, CASE WHEN $4 THEN now() ELSE NULL END, $5)`,
-      [userId, email, hash, marketingConsent, LEGAL_DOCS_VERSION]
+          $4, CASE WHEN $4 THEN now() ELSE NULL END, $5, now(), $6::jsonb)`,
+      [userId, email, hash, marketingConsent, REGISTRATION_CONSENT_VERSION,
+        JSON.stringify(registrationConsentProof(marketingConsent))]
     );
 
     if (utm && Object.keys(utm).length) {
