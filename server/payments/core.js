@@ -108,6 +108,21 @@ export async function checkout(user,input) {
   if(o.status==='paid')return {invoice:o.invoice,status:'paid'};
   return {invoice:o.invoice,status:o.status,...form(o,c)};
 }
+// Recover an interrupted redirect without creating another invoice or consent.
+export async function resume(user, invoice) {
+  const c=config();if(!c.enabled)fail('payments_disabled',503);
+  if(typeof invoice!=='string'||!/^1\d{17}$/.test(invoice))fail('invalid_payment',400);
+  const o=await transaction(async db=>{
+    const a=await owner(db,user);
+    const order=(await db.query('SELECT * FROM public.payment_orders WHERE invoice=$1 AND user_id=$2 FOR UPDATE',[invoice,user])).rows[0];
+    if(!order)fail('payment_not_found',404);
+    if(order.status==='paid')return order;
+    if(!a.email_verified||!validEmail(a.email)||a.email!==order.email)fail('email_not_verified',403);
+    return order;
+  });
+  if(o.status==='paid')return {invoice:o.invoice,status:'paid'};
+  return {invoice:o.invoice,status:o.status,...form(o,c)};
+}
 export async function result(body) {
   const c=config(); // Callback remains valid after PAYMENTS_ENABLED is turned off.
   if(typeof body?.InvId!=='string'||!/^1\d{17}$/.test(body.InvId))fail('invalid_payment',400);
