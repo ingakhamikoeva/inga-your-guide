@@ -11,6 +11,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import VerifyEmail from "./pages/VerifyEmail.tsx";
 
 const SubscriptionPreview = lazy(() => import("./pages/SubscriptionPreview.tsx"));
+const SubscriptionTest = lazy(() => import("./pages/SubscriptionTest.tsx"));
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/subscription-preview" element={<Suspense fallback={null}><SubscriptionPreview /></Suspense>} />
+          <Route path="/subscription-test" element={<Suspense fallback={null}><SubscriptionTest /></Suspense>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
