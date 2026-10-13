@@ -1,3 +1,4 @@
+import payments from "./payments.js";
 import diary from "./diary.js";
 import subscription from "./subscription.js";
 // Mounts every data route under a single base prefix.
@@ -18,6 +19,7 @@ import profilePhotos from "./profile-photos.js";
 import promo from "./promo.js";
 
 export function registerRoutes(app, base = "/api/v1") {
+  app.use(`${base}/payments`, payments);
   app.use(`${base}/subscription`, subscription);
   app.use(`${base}/diary`, diary);
   app.use(`${base}/profile`, profile);
