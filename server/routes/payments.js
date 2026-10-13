@@ -1,7 +1,7 @@
 import express, { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { available } from '../payments/provider.js';
-import { PaymentError, state, checkout, result } from '../payments/core.js';
+import { PaymentError, state, checkout, resume, result } from '../payments/core.js';
 
 const r=Router();
 r.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
@@ -22,5 +22,6 @@ const handle=run=>async(req,res)=>{
 };
 r.get('/',handle(req=>state(req.userId)));
 r.post('/checkout',handle(req=>checkout(req.userId,req.body)));
+r.post('/orders/:invoice/resume',handle(req=>resume(req.userId,req.params.invoice)));
 // No success redirect or browser endpoint grants access.
 export default r;
