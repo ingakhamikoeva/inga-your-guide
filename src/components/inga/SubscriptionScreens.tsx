@@ -7,11 +7,19 @@ import {
 
 const period = (plan: PreviewPlan) => plan === 'month' ? 'месяц' : 'год';
 const heading = (plan: PreviewPlan) => plan === 'month' ? 'Месяц' : 'Год';
-const termsKey = (q: SubscriptionQuote) => JSON.stringify([q.id, q.plan, q.amount, q.special, q.startsAt, q.renewsAt, AUTO_RENEW_CONSENT]);
+export type CheckoutQuote = SubscriptionQuote & {
+  consentText?: string; consentVersion?: string;
+  offer?: { url: string; version: string; sha256: string };
+  specialPriceTerms?: string;
+};
+const termsKey = (q: CheckoutQuote) => JSON.stringify([q.id, q.plan, q.amount, q.special, q.startsAt, q.renewsAt,
+  q.consentText ?? AUTO_RENEW_CONSENT, q.consentVersion, q.offer, q.specialPriceTerms ?? SPECIAL_PRICE_TERMS]);
 
-export function SubscriptionCheckout({ quotes, onContinue }: {
-  quotes: SubscriptionQuote[];
-  onContinue: (quote: SubscriptionQuote) => void;
+export function SubscriptionCheckout({ quotes, onContinue, busy = false, testOnly = false }: {
+  quotes: CheckoutQuote[];
+  onContinue: (quote: CheckoutQuote) => void;
+  busy?: boolean;
+  testOnly?: boolean;
 }) {
   const [plan, setPlan] = useState<PreviewPlan>('month');
   const [accepted, setAccepted] = useState<string | null>(null);
@@ -38,7 +46,7 @@ export function SubscriptionCheckout({ quotes, onContinue }: {
       ].map(([title, text]) =>
         <p key={title} className="flex items-start gap-2 text-sm leading-relaxed"><Check className="h-4 w-4 shrink-0 text-primary mt-1" aria-hidden="true" /><span><strong>{title}</strong> — {text}</span></p>)}
     </div>
-    <fieldset>
+    <fieldset disabled={busy}>
       <legend className="font-bold mb-3">Выберите срок доступа</legend>
       <div className="grid grid-cols-2 gap-3">
         {quotes.map(item => <label key={item.plan} className={`relative cursor-pointer rounded-2xl border-2 p-4 transition-colors ${plan === item.plan ? 'border-primary bg-primary/5' : 'border-border bg-white'}`}>
@@ -66,7 +74,7 @@ export function SubscriptionCheckout({ quotes, onContinue }: {
     {quote && <>
       {quote.special && <div className="space-y-2">
         <p className="font-bold text-[#601645]">Спеццена для первых 100 участников</p>
-        <p className="text-sm leading-relaxed text-muted-foreground">{SPECIAL_PRICE_TERMS}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{quote.specialPriceTerms ?? SPECIAL_PRICE_TERMS}</p>
       </div>}
       <div className="inga-card !bg-white space-y-4">
         <div className="flex justify-between items-center gap-3">
@@ -74,23 +82,25 @@ export function SubscriptionCheckout({ quotes, onContinue }: {
         </div>
         <div className="border-t border-border pt-4 text-sm space-y-3">
           <p className="flex gap-2"><CalendarDays className="h-4 w-4 shrink-0 mt-1" aria-hidden="true" /><span>Период доступа:<br />{formatBillingDate(quote.startsAt)} — {formatBillingDate(quote.renewsAt)}</span></p>
-          <p><strong>Следующее списание:</strong><br />{formatBillingDate(quote.renewsAt)} · {formatMoney(quote.amount)}</p>
-          <p>Далее — {formatMoney(quote.amount)} каждый календарный {period(quote.plan)}, пока автопродление включено.</p>
+          {!testOnly && <>
+            <p><strong>Следующее списание:</strong><br />{formatBillingDate(quote.renewsAt)} · {formatMoney(quote.amount)}</p>
+            <p>Далее — {formatMoney(quote.amount)} каждый календарный {period(quote.plan)}, пока автопродление включено.</p>
+          </>}
         </div>
       </div>
-      <div className="flex items-start gap-3 text-sm leading-relaxed">
+      {!testOnly && <div className="flex items-start gap-3 text-sm leading-relaxed">
         <Bell className="h-5 w-5 shrink-0 text-primary mt-0.5" aria-hidden="true" />
         <p>Напоминание придёт на электронную почту не позднее чем за 3 календарных дня. Отключить автопродление можно в личном кабинете.</p>
-      </div>
+      </div>}
       <div className="rounded-2xl border border-border bg-white p-4">
         <label className="flex items-start gap-3 cursor-pointer">
-          <input id="automatic-charge-consent" type="checkbox" checked={agreed}
+          <input id="automatic-charge-consent" type="checkbox" checked={agreed} disabled={busy}
             onChange={event => setAccepted(event.target.checked ? key : null)} className="mt-1 h-5 w-5 shrink-0 accent-[#FF6200]" />
-          <span className="text-sm leading-relaxed">{AUTO_RENEW_CONSENT}</span>
+          <span className="text-sm leading-relaxed">{quote.consentText ?? AUTO_RENEW_CONSENT}</span>
         </label>
-        <a href={OFFER_URL} target="_blank" rel="noopener noreferrer" className="ml-8 mt-2 inline-block text-sm underline text-primary">Публичная оферта</a>
+        <a href={quote.offer?.url ?? OFFER_URL} target="_blank" rel="noopener noreferrer" className="ml-8 mt-2 inline-block text-sm underline text-primary">Публичная оферта</a>
       </div>
-      <button type="button" disabled={!agreed} onClick={() => { if (agreed) onContinue(quote); }}
+      <button type="button" disabled={!agreed || busy} onClick={() => { if (agreed && !busy) onContinue(quote); }}
         className="inga-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
         Оплатить {formatMoney(quote.amount)}
       </button>
