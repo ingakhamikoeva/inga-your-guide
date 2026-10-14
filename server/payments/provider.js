@@ -34,7 +34,8 @@ export function form(o, c = config()) {
   if (o.kind === 'initial') {
     if (!c.recurringEnabled) throw new Error('renewals_disabled');
     fields.Recurring = 'true';
-    fields.PaymentMethods = '["BankCard"]';
+    // Index.aspx expects one plain alias per PaymentMethods form field, not JSON.
+    fields.PaymentMethods = 'BankCard';
   }
   return { action: PAYMENT_URL, fields };
 }

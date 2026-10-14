@@ -137,7 +137,7 @@ export function submitTestPayment(result: PaymentRedirect, expected: { amount: n
     'IsTest', 'Culture', 'Shp_env', 'Shp_order', 'SignatureValue'];
   if (expected.recurring === true) {
     keys.push('Recurring', 'PaymentMethods');
-    if (fields.Recurring !== 'true' || fields.PaymentMethods !== '["BankCard"]') invalid();
+    if (fields.Recurring !== 'true' || fields.PaymentMethods !== 'BankCard') invalid();
   }
   if (Object.keys(fields).sort().join(',') !== keys.sort().join(',')
       || Object.values(fields).some(value => typeof value !== 'string' || value.length > 16000)
