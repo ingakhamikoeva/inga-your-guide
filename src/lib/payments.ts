@@ -2,6 +2,7 @@ import { API_BASE, apiFetch } from './api-client';
 import { AUTO_RENEW_CONSENT, OFFER_URL, type SubscriptionQuote } from './subscription-preview';
 
 export interface PaymentQuote extends SubscriptionQuote {
+  recurring: boolean;
   token: string;
   expiresAt: string;
   consentText: string;
@@ -16,13 +17,29 @@ export interface PaymentOrder {
   amount: number;
   special: boolean;
   status: 'pending' | 'paid';
+  recurring: boolean;
+  canResume: boolean;
   createdAt: string;
   accessUntil: string | null;
+}
+export interface RenewalState {
+  enabled: boolean;
+  pendingActivation: boolean;
+  paused: boolean;
+  plan?: 'month' | 'year';
+  amount?: number;
+  special?: boolean;
+  dueAt?: string | null;
+  chargeAt?: string | null;
+  noticeSentAt?: string | null;
+  awaitingPayment?: boolean;
 }
 export interface PaymentState {
   available: boolean;
   testOnly: true;
-  autoRenew?: false;
+  autoRenew?: boolean;
+  recurringAvailable?: boolean;
+  renewal?: RenewalState;
   emailVerified?: boolean;
   quotes: PaymentQuote[];
   orders: PaymentOrder[];
@@ -30,6 +47,7 @@ export interface PaymentState {
 export interface PaymentRedirect {
   invoice: string;
   status: 'pending' | 'paid';
+  recurring?: boolean;
   action?: string;
   fields?: Record<string, string>;
 }
@@ -58,13 +76,18 @@ export async function loadPaymentState(): Promise<PaymentState> {
   const state = await apiFetch<PaymentState>('/payments/', { cache: 'no-store' });
   if (!state || state.testOnly !== true || typeof state.available !== 'boolean'
       || !Array.isArray(state.quotes) || !Array.isArray(state.orders)) invalid();
-  if (!state.available) {
-    if (state.quotes.length || state.orders.length) invalid();
-    return state;
-  }
-  if (state.autoRenew !== false || typeof state.emailVerified !== 'boolean') invalid();
+  if (!state.available && state.quotes.length) invalid();
+  if (!state.available && !state.renewal && !state.orders.length) return state;
+  if (typeof state.autoRenew !== 'boolean' || typeof state.emailVerified !== 'boolean'
+      || typeof state.recurringAvailable !== 'boolean' || !state.renewal) invalid();
+  const r = state.renewal!;
+  if (typeof r.enabled !== 'boolean' || typeof r.pendingActivation !== 'boolean'
+      || typeof r.paused !== 'boolean' || r.enabled !== state.autoRenew
+      || (r.enabled && (!plan(r.plan) || !amount(r.amount) || !date(r.dueAt)))
+      || (r.chargeAt != null && !date(r.chargeAt))
+      || (r.noticeSentAt != null && !date(r.noticeSentAt))) invalid();
   for (const q of state.quotes) {
-    if (!q || typeof q.id !== 'string' || !q.id || !plan(q.plan) || !amount(q.amount)
+    if (!q || typeof q.recurring !== 'boolean' || q.recurring !== state.recurringAvailable || typeof q.id !== 'string' || !q.id || !plan(q.plan) || !amount(q.amount)
         || typeof q.special !== 'boolean' || !date(q.startsAt) || !date(q.renewsAt)
         || Date.parse(q.renewsAt) <= Date.parse(q.startsAt) || !date(q.expiresAt)
         || typeof q.token !== 'string' || !q.token || q.consentText !== AUTO_RENEW_CONSENT
@@ -76,14 +99,14 @@ export async function loadPaymentState(): Promise<PaymentState> {
   if (state.quotes.length && (state.quotes.length !== 2
       || new Set(state.quotes.map(q => q.plan)).size !== 2)) invalid();
   for (const o of state.orders) {
-    if (!o || !invoice(o.invoice) || !plan(o.plan) || !amount(o.amount)
+    if (!o || typeof o.recurring !== 'boolean' || typeof o.canResume !== 'boolean' || !invoice(o.invoice) || !plan(o.plan) || !amount(o.amount)
         || typeof o.special !== 'boolean' || !date(o.createdAt)
         || !['pending', 'paid'].includes(o.status)
         || (o.status === 'paid' && !date(o.accessUntil))) invalid();
   }
   const pending = state.orders.filter(o => o.status === 'pending');
   if (pending.length > 1 || (pending.length && state.quotes.length)
-      || (!state.emailVerified && state.quotes.length)) invalid();
+      || ((!state.emailVerified || state.autoRenew) && state.quotes.length)) invalid();
   return state;
 }
 
@@ -93,18 +116,29 @@ export async function createPayment(quote: PaymentQuote): Promise<PaymentRedirec
 }
 export async function resumePayment(order: PaymentOrder): Promise<PaymentRedirect> {
   requireTestPage();
-  if (!invoice(order.invoice)) invalid();
+  if (!invoice(order.invoice) || order.canResume === false) invalid();
   return apiFetch(`/payments/orders/${order.invoice}/resume`, { method: 'POST', body: {} });
 }
 
-export function submitTestPayment(result: PaymentRedirect, expected: { amount: number; invoice?: string }): void {
+export async function cancelAutoRenewal(): Promise<void> {
+  requireTestPage();
+  const result = await apiFetch<{ cancelled: boolean }>('/payments/renewal/cancel', { method: 'POST', body: {} });
+  if (result?.cancelled !== true) invalid();
+}
+
+export function submitTestPayment(result: PaymentRedirect, expected: { amount: number; invoice?: string; recurring?: boolean }): void {
   requireTestPage();
   if (!result || !invoice(result.invoice) || (expected.invoice && expected.invoice !== result.invoice)) invalid();
   if (result.status === 'paid') return;
   if (result.status !== 'pending' || result.action !== PAYMENT_URL || !result.fields) invalid();
+  if ((result.recurring === true) !== (expected.recurring === true)) invalid();
   const fields = result.fields;
   const keys = ['MerchantLogin', 'OutSum', 'InvId', 'Description', 'Receipt', 'Email',
     'IsTest', 'Culture', 'Shp_env', 'Shp_order', 'SignatureValue'];
+  if (expected.recurring === true) {
+    keys.push('Recurring', 'PaymentMethods');
+    if (fields.Recurring !== 'true' || fields.PaymentMethods !== '["BankCard"]') invalid();
+  }
   if (Object.keys(fields).sort().join(',') !== keys.sort().join(',')
       || Object.values(fields).some(value => typeof value !== 'string' || value.length > 16000)
       || fields.IsTest !== '1' || fields.Shp_env !== 'test' || fields.Culture !== 'ru'

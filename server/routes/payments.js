@@ -3,6 +3,8 @@ import { requireAuth } from '../middleware/auth.js';
 import { available } from '../payments/provider.js';
 import { PaymentError, state, checkout, resume, result } from '../payments/core.js';
 
+import { cancelRenewal } from '../payments/renewals.js';
+
 const r=Router();
 r.use((_req,res,next)=>{res.set('Cache-Control','no-store');next();});
 r.get('/availability',(_req,res)=>res.json({available:available(),testOnly:true}));
@@ -21,6 +23,7 @@ const handle=run=>async(req,res)=>{
     console.error('[payments] request_failed');res.status(503).json({error:'payments_unavailable'});}
 };
 r.get('/',handle(req=>state(req.userId)));
+r.post('/renewal/cancel',handle(req=>cancelRenewal(req.userId)));
 r.post('/checkout',handle(req=>checkout(req.userId,req.body)));
 r.post('/orders/:invoice/resume',handle(req=>resume(req.userId,req.params.invoice)));
 // No success redirect or browser endpoint grants access.

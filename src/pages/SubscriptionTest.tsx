@@ -5,7 +5,7 @@ import { currentSession, subscribe } from '@/lib/auth-storage';
 import { ApiError } from '@/lib/api-client';
 import { formatBillingDate, formatMoney } from '@/lib/subscription-preview';
 import {
-  createPayment, isTestPaymentPage, loadPaymentState, resumePayment, submitTestPayment,
+  cancelAutoRenewal, createPayment, isTestPaymentPage, loadPaymentState, resumePayment, submitTestPayment,
   type PaymentOrder, type PaymentQuote, type PaymentState,
 } from '@/lib/payments';
 
@@ -30,7 +30,7 @@ export default function SubscriptionTest() {
   return <div className="min-h-screen px-4 py-6 sm:py-10"><div className="mx-auto max-w-lg space-y-6">
     <aside className="rounded-2xl border border-dashed border-[#601645]/40 bg-white p-4 text-sm space-y-2">
       <p className="font-bold text-[#601645]">Тестовая оплата · реальные деньги не списываются</p>
-      <p>Проверяем оформление заказа и сохранение согласия. После успешной тестовой оплаты доступ продлится только в тестовом аккаунте. Автопродление не включается.</p>
+      <p>Проверяем оформление заказа и сохранение согласия. После успешной тестовой оплаты доступ продлится только в тестовом аккаунте. Здесь можно проверить автопродление и его отключение. Все платежи остаются тестовыми.</p>
     </aside>
     <Link to="/" className="inline-block text-sm text-muted-foreground underline">← В приложение</Link>
     {!isTestPaymentPage() ? <p role="alert">Эта страница доступна только на тестовом сайте.</p>
@@ -83,7 +83,7 @@ function TestCheckout({ owner }: { owner: string }) {
     try {
       const result = 'token' in selected ? await createPayment(selected) : await resumePayment(selected);
       if (!current()) return;
-      submitTestPayment(result, { amount: selected.amount, ...('invoice' in selected ? { invoice: selected.invoice } : {}) });
+      submitTestPayment(result, { amount: selected.amount, recurring: selected.recurring === true, ...('invoice' in selected ? { invoice: selected.invoice } : {}) });
       if (result.status === 'paid') {
         const next = await loadPaymentState();
         if (current()) setState(next);
@@ -108,6 +108,30 @@ function TestCheckout({ owner }: { owner: string }) {
     }
   };
 
+  const cancel = async () => {
+    if (locked.current || !current()) return;
+    locked.current = true; setBusy(true); setError('');
+    try {
+      await cancelAutoRenewal();
+      if (!current()) return;
+      const next = await loadPaymentState();
+      if (current()) setState(next);
+    } catch {
+      if (current()) {
+        setError('Не удалось проверить отключение. Нажмите «Проверить статус».');
+        try {
+          const next = await loadPaymentState();
+          if (current()) {
+            setState(next);
+            if (next.renewal && !next.renewal.enabled && !next.renewal.pendingActivation) setError('');
+          }
+        } catch { /* A failed request must never claim cancellation succeeded. */ }
+      }
+    }
+    finally { locked.current = false; if (current()) setBusy(false); }
+  };
+
+  const renewal = state?.renewal;
   const pending = state?.orders.find(order => order.status === 'pending');
   const paid = state?.orders.filter(order => order.status === 'paid') ?? [];
   return <main className="space-y-5" aria-busy={busy}>
@@ -116,12 +140,26 @@ function TestCheckout({ owner }: { owner: string }) {
     <button type="button" disabled={busy} onClick={() => void refresh()} className="inga-btn-outline w-full disabled:opacity-50">Проверить статус</button>
     {state && !state.available && <p role="status">Тестовая оплата сейчас выключена.</p>}
     {state?.available && !state.emailVerified && <p role="status">Подтвердите электронную почту в профиле приложения, затем обновите эту страницу.</p>}
+    {renewal && <section className="inga-card !bg-white space-y-3">
+      <h2 className="font-bold">Автопродление: {renewal.enabled ? 'включено' : 'выключено'}</h2>
+      {renewal.pendingActivation && <p className="text-sm">Автопродление включится после подтверждения нового платежа. Его можно отключить уже сейчас.</p>}
+      {renewal.enabled && <>
+        <p className="text-sm">Следующее тестовое списание:<br />{formatBillingDate(renewal.chargeAt || renewal.dueAt!)} · {formatMoney(renewal.amount!)}</p>
+        <p className="text-sm">Напоминание придёт на электронную почту не позднее чем за 3 календарных дня.</p>
+        {!state?.recurringAvailable && <p className="text-sm">Автоматические списания сейчас приостановлены на сервере.</p>}
+      </>}
+      {renewal.paused && <p role="status" className="text-sm">Автопродление приостановлено. Продлите доступ вручную.</p>}
+      {(renewal.enabled || renewal.pendingActivation) && <>
+        <button type="button" disabled={busy} onClick={() => void cancel()} className="inga-btn-outline w-full disabled:opacity-50">Отключить автопродление</button>
+        <p className="text-sm">После отключения доступ сохранится до окончания оплаченного периода. Если платёж уже совершён, отключение остановит последующие списания.</p>
+      </>}
+    </section>}
     {pending && <section className="inga-card !bg-white space-y-3">
       <h1 className="text-xl font-bold">Незавершённый заказ</h1>
       <p>{pending.plan === 'month' ? 'Месяц' : 'Год'} · {formatMoney(pending.amount)}</p>
       <p className="break-all text-xs text-muted-foreground">№ {pending.invoice}</p>
       <p className="text-sm">Если вы уже оплатили заказ, нажмите «Проверить статус». Подтверждение может прийти не сразу.</p>
-      <button type="button" disabled={busy || !state.emailVerified} onClick={() => void pay(pending)} className="inga-btn-primary w-full disabled:opacity-50">Продолжить тестовую оплату</button>
+      {pending.canResume !== false ? <button type="button" disabled={busy || !state.available || !state.emailVerified} onClick={() => void pay(pending)} className="inga-btn-primary w-full disabled:opacity-50">Продолжить тестовую оплату</button> : <p className="text-sm">Ожидаем подтверждение автоматического платежа. Повторное списание не запускается. Если статус долго не меняется, напишите в поддержку.</p>}
     </section>}
     {!!paid.length && <section className="inga-card !bg-white space-y-4">
       <h2 className="font-bold">Подтверждённые тестовые платежи</h2>
@@ -130,7 +168,7 @@ function TestCheckout({ owner }: { owner: string }) {
         <p className="break-all text-xs text-muted-foreground">№ {order.invoice}</p>
         <p>Доступ по этому заказу продлён до {formatBillingDate(order.accessUntil!)}</p>
       </div>)}
-      <p className="text-sm">Автопродление: выключено</p>
+
     </section>}
     {!!state?.quotes.length && <SubscriptionCheckout quotes={state.quotes} busy={busy} testOnly onContinue={selected => {
       const quote = state.quotes.find(item => item.id === selected.id);

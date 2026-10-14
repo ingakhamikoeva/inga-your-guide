@@ -8,11 +8,12 @@ import {
 const period = (plan: PreviewPlan) => plan === 'month' ? 'месяц' : 'год';
 const heading = (plan: PreviewPlan) => plan === 'month' ? 'Месяц' : 'Год';
 export type CheckoutQuote = SubscriptionQuote & {
+  recurring?: boolean;
   consentText?: string; consentVersion?: string;
   offer?: { url: string; version: string; sha256: string };
   specialPriceTerms?: string;
 };
-const termsKey = (q: CheckoutQuote) => JSON.stringify([q.id, q.plan, q.amount, q.special, q.startsAt, q.renewsAt,
+const termsKey = (q: CheckoutQuote) => JSON.stringify([q.id, q.recurring, q.plan, q.amount, q.special, q.startsAt, q.renewsAt,
   q.consentText ?? AUTO_RENEW_CONSENT, q.consentVersion, q.offer, q.specialPriceTerms ?? SPECIAL_PRICE_TERMS]);
 
 export function SubscriptionCheckout({ quotes, onContinue, busy = false, testOnly = false }: {
@@ -82,13 +83,13 @@ export function SubscriptionCheckout({ quotes, onContinue, busy = false, testOnl
         </div>
         <div className="border-t border-border pt-4 text-sm space-y-3">
           <p className="flex gap-2"><CalendarDays className="h-4 w-4 shrink-0 mt-1" aria-hidden="true" /><span>Период доступа:<br />{formatBillingDate(quote.startsAt)} — {formatBillingDate(quote.renewsAt)}</span></p>
-          {!testOnly && <>
+          {(!testOnly || quote.recurring) && <>
             <p><strong>Следующее списание:</strong><br />{formatBillingDate(quote.renewsAt)} · {formatMoney(quote.amount)}</p>
             <p>Далее — {formatMoney(quote.amount)} каждый календарный {period(quote.plan)}, пока автопродление включено.</p>
           </>}
         </div>
       </div>
-      {!testOnly && <div className="flex items-start gap-3 text-sm leading-relaxed">
+      {(!testOnly || quote.recurring) && <div className="flex items-start gap-3 text-sm leading-relaxed">
         <Bell className="h-5 w-5 shrink-0 text-primary mt-0.5" aria-hidden="true" />
         <p>Напоминание придёт на электронную почту не позднее чем за 3 календарных дня. Отключить автопродление можно в личном кабинете.</p>
       </div>}

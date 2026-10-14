@@ -1,3 +1,4 @@
+import { startRenewalScheduler } from './payments/renewals.js';
 // Self-hosted API server. JWT (HS256) + direct Postgres. No Supabase.
 import express from "express";
 import cors from "cors";
@@ -84,4 +85,5 @@ app.post("/api/v1/start-trial", handleStartTrial);
 app.listen(Number(PORT), () => {
   console.log(`[boot] legche-api listening on :${PORT}`);
   startEmailDripScheduler();
+  startRenewalScheduler();
 });
