@@ -16,7 +16,8 @@ export interface PaymentOrder {
   plan: 'month' | 'year';
   amount: number;
   special: boolean;
-  status: 'pending' | 'paid';
+  status: 'pending' | 'paid' | 'failed';
+  verification?: 'waiting' | 'delayed' | null;
   recurring: boolean;
   canResume: boolean;
   createdAt: string;
@@ -101,7 +102,9 @@ export async function loadPaymentState(): Promise<PaymentState> {
   for (const o of state.orders) {
     if (!o || typeof o.recurring !== 'boolean' || typeof o.canResume !== 'boolean' || !invoice(o.invoice) || !plan(o.plan) || !amount(o.amount)
         || typeof o.special !== 'boolean' || !date(o.createdAt)
-        || !['pending', 'paid'].includes(o.status)
+        || !['pending', 'paid', 'failed'].includes(o.status)
+        || (o.verification != null && !['waiting', 'delayed'].includes(o.verification))
+        || (o.status === 'failed' && o.canResume)
         || (o.status === 'paid' && !date(o.accessUntil))) invalid();
   }
   const pending = state.orders.filter(o => o.status === 'pending');

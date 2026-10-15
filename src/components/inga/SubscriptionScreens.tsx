@@ -16,11 +16,12 @@ export type CheckoutQuote = SubscriptionQuote & {
 const termsKey = (q: CheckoutQuote) => JSON.stringify([q.id, q.recurring, q.plan, q.amount, q.special, q.startsAt, q.renewsAt,
   q.consentText ?? AUTO_RENEW_CONSENT, q.consentVersion, q.offer, q.specialPriceTerms ?? SPECIAL_PRICE_TERMS]);
 
-export function SubscriptionCheckout({ quotes, onContinue, busy = false, testOnly = false }: {
+export function SubscriptionCheckout({ quotes, onContinue, busy = false, testOnly = false, submitLabel }: {
   quotes: CheckoutQuote[];
   onContinue: (quote: CheckoutQuote) => void;
   busy?: boolean;
   testOnly?: boolean;
+  submitLabel?: string;
 }) {
   const [plan, setPlan] = useState<PreviewPlan>('month');
   const [accepted, setAccepted] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export function SubscriptionCheckout({ quotes, onContinue, busy = false, testOnl
       </div>
       <button type="button" disabled={!agreed || busy} onClick={() => { if (agreed && !busy) onContinue(quote); }}
         className="inga-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
-        Оплатить {formatMoney(quote.amount)}
+        {submitLabel ?? `Оплатить ${formatMoney(quote.amount)}`}
       </button>
       <p className="text-xs leading-relaxed text-muted-foreground flex items-start gap-2">
         <CreditCard className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />

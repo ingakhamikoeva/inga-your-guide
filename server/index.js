@@ -1,3 +1,4 @@
+import { startPaymentStatusScheduler } from './payments/reconciliation.js';
 import { startRenewalScheduler } from './payments/renewals.js';
 // Self-hosted API server. JWT (HS256) + direct Postgres. No Supabase.
 import express from "express";
@@ -86,4 +87,5 @@ app.listen(Number(PORT), () => {
   console.log(`[boot] legche-api listening on :${PORT}`);
   startEmailDripScheduler();
   startRenewalScheduler();
+  startPaymentStatusScheduler();
 });

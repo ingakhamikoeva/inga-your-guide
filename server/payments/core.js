@@ -10,8 +10,9 @@ export const SPECIAL_PRICE_TERMS = 'Спеццена сохраняется пр
 const { documents: { offer } } = JSON.parse(readFileSync(new URL('../registration-legal-documents.json', import.meta.url), 'utf8'));
 const offerProof = { url: offer.url, version: offer.version, sha256: offer.sha256 };
 import { PaymentError } from './errors.js';
-import { initialIntent, activateOrAdvance, renewalSummary } from './renewals.js';
+import { initialIntent, renewalSummary } from './renewals.js';
 export { PaymentError } from './errors.js';
+import { payable, settlePaidOrder } from './settlement.js';
 const fail = (code,status) => { throw new PaymentError(code,status); };
 const digest = text => crypto.createHash('sha256').update(text).digest('hex');
 async function transaction(run) {
@@ -52,13 +53,13 @@ function read(token,user,c) {
   if(q.user!==user||q.environment!=='test'||q.merchant!==c.merchant||q.consentVersion!==CONSENT_VERSION||q.offerHash!==offer.sha256)fail('quote_invalid',400);
   return q;
 }
-function publicOrder(o) { return { invoice:o.invoice,plan:o.plan,amount:o.amount,special:o.special,status:o.status,createdAt:o.created_at,accessUntil:o.access_until,recurring:o.kind==='initial',canResume:o.kind!=='renewal' }; }
+function publicOrder(o, now) { return { verification: o.status === 'pending' && o.kind === 'renewal' ? (new Date(now).getTime() - new Date(o.created_at).getTime() >= 86400000 ? 'delayed' : 'waiting') : null, invoice:o.invoice,plan:o.plan,amount:o.amount,special:o.special,status:o.status,createdAt:o.created_at,accessUntil:o.access_until,recurring:o.kind==='initial',canResume:o.kind!=='renewal' && o.status==='pending' }; }
 export async function state(user) {
   try {assertTestEnvironment();}catch{return {available:false,testOnly:true,quotes:[],orders:[]};}
   let c;try {c=config();}catch{c={enabled:false,recurringEnabled:false};}
   return transaction(async db=>{
     const a=await owner(db,user);
-    const orders=(await db.query(`SELECT * FROM public.payment_orders WHERE user_id=$1 AND status<>'void' ORDER BY created_at DESC LIMIT 10`,[user])).rows;
+    const orders=(await db.query(`SELECT * FROM public.payment_orders WHERE user_id=$1 AND status<>'void' ORDER BY (status='pending') DESC,created_at DESC LIMIT 10`,[user])).rows;
     const renewal=await renewalSummary(db,user);
     const quotes=[];
     if(c.enabled&&!renewal.enabled&&a.email_verified&&validEmail(a.email)&&!orders.some(o=>o.status==='pending')) {
@@ -72,7 +73,7 @@ export async function state(user) {
           reminderDays:3,token:sign(q)});
       }
     }
-    return {available:c.enabled,testOnly:true,autoRenew:renewal.enabled,renewal,recurringAvailable:c.enabled&&c.recurringEnabled,emailVerified:!!a.email_verified,quotes,orders:orders.map(publicOrder)};
+    return {available:c.enabled,testOnly:true,autoRenew:renewal.enabled,renewal,recurringAvailable:c.enabled&&c.recurringEnabled,emailVerified:!!a.email_verified,quotes,orders:orders.map(o=>publicOrder(o,a.server_now))};
   });
 }
 export async function checkout(user,input) {
@@ -112,6 +113,7 @@ export async function checkout(user,input) {
     return r.rows[0];
   });
   if(o.status==='paid')return {invoice:o.invoice,status:'paid'};
+  if(o.status!=='pending')fail('payment_not_found',404);
   return {invoice:o.invoice,status:o.status,recurring:o.kind==='initial',...form(o,c)};
 }
 // Recover an interrupted redirect without creating another invoice or consent.
@@ -121,13 +123,14 @@ export async function resume(user, invoice) {
   const o=await transaction(async db=>{
     const a=await owner(db,user);
     const order=(await db.query('SELECT * FROM public.payment_orders WHERE invoice=$1 AND user_id=$2 FOR UPDATE',[invoice,user])).rows[0];
-    if(!order||order.status==='void')fail('payment_not_found',404);
+    if(!order||!['pending','paid'].includes(order.status))fail('payment_not_found',404);
     if(order.kind==='renewal')fail('payment_processing');
     if(order.status==='paid')return order;
     if(!a.email_verified||!validEmail(a.email)||a.email!==order.email)fail('email_not_verified',403);
     return order;
   });
   if(o.status==='paid')return {invoice:o.invoice,status:'paid'};
+  if(o.status!=='pending')fail('payment_not_found',404);
   return {invoice:o.invoice,status:o.status,recurring:o.kind==='initial',...form(o,c)};
 }
 export async function result(body) {
@@ -135,18 +138,11 @@ export async function result(body) {
   if(typeof body?.InvId!=='string'||!/^1\d{17}$/.test(body.InvId))fail('invalid_payment',400);
   return transaction(async db=>{
     const order=(await db.query('SELECT * FROM public.payment_orders WHERE invoice=$1',[body.InvId])).rows[0];
-    if(!order||order.status==='void'||(order.kind==='renewal'&&!['claimed','accepted','unknown'].includes(order.dispatch_state))||!verify(body,order,c))fail('invalid_payment',400);
+    if(!order||!payable(order)||!verify(body,order,c))fail('invalid_payment',400);
     const a=await owner(db,order.user_id);
     const locked=(await db.query('SELECT * FROM public.payment_orders WHERE invoice=$1 FOR UPDATE',[order.invoice])).rows[0];
-    if(locked.status==='paid')return 'OK'+order.invoice;
-    await db.query('INSERT INTO public.subscriptions(user_id) VALUES($1) ON CONFLICT DO NOTHING',[order.user_id]);
-    const sub=(await db.query('SELECT *,clock_timestamp() AS server_now FROM public.subscriptions WHERE user_id=$1 FOR UPDATE',[order.user_id])).rows[0];
-    const end=addPeriod(periodStart({...a,...sub}),order.plan);
-    await db.query("UPDATE public.subscriptions SET paid_until=$2,subscription_status='active' WHERE user_id=$1",[order.user_id,end]);
-    await db.query("UPDATE public.payment_orders SET status='paid',paid_at=clock_timestamp(),access_until=$2 WHERE invoice=$1",[order.invoice,end]);
-    await activateOrAdvance(db,order,end);
-    if(order.special)await db.query('UPDATE public.payment_special_seats SET granted_at=COALESCE(granted_at,clock_timestamp()) WHERE user_id=$1',[order.user_id]);
-    await db.query("INSERT INTO public.payment_events(invoice,type,details) VALUES($1,'paid',$2)",[order.invoice,{amount:order.amount,until:end.toISOString(),environment:'test'}]);
+    if(!payable(locked))fail('invalid_payment',400);
+    await settlePaidOrder(db,locked,'ResultURL');
     return 'OK'+order.invoice;
   });
 }
