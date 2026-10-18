@@ -64,6 +64,12 @@ r.put("/:date", async (req, res) => {
     }
   }
   if (!Object.keys(row).length) return res.json({ ok: true });
+  if (row.weight_kg !== undefined) {
+    if (typeof body.weight !== 'number' || !Number.isFinite(body.weight) || body.weight <= 0 || body.weight > 999.9) {
+      return res.status(400).json({ error: 'invalid_weight' });
+    }
+    row.weight_recorded_at = new Date();
+  }
   try {
     await upsert(
       "public.daily_checkins",

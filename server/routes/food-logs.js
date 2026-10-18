@@ -21,16 +21,19 @@ r.get("/", async (req, res) => {
   try {
     const userId = await resolveUserId(req);
     const { date } = req.query;
+    const timezone = typeof req.query.timezone === 'string' ? req.query.timezone : 'UTC';
+    try { new Intl.DateTimeFormat('en', { timeZone: timezone }).format(); }
+    catch { return res.status(400).json({ error: 'invalid_timezone' }); }
     let rows;
     if (date && /^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
       const result = await pool.query(
         `SELECT log_id, raw_text, meal_tag, datetime, meta
            FROM public.food_logs
           WHERE user_id = $1
-            AND datetime >= ($2::date)::timestamptz
-            AND datetime <  (($2::date) + INTERVAL '1 day')::timestamptz
+            AND datetime >= ($2::date::timestamp AT TIME ZONE $3)
+            AND datetime < (($2::date + INTERVAL '1 day') AT TIME ZONE $3)
           ORDER BY datetime ASC`,
-        [userId, date]
+        [userId, date, timezone]
       );
       rows = result.rows;
     } else {
