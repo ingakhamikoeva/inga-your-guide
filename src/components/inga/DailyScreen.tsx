@@ -3,9 +3,9 @@ import { Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
-import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
+import { localDay } from '@/lib/achievement-client';
+import { toast } from 'sonner';
 import { LIGHT_RECIPES, timesLighter, LightRecipeEntry } from '@/lib/light-version';
-import { Medal } from '@/lib/types';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
 import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadLightSavings, loadProgramProgress, logUserEvent, type MealTag, type LightSavings, type ProgramProgress } from '@/lib/db';
@@ -48,8 +48,8 @@ const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
-  const { setStep, addDailyReport, addWeightEntry, addAwardedMedal, profile, calculations, weeklyData, dailyReports, medals, updateProfile } = useApp();
-  const todayInit = new Date().toISOString().slice(0, 10);
+  const { setStep, addDailyReport, addWeightEntry, profile, calculations, weeklyData, dailyReports, updateProfile } = useApp();
+  const todayInit = localDay();
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
       const savedDate = localStorage.getItem('dailyActiveTabDate');
@@ -102,7 +102,7 @@ export function DailyScreen() {
   });
   const [waterCount, setWaterCount] = useState<number>(() => {
     try {
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = localDay();
       const savedDate = localStorage.getItem('waterDate');
       const savedCount = localStorage.getItem('waterCount');
       if (savedDate === todayStr && savedCount) {
@@ -139,7 +139,6 @@ export function DailyScreen() {
 
   const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
-  const [awardedMedal, setAwardedMedal] = useState<Medal | null>(null);
   const [showGoalReached, setShowGoalReached] = useState(false);
   const [showFixationDone, setShowFixationDone] = useState(false);
   const [showPlanning, setShowPlanning] = useState(false);
@@ -151,8 +150,8 @@ export function DailyScreen() {
   const [showMorningCheckin, setShowMorningCheckin] = useState(false);
   const analysis = analyzeDailyNutrition(meals, profile.gender);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const today = localDay();
+  const tomorrow = localDay(new Date(Date.now() + 86400000));
 
   // Persist active tab (and current date) so reloading restores it, but reset on a new day
   useEffect(() => {
@@ -208,7 +207,7 @@ export function DailyScreen() {
   useEffect(() => {
     try {
       localStorage.setItem('waterCount', String(waterCount));
-      localStorage.setItem('waterDate', new Date().toISOString().slice(0, 10));
+      localStorage.setItem('waterDate', localDay());
     } catch {}
   }, [waterCount]);
 
@@ -328,13 +327,14 @@ export function DailyScreen() {
 
 
 
-  const handleSaveMorning = () => {
+  const handleSaveMorning = async () => {
     if (weight) {
       const w = parseFloat(weight);
-      addWeightEntry(today, w);
+      try { await addWeightEntry(localDay(), w); }
+      catch { toast.error('Не удалось сохранить вес. Повторите попытку.'); return; }
       // Build history excluding today's just-added entry to avoid self-comparison
       const history = weeklyData.filter(e => e.date !== today);
-      const yesterdayDateStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const yesterdayDateStr = localDay(new Date(Date.now() - 86400000));
       const yesterdayReport = dailyReports.find(r => r.date === yesterdayDateStr);
       const result = analyzeMorningWeight(
         today,
@@ -622,17 +622,6 @@ export function DailyScreen() {
 
     };
     addDailyReport(report);
-    const summary = buildGamificationSummary(
-      today,
-      weight ? [...weeklyData.filter(w => w.date !== today), { date: today, weight: parseFloat(weight) }] : weeklyData,
-      [...dailyReports.filter(r => r.date !== today), report],
-      medals,
-    );
-    if (summary.nextMedal) {
-      addAwardedMedal(summary.nextMedal);
-      setAwardedMedal(summary.nextMedal);
-    }
-
     setSaved(true);
   };
 
@@ -642,7 +631,7 @@ export function DailyScreen() {
     setPlanText('');
     setPlanSavedMessage(false);
     // Planning does not advance the calendar date or erase today's diary.
-    if (new Date().toISOString().slice(0, 10) === today) {
+    if (localDay() === today) {
       setTab('meals');
       return;
     }
@@ -660,7 +649,6 @@ export function DailyScreen() {
     setSweetPoint('');
     setWaterCount(0);
     setMorningAnalysis(null);
-    setAwardedMedal(null);
     try {
       localStorage.removeItem('dailyActiveTab');
       localStorage.removeItem('dailyActiveTabDate');
@@ -794,19 +782,6 @@ export function DailyScreen() {
           <div className="inga-card">
             <p className="text-sm">{ingaMessage}</p>
           </div>
-
-          {awardedMedal && (
-            <div className="inga-card border-primary/40 bg-primary/5">
-              <p className="text-sm font-semibold mb-1">Новая медаль</p>
-              <div className="flex items-start gap-3">
-                <span className={`text-3xl ${getMedalStyle(awardedMedal.type).tone}`}>{getMedalStyle(awardedMedal.type).icon}</span>
-                <div>
-                  <p className="font-semibold">{awardedMedal.title}</p>
-                  <p className="text-sm text-muted-foreground">{awardedMedal.description}</p>
-                </div>
-              </div>
-            </div>
-          )}
 
           <button
             onClick={() => {

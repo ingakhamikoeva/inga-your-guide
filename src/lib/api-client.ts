@@ -119,5 +119,11 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiOptions = {})
     }
     throw new ApiError(res.status, json);
   }
+  const currentOwner = getStoredUser()?.id || getStoredUser()?.user_id;
+  if (useAuth && requestOwner && currentOwner === requestOwner
+    && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(opts.method || 'GET')
+    && /^\/(profile|checkins|food-logs)(\/|$)/.test(path)) {
+    window.dispatchEvent(new CustomEvent('legche:diary-saved', { detail: { userId: requestOwner } }));
+  }
   return json as T;
 }

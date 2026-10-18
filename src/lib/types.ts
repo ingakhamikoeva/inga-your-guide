@@ -51,6 +51,7 @@ export interface Calculations {
 }
 
 export interface DailyReport {
+  stoolYesterday?: boolean | null;
   date: string;
   weight?: number;
   sleepHours?: number;
@@ -64,9 +65,10 @@ export interface DailyReport {
 }
 
 
-export type MedalType = 'movement' | 'stable' | 'strong' | 'consistency';
+export type MedalType = 'movement' | 'stable' | 'strong' | 'consistency' | 'recipe' | 'goal' | 'maintenance';
 
 export interface Medal {
+  icon?: string;
   id: string;
   type: MedalType;
   title: string;

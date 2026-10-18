@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles } from 'lucide-react';
 import { LightVersionScreen } from './LightVersionScreen';
 import { ProgressPhotosSection } from './ProgressPhotosSection';
+import { localDay } from '@/lib/achievement-client';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
@@ -136,7 +137,7 @@ const paceLabels: Record<string, string> = {
 };
 
 export function MenuScreen() {
-  const { setStep, weeklyData, profile, dailyReports, medals, updateProfile } = useApp();
+  const { setStep, weeklyData, profile, dailyReports, medals, achievementStreak, uniqueRecipes, updateProfile } = useApp();
   const [section, setSection] = useState<MenuSection>("main");
   const subscription = useSubscription();
   const [showDiaryHistory, setShowDiaryHistory] = useState(false);
@@ -214,8 +215,10 @@ export function MenuScreen() {
     return { ...t, title: ov.title || t.title, content: ov.content || t.content };
   });
 
-  const today = new Date().toISOString().slice(0, 10);
-  const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals);
+  const today = localDay();
+  const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals, achievementStreak);
+  const nextStreak = [7, 14, 21, 30, 60, 90].find(n => n > gamification.streakDays) ?? 90;
+  const nextSwap = uniqueRecipes !== null ? [1, 5, 10].find(n => n > uniqueRecipes) : undefined;
   const formatDelta = (value: number | null) => value === null ? 'пока мало данных' : value > 0 ? `+${value} кг` : `${value} кг`;
   const stage = detectStage(profile.weight, profile.goalWeight, profile.currentStage);
 
@@ -1912,17 +1915,17 @@ export function MenuScreen() {
               </div>
             )}
 
-            <div className="inga-card space-y-2">
+            {stage !== 'maintenance' && <div className="inga-card space-y-2">
               <div className="font-semibold">Серия</div>
               <div className="flex items-end gap-2">
-                <span className="text-3xl font-bold text-primary">{gamification.streakDays}</span>
+                <span className="text-3xl font-bold text-primary">{achievementStreak === null ? '—' : gamification.streakDays}</span>
                 <span className="text-sm text-muted-foreground pb-1">дней в ритме</span>
               </div>
               <div className="inga-progress">
-                <div className="inga-progress-bar" style={{ width: `${Math.min(100, (gamification.streakDays / 14) * 100)}%` }} />
+                <div className="inga-progress-bar" style={{ width: `${Math.min(100, (gamification.streakDays / nextStreak) * 100)}%` }} />
               </div>
               <p className="text-sm text-muted-foreground">{gamification.streakMessage}</p>
-            </div>
+            </div>}
 
             {goalReached && stage === 'loss' && (
               <div className="inga-card border-primary/40 bg-primary/5">
@@ -1941,11 +1944,15 @@ export function MenuScreen() {
 
             <div className="inga-card">
               <div className="font-semibold mb-3">Медали</div>
+              {nextSwap && <div className="mb-4 space-y-2">
+                <p className="text-sm">{nextSwap === 1 ? 'Первая замена' : nextSwap === 5 ? 'Пять замен' : 'В десяточку!'} · {uniqueRecipes}/{nextSwap}</p>
+                <div className="inga-progress"><div className="inga-progress-bar" style={{ width: `${(uniqueRecipes ?? 0) / nextSwap * 100}%` }} /></div>
+              </div>}
               {medals.length > 0 ? (
                 <div className="space-y-3">
-                  {[...medals].reverse().slice(0, 6).map(medal => (
+                  {[...medals].reverse().map(medal => (
                     <div key={medal.id} className="flex items-start gap-3 rounded-xl bg-background/60 p-3">
-                      <span className={`text-2xl ${getMedalStyle(medal.type).tone}`}>{getMedalStyle(medal.type).icon}</span>
+                      <span className={`text-2xl ${getMedalStyle(medal.type).tone}`}>{medal.icon || getMedalStyle(medal.type).icon}</span>
                       <div>
                         <p className="text-sm font-semibold">{medal.title}</p>
                         <p className="text-xs text-muted-foreground">{medal.description}</p>
@@ -1954,7 +1961,7 @@ export function MenuScreen() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Медали появятся здесь, когда накопится недельный ритм.</p>
+                <p className="text-sm text-muted-foreground">Здесь появятся ваши награды за лёгкие замены, ведение дневника и достижения в весе.</p>
               )}
             </div>
           </div>

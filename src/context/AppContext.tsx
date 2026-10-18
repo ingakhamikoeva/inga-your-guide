@@ -1,3 +1,4 @@
+import { useAchievements } from '@/lib/achievement-client';
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport, Medal } from '@/lib/types';
 import { calculateAll, roundTo50 } from '@/lib/calculations';
@@ -33,8 +34,9 @@ interface AppContextValue extends AppState {
   updateProfile: (data: Partial<UserProfile>) => void;
   runCalculations: () => Calculations;
   addDailyReport: (report: DailyReport) => void;
-  addWeightEntry: (date: string, weight: number) => void;
-  addAwardedMedal: (medal: Medal) => void;
+  addWeightEntry: (date: string, weight: number) => Promise<void>;
+  achievementStreak: number | null;
+  uniqueRecipes: number | null;
   syncToDb: () => Promise<void>;
   hydrateFromDb: () => Promise<AppStep>;
   resetLocalState: () => void;
@@ -71,7 +73,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [calculations, setCalculations] = useState<Calculations | null>(saved.calculations || null);
   const [dailyReports, setDailyReports] = useState<DailyReport[]>(saved.dailyReports || []);
   const [weeklyData, setWeeklyData] = useState<{ date: string; weight: number }[]>(saved.weeklyData || []);
-  const [medals, setMedals] = useState<Medal[]>(saved.medals || []);
+  const { medals, streakDays: achievementStreak, uniqueRecipes, reset: resetAchievements } = useAchievements();
 
   const state: AppState = { step, profile, calculations, dailyReports, weeklyData, medals };
 
@@ -111,9 +113,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addDailyReport = useCallback((report: DailyReport) => {
     setDailyReports(prev => [...prev, report]);
 
-    // Sync to DB
-    if (report.weight || report.sleepHours || report.stepsYesterday) {
-      saveDailyCheckin(report.date, report.weight, report.sleepHours, report.stepsYesterday, report.stoolYesterday).catch(() => {});
+    // Weight is saved explicitly in the morning, never replayed by the evening report.
+    if (report.sleepHours != null || report.stepsYesterday != null || report.stoolYesterday != null) {
+      saveDailyCheckin(report.date, undefined, report.sleepHours, report.stepsYesterday, report.stoolYesterday).catch(() => {});
     }
     // Meals are already persisted by DailyScreen.addMealEntry.
     // Saving a report must not create or overwrite food logs.
@@ -123,13 +125,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   }, []);
 
-  const addWeightEntry = useCallback((date: string, weight: number) => {
-    setWeeklyData(prev => [...prev, { date, weight }]);
-    saveDailyCheckin(date, weight).catch(() => {});
-  }, []);
-
-  const addAwardedMedal = useCallback((medal: Medal) => {
-    setMedals(prev => prev.some(m => m.weekKey === medal.weekKey) ? prev : [...prev, medal]);
+  const addWeightEntry = useCallback(async (date: string, weight: number) => {
+    await saveDailyCheckin(date, weight);
+    setWeeklyData(prev => [...prev.filter(entry => entry.date !== date), { date, weight }]);
   }, []);
 
   // Full sync to DB (called manually or on key events)
@@ -159,7 +157,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCalculations(null);
     setDailyReports([]);
     setWeeklyData([]);
-    setMedals([]);
+    resetAchievements();
   }, []);
 
   const hydrateFromDb = useCallback(async (): Promise<AppStep> => {
@@ -246,7 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         calculations, runCalculations,
         dailyReports, addDailyReport,
         weeklyData, addWeightEntry,
-        medals, addAwardedMedal,
+        medals, achievementStreak, uniqueRecipes,
         syncToDb,
         hydrateFromDb,
         resetLocalState,

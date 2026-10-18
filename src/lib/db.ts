@@ -5,6 +5,7 @@ type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 import type { UserProfile, Calculations, FoodProfile } from './types';
 import { apiFetch } from './api-client';
 import { currentSession } from './auth-storage';
+import { deviceTimezone } from './achievement-client';
 import { beginTrial } from './subscription';
 
 export async function isAuthenticated(): Promise<boolean> {
@@ -198,7 +199,7 @@ export async function saveFoodLog(
 
 export async function loadFoodLogs(date?: string): Promise<FoodLogRow[]> {
   try {
-    const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+    const qs = date ? `?date=${encodeURIComponent(date)}&timezone=${encodeURIComponent(deviceTimezone())}` : '';
     return await apiFetch<FoodLogRow[]>(`/food-logs${qs}`);
   } catch (e) {
     console.error('loadFoodLogs failed', e);
