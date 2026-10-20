@@ -88,7 +88,7 @@ export function GoalReachedModal({ sex, onContinue }: Props) {
           className="inline-flex items-center justify-center rounded-full p-3 border border-border">
           {sound ? <Volume2 size={20} /> : <VolumeX size={20} />}
         </button>
-        <button onClick={onContinue} className="inga-btn-primary w-full">Перейти к фиксации →</button>
+        <button onClick={onContinue} className="inga-btn-primary w-full">Перейти к фиксации веса →</button>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 import { useSubscription } from '@/context/SubscriptionContext';
 import { AccessScreen } from './AccessScreen';
+import { FixationLesson } from './FixationLesson';
+import { fixationEquilibrium } from '@/lib/fixation';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 import { auth } from '@/lib/auth';
 import React, { useEffect, useState, useRef } from 'react';
@@ -292,6 +294,13 @@ export function MenuScreen() {
 
 
 
+
+  if (section === 'how-to' && nutrientSection === 'Фиксация') {
+    return <FixationLesson
+      equilibriumCalories={fixationEquilibrium(profile, weeklyData, today)}
+      onBack={() => goBack(() => setNutrientSection(null))}
+    />;
+  }
 
   if (section === 'how-to' && nutrientSection === 'Тарелка') {
     return (
@@ -1236,7 +1245,16 @@ export function MenuScreen() {
                 {((topic as any).isFixation) && (
                   <div className="border-t border-border my-1" />
                 )}
-              {((topic as any).isMethodLesson || (topic as any).isVolumeLesson || (topic as any).isSweetLesson || (topic as any).isEveningLesson || (topic as any).isPlanningLesson) ? (
+              {(topic as any).isFixation ? (
+                <button type="button" onClick={() => setNutrientSection('Фиксация')}
+                  className="inga-card w-full text-left flex items-center justify-between gap-3">
+                  <span>
+                    <span className="font-semibold">{topic.title}</span>
+                    <span className="block text-xs text-muted-foreground mt-0.5">Постепенно выйти из дефицита калорий 🎯</span>
+                  </span>
+                  <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+                </button>
+              ) : ((topic as any).isMethodLesson || (topic as any).isVolumeLesson || (topic as any).isSweetLesson || (topic as any).isEveningLesson || (topic as any).isPlanningLesson) ? (
                 <div
                   className="inga-card cursor-pointer flex items-center justify-between"
                   onClick={() => {
@@ -1919,7 +1937,7 @@ export function MenuScreen() {
               <div className="font-semibold">Серия</div>
               <div className="flex items-end gap-2">
                 <span className="text-3xl font-bold text-primary">{achievementStreak === null ? '—' : gamification.streakDays}</span>
-                <span className="text-sm text-muted-foreground pb-1">дней в ритме</span>
+                <span className="text-sm text-muted-foreground pb-1">{({ one: 'день', few: 'дня' } as Record<string, string>)[new Intl.PluralRules('ru').select(gamification.streakDays)] ?? 'дней'} в ритме</span>
               </div>
               <div className="inga-progress">
                 <div className="inga-progress-bar" style={{ width: `${Math.min(100, (gamification.streakDays / nextStreak) * 100)}%` }} />

@@ -4,6 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 import { localDay } from '@/lib/achievement-client';
+import { fixationEquilibrium } from '@/lib/fixation';
 import { toast } from 'sonner';
 import { LIGHT_RECIPES, timesLighter, LightRecipeEntry } from '@/lib/light-version';
 import { withName, hasName } from '@/lib/user-name';
@@ -308,7 +309,7 @@ export function DailyScreen() {
     } : prev);
   };
 
-  const handleProgramJump = (link: ProgramLink) => {
+  const handleProgramJump = (link: Pick<ProgramLink, 'jump'>) => {
     // returnTo: универсальный «откуда пришли» — «Назад» в меню/на карточке
     // вернёт сюда, на «Утро», независимо от того, какой это день программы.
     try { localStorage.setItem('inga-menu-jump', JSON.stringify({ ...link.jump, returnTo: 'daily' })); } catch {}
@@ -384,7 +385,7 @@ export function DailyScreen() {
 
   const handleEnterFixation = () => {
     setShowGoalReached(false);
-    const target = calculations?.totalCalories;
+    const target = fixationEquilibrium(profile, weeklyData, today) ?? undefined;
     const startCalories = calculations?.corridorMin ?? (target ? target - 400 : undefined);
     updateProfile({
       currentStage: 'fixation',
@@ -395,6 +396,7 @@ export function DailyScreen() {
       equilibriumCalories: target ?? undefined,
       lastCalorieIncreaseAt: today,
     });
+    handleProgramJump({ jump: { section: 'how-to', nutrientSection: 'Фиксация' } });
   };
 
   const handleEnterMaintenance = () => {
