@@ -1,14 +1,14 @@
 import { useSubscription } from '@/context/SubscriptionContext';
 import { AccessScreen } from './AccessScreen';
 import { FixationLesson } from './FixationLesson';
-import { fixationEquilibrium } from '@/lib/fixation';
+import { fixationEquilibrium, canOpenFixationLesson } from '@/lib/fixation';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 import { auth } from '@/lib/auth';
 import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { UserProfile, AppStep } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles } from 'lucide-react';
+import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles, LockKeyhole } from 'lucide-react';
 import { LightVersionScreen } from './LightVersionScreen';
 import { ProgressPhotosSection } from './ProgressPhotosSection';
 import { localDay } from '@/lib/achievement-client';
@@ -218,6 +218,7 @@ export function MenuScreen() {
   });
 
   const today = localDay();
+  const fixationLessonAvailable = canOpenFixationLesson(profile, weeklyData, today);
   const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals, achievementStreak);
   const nextStreak = [7, 14, 21, 30, 60, 90].find(n => n > gamification.streakDays) ?? 90;
   const nextSwap = uniqueRecipes !== null ? [1, 5, 10].find(n => n > uniqueRecipes) : undefined;
@@ -295,7 +296,7 @@ export function MenuScreen() {
 
 
 
-  if (section === 'how-to' && nutrientSection === 'Фиксация') {
+  if (section === 'how-to' && nutrientSection === 'Фиксация' && fixationLessonAvailable) {
     return <FixationLesson
       equilibriumCalories={fixationEquilibrium(profile, weeklyData, today)}
       onBack={() => goBack(() => setNutrientSection(null))}
@@ -1246,13 +1247,16 @@ export function MenuScreen() {
                   <div className="border-t border-border my-1" />
                 )}
               {(topic as any).isFixation ? (
-                <button type="button" onClick={() => setNutrientSection('Фиксация')}
-                  className="inga-card w-full text-left flex items-center justify-between gap-3">
+                <button type="button" disabled={!fixationLessonAvailable}
+                  onClick={() => { if (fixationLessonAvailable) setNutrientSection('Фиксация'); }}
+                  className="inga-card w-full text-left flex items-center justify-between gap-3 disabled:opacity-60 disabled:cursor-not-allowed">
                   <span>
                     <span className="font-semibold">{topic.title}</span>
                     <span className="block text-xs text-muted-foreground mt-0.5">Постепенно выйти из дефицита калорий 🎯</span>
                   </span>
-                  <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+                  {fixationLessonAvailable
+                    ? <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+                    : <LockKeyhole size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />}
                 </button>
               ) : ((topic as any).isMethodLesson || (topic as any).isVolumeLesson || (topic as any).isSweetLesson || (topic as any).isEveningLesson || (topic as any).isPlanningLesson) ? (
                 <div
