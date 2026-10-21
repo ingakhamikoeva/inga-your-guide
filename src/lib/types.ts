@@ -1,4 +1,20 @@
+export interface FixationProgress {
+  version: 2;
+  revision: number;
+  phase: 'fixation' | 'complete';
+  goalWeight: number;
+  equilibriumCalories: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  timezone: string;
+}
+export interface FixationAction {
+  action: 'enter' | 'complete';
+  confirmed?: boolean;
+}
+
 export interface UserProfile {
+  fixationProgress?: FixationProgress | null;
   name: string;
   gender: 'female' | 'male';
   age: number;

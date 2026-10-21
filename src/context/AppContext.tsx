@@ -1,8 +1,10 @@
+import { currentSession } from '@/lib/auth-storage';
 import { useAchievements } from '@/lib/achievement-client';
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { AppStep, UserProfile, Calculations, DailyReport, Medal } from '@/lib/types';
+import { AppStep, UserProfile, Calculations, DailyReport, Medal, FixationAction } from '@/lib/types';
 import { calculateAll, roundTo50 } from '@/lib/calculations';
 import {
+  saveFixationAction,
   isAuthenticated,
   saveUserProfile,
   saveUserPlan,
@@ -33,6 +35,7 @@ interface AppContextValue extends AppState {
   setStep: (step: AppStep) => void;
   updateProfile: (data: Partial<UserProfile>) => void;
   runCalculations: () => Calculations;
+  performFixationAction: (action: FixationAction) => Promise<void>;
   addDailyReport: (report: DailyReport) => void;
   addWeightEntry: (date: string, weight: number) => Promise<void>;
   achievementStreak: number | null;
@@ -101,6 +104,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Send only the edit: unrelated updates must not resubmit a legacy goal.
     saveUserProfile(data).catch(() => {});
   }, []);
+
+  const performFixationAction = useCallback(async (action: FixationAction) => {
+    const userId = currentSession()?.user.id;
+    if (!userId) throw new Error('account_changed');
+    try {
+      const result = await saveFixationAction(action, profile.fixationProgress?.revision ?? 0);
+      if (currentSession()?.user.id !== userId) throw new Error('account_changed');
+      // State is updated only after the server commits. Never send another profile PUT.
+      setProfile(prev => ({ ...prev, ...result }));
+    } catch (error) {
+      if (error instanceof Error && error.message === 'stale_fixation') {
+        const fresh = await loadUserProfile();
+        if (fresh && currentSession()?.user.id === userId) {
+          const keys = ['fixationProgress', 'currentStage', 'goalReachedAt', 'fixationStartedAt',
+            'maintenanceStartedAt', 'equilibriumCalories', 'currentFixationCalories',
+            'fixationWeekNumber', 'lastCalorieIncreaseAt', 'goalWeight'] as const;
+          setProfile(prev => ({ ...prev, ...Object.fromEntries(keys.map(key => [key, fresh[key]])) }));
+        }
+      }
+      throw error;
+    }
+  }, [profile.fixationProgress?.revision]);
 
   const runCalculations = useCallback(() => {
     const calc = calculateAll(profile);
@@ -240,7 +265,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         step, setStep,
-        profile, updateProfile,
+        profile, updateProfile, performFixationAction,
         calculations, runCalculations,
         dailyReports, addDailyReport,
         weeklyData, addWeightEntry,

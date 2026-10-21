@@ -2,7 +2,7 @@
 // All endpoints take user_id from the JWT on the server side.
 
 type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
-import type { UserProfile, Calculations, FoodProfile } from './types';
+import type { UserProfile, Calculations, FoodProfile, FixationAction } from './types';
 import { apiFetch } from './api-client';
 import { currentSession } from './auth-storage';
 import { deviceTimezone } from './achievement-client';
@@ -21,9 +21,6 @@ export async function saveUserProfile(profile: Partial<UserProfile>) {
     'name','gender','age','height','weight','goalWeight','waist','hips',
     'stepsPerDay','weightGainReasons','emotionalTrigger',
     'motivation','kgToLose',
-    'currentStage','goalReachedAt','fixationStartedAt','maintenanceStartedAt',
-    'equilibriumCalories','currentFixationCalories','fixationWeekNumber',
-    'lastCalorieIncreaseAt',
   ];
   for (const k of passthrough) {
     if (profile[k] !== undefined) body[k as string] = profile[k];
@@ -38,6 +35,12 @@ export async function loadUserProfile(): Promise<Partial<UserProfile> | null> {
     console.error('loadUserProfile failed', e);
     return null;
   }
+}
+
+export async function saveFixationAction(action: FixationAction, revision: number): Promise<Partial<UserProfile>> {
+  return apiFetch('/profile/fixation', {
+    method: 'POST', body: { ...action, revision, timezone: deviceTimezone() },
+  });
 }
 
 // ============ USER PLAN ============

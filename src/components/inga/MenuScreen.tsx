@@ -1,6 +1,7 @@
 import { useSubscription } from '@/context/SubscriptionContext';
 import { AccessScreen } from './AccessScreen';
 import { FixationLesson } from './FixationLesson';
+import { MaintenanceLesson } from './MaintenanceLesson';
 import { fixationEquilibrium, canOpenFixationLesson } from '@/lib/fixation';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 import { auth } from '@/lib/auth';
@@ -218,6 +219,7 @@ export function MenuScreen() {
   });
 
   const today = localDay();
+  const maintenanceLessonAvailable = profile.currentStage === 'maintenance';
   const fixationLessonAvailable = canOpenFixationLesson(profile, weeklyData, today);
   const gamification = buildGamificationSummary(today, weeklyData, dailyReports, medals, achievementStreak);
   const nextStreak = [7, 14, 21, 30, 60, 90].find(n => n > gamification.streakDays) ?? 90;
@@ -298,9 +300,14 @@ export function MenuScreen() {
 
   if (section === 'how-to' && nutrientSection === 'Фиксация' && fixationLessonAvailable) {
     return <FixationLesson
-      equilibriumCalories={fixationEquilibrium(profile, weeklyData, today)}
+      equilibriumCalories={profile.fixationProgress?.equilibriumCalories ?? fixationEquilibrium(profile, weeklyData, today)}
       onBack={() => goBack(() => setNutrientSection(null))}
     />;
+  }
+
+  if (section === 'how-to' && nutrientSection === 'Сохранение' && maintenanceLessonAvailable) {
+    return <MaintenanceLesson goalWeight={profile.goalWeight}
+      onBack={() => goBack(() => setNutrientSection(null))} />;
   }
 
   if (section === 'how-to' && nutrientSection === 'Тарелка') {
@@ -1258,6 +1265,18 @@ export function MenuScreen() {
                     ? <ChevronRight size={18} className="text-muted-foreground shrink-0" />
                     : <LockKeyhole size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />}
                 </button>
+              ) : (topic as any).isMaintenance ? (
+                <button type="button" disabled={!maintenanceLessonAvailable}
+                  onClick={() => { if (maintenanceLessonAvailable) setNutrientSection('Сохранение'); }}
+                  className="inga-card w-full text-left flex items-center justify-between gap-3 disabled:opacity-60 disabled:cursor-not-allowed">
+                  <span>
+                    <span className="font-semibold">{topic.title}</span>
+                    <span className="block text-xs text-muted-foreground mt-0.5">{maintenanceLessonAvailable ? 'Сохранять результат в обычной жизни' : 'Откроется после завершения фиксации веса'}</span>
+                  </span>
+                  {maintenanceLessonAvailable
+                    ? <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+                    : <LockKeyhole size={18} className="text-muted-foreground shrink-0" aria-hidden="true" />}
+                </button>
               ) : ((topic as any).isMethodLesson || (topic as any).isVolumeLesson || (topic as any).isSweetLesson || (topic as any).isEveningLesson || (topic as any).isPlanningLesson) ? (
                 <div
                   className="inga-card cursor-pointer flex items-center justify-between"
@@ -1925,17 +1944,6 @@ export function MenuScreen() {
                 </div>
               );
             })()}
-
-            {stage === 'fixation' && profile.currentFixationCalories && (
-              <div className="inga-card">
-                <div className="font-semibold mb-1">Фиксация: калорийность</div>
-                <p className="text-sm text-muted-foreground">
-                  Сейчас ваш ориентир — <span className="font-semibold text-foreground">{profile.currentFixationCalories} ккал в день</span>
-                  {profile.fixationWeekNumber ? ` (неделя ${profile.fixationWeekNumber})` : ''}.
-                  {' '}Каждую неделю аккуратно прибавляем ~200 ккал — за счёт половинки авокадо, целого яйца, 40–50 г сыра, орехов в порции или ложки масла в салат.
-                </p>
-              </div>
-            )}
 
             {stage !== 'maintenance' && <div className="inga-card space-y-2">
               <div className="font-semibold">Серия</div>

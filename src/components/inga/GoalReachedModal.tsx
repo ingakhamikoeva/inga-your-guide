@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { UserSex } from '@/lib/gender-text';
-interface Props { sex: UserSex; onContinue: () => void }
+interface Props { sex: UserSex; onContinue: () => void; busy?: boolean }
 const SOUND_KEY = 'legche-celebration-sound';
 
-export function GoalReachedModal({ sex, onContinue }: Props) {
+export function GoalReachedModal({ sex, onContinue, busy = false }: Props) {
   const [show, setShow] = useState(true);
   const [sound, setSound] = useState(() => {
     try { return localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; }
@@ -88,7 +88,7 @@ export function GoalReachedModal({ sex, onContinue }: Props) {
           className="inline-flex items-center justify-center rounded-full p-3 border border-border">
           {sound ? <Volume2 size={20} /> : <VolumeX size={20} />}
         </button>
-        <button onClick={onContinue} className="inga-btn-primary w-full">Перейти к фиксации веса →</button>
+        <button onClick={onContinue} disabled={busy} aria-busy={busy} className="inga-btn-primary w-full disabled:opacity-60">Перейти к фиксации веса →</button>
       </div>
     </div>
   );

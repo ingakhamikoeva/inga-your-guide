@@ -4,7 +4,6 @@ import { useApp } from '@/context/AppContext';
 import { analyzeDailyNutrition } from '@/lib/daily-analysis';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 import { localDay } from '@/lib/achievement-client';
-import { fixationEquilibrium } from '@/lib/fixation';
 import { toast } from 'sonner';
 import { LIGHT_RECIPES, timesLighter, LightRecipeEntry } from '@/lib/light-version';
 import { withName, hasName } from '@/lib/user-name';
@@ -16,8 +15,7 @@ import { findSwapHint, registerHintShown, muteSwapPair, kgEquivalent, COPILKA_TE
 import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
 import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
-import { FixationCompleteModal } from './FixationCompleteModal';
-import { hasReachedGoal, corridorStatus } from '@/lib/soft-swap';
+import { FixationProgressCard } from './FixationProgressCard';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
 const FOOD_PREFERENCE_OPTIONS = [
@@ -49,7 +47,7 @@ const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 type DailyTab = 'morning' | 'meals' | 'evening';
 
 export function DailyScreen() {
-  const { setStep, addDailyReport, addWeightEntry, profile, calculations, weeklyData, dailyReports, updateProfile } = useApp();
+  const { setStep, addDailyReport, addWeightEntry, profile, calculations, weeklyData, dailyReports, updateProfile, performFixationAction } = useApp();
   const todayInit = localDay();
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
@@ -141,7 +139,7 @@ export function DailyScreen() {
   const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [showGoalReached, setShowGoalReached] = useState(false);
-  const [showFixationDone, setShowFixationDone] = useState(false);
+  const [enteringFixation, setEnteringFixation] = useState(false);
   const [showPlanning, setShowPlanning] = useState(false);
   const [planText, setPlanText] = useState('');
   const [planSavedMessage, setPlanSavedMessage] = useState(false);
@@ -354,28 +352,6 @@ export function DailyScreen() {
       const isGoalReached = targetWeight > 0 && currentWeight <= targetWeight && currentWeight > 0;
       if (stage === 'loss' && isGoalReached && !profile.goalReachedAt) {
         setShowGoalReached(true);
-      } else if (
-        stage === 'fixation' &&
-        profile.goalWeight &&
-        profile.equilibriumCalories &&
-        profile.currentFixationCalories &&
-        profile.currentFixationCalories >= profile.equilibriumCalories &&
-        corridorStatus(w, profile.goalWeight) === 'in_range'
-      ) {
-        setShowFixationDone(true);
-      } else if (stage === 'fixation' && profile.lastCalorieIncreaseAt && profile.currentFixationCalories) {
-        // Weekly +200 ramp toward equilibrium
-        const lastInc = new Date(profile.lastCalorieIncreaseAt).getTime();
-        const daysSince = Math.floor((Date.now() - lastInc) / (1000 * 60 * 60 * 24));
-        const eq = profile.equilibriumCalories ?? calculations?.totalCalories;
-        if (daysSince >= 7 && eq && profile.currentFixationCalories < eq) {
-          const next = Math.min(eq, profile.currentFixationCalories + 200);
-          updateProfile({
-            currentFixationCalories: next,
-            fixationWeekNumber: (profile.fixationWeekNumber ?? 1) + 1,
-            lastCalorieIncreaseAt: today,
-          });
-        }
       }
     } else {
       setMorningAnalysis(null);
@@ -383,28 +359,19 @@ export function DailyScreen() {
     }
   };
 
-  const handleEnterFixation = () => {
-    setShowGoalReached(false);
-    const target = fixationEquilibrium(profile, weeklyData, today) ?? undefined;
-    const startCalories = calculations?.corridorMin ?? (target ? target - 400 : undefined);
-    updateProfile({
-      currentStage: 'fixation',
-      goalReachedAt: today,
-      fixationStartedAt: today,
-      fixationWeekNumber: 1,
-      currentFixationCalories: startCalories,
-      equilibriumCalories: target ?? undefined,
-      lastCalorieIncreaseAt: today,
-    });
-    handleProgramJump({ jump: { section: 'how-to', nutrientSection: 'Фиксация' } });
+  const handleEnterFixation = async () => {
+    if (enteringFixation) return;
+    setEnteringFixation(true);
+    try {
+      await performFixationAction({ action:'enter' });
+      setShowGoalReached(false);
+      handleProgramJump({ jump: { section:'how-to', nutrientSection:'Фиксация' } });
+    } catch { toast.error('Не удалось сохранить изменения. Повторите попытку.'); }
+    finally { setEnteringFixation(false); }
   };
 
-  const handleEnterMaintenance = () => {
-    setShowFixationDone(false);
-    updateProfile({
-      currentStage: 'maintenance',
-      maintenanceStartedAt: today,
-    });
+  const openMaintenanceLesson = () => {
+    handleProgramJump({ jump: { section:'how-to', nutrientSection:'Сохранение' } });
   };
 
   const formatDelta = (d: number | null) => {
@@ -803,10 +770,7 @@ export function DailyScreen() {
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 pb-[80px] animate-fade-in-up" style={{ maxWidth: 480, margin: '0 auto', width: '100%' }}>
       {showGoalReached && (
-        <GoalReachedModal sex={profile.gender} onContinue={handleEnterFixation} />
-      )}
-      {showFixationDone && (
-        <FixationCompleteModal sex={profile.gender} onContinue={handleEnterMaintenance} />
+        <GoalReachedModal sex={profile.gender} onContinue={handleEnterFixation} busy={enteringFixation} />
       )}
       {/* Header: date + day badge */}
       <div className="w-full max-w-sm flex items-center justify-between mb-4">
@@ -855,6 +819,7 @@ export function DailyScreen() {
 
 
       <div className="w-full max-w-sm">
+        {profile.currentStage === 'fixation' && <div className="mb-5"><FixationProgressCard onMaintenance={openMaintenanceLesson} onLesson={() => handleProgramJump({ jump: { section:'how-to', nutrientSection:'Фиксация' } })} /></div>}
         {tab === 'morning' && (
           <div className="space-y-4 animate-fade-in-up">
             {!showFoodSurvey && programDay && (

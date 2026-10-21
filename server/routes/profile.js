@@ -2,6 +2,9 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { pool, upsert } from "./_helpers.js";
 
+import { requireAccess } from '../access.js';
+import { transitionFixation, FixationError } from '../fixation/flow.js';
+
 const r = Router();
 r.use(requireAuth);
 
@@ -19,19 +22,12 @@ const TO_DB = {
   emotionalTrigger: "emotional_trigger",
   motivation: "motivation",
   kgToLose: "kg_to_lose",
-  currentStage: "current_stage",
-  goalReachedAt: "goal_reached_at",
-  fixationStartedAt: "fixation_started_at",
-  maintenanceStartedAt: "maintenance_started_at",
-  equilibriumCalories: "equilibrium_calories",
-  currentFixationCalories: "current_fixation_calories",
-  fixationWeekNumber: "fixation_week_number",
-  lastCalorieIncreaseAt: "last_calorie_increase_at",
 };
 
 function rowToProfile(p, u) {
   if (!p && !u) return null;
   return {
+    fixationProgress: p?.fixation_progress ?? null,
     name: u?.name ?? undefined,
     gender: p?.sex === "male" || p?.sex === "female" ? p.sex : null,
     age: p?.age ?? undefined,
@@ -67,6 +63,32 @@ r.get("/", async (req, res) => {
     console.error("GET /profile:", e);
     res.status(500).json({ error: "load_failed" });
   }
+});
+
+// State transitions are server-confirmed; ordinary profile edits cannot advance stages.
+r.post('/fixation', requireAccess, async (req, res) => {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const user = await client.query('SELECT user_id FROM public.users WHERE user_id=$1 FOR UPDATE', [req.userId]);
+    if (!user.rows.length) throw new FixationError('user_not_found');
+    const { rows } = await client.query('SELECT * FROM public.user_profile WHERE user_id=$1', [req.userId]);
+    if (!rows.length) throw new FixationError('incomplete_profile');
+    const weights = await client.query('SELECT date::text AS date, weight_kg, weight_recorded_at FROM public.daily_checkins WHERE user_id=$1 AND weight_kg IS NOT NULL', [req.userId]);
+    const { progress, row } = transitionFixation(rows[0], weights.rows, req.body || {});
+    const saved = await upsert('public.user_profile', ['user_id'], [req.userId], { ...row, fixation_progress:progress }, client);
+    await client.query('COMMIT');
+    const result = rowToProfile(saved, null);
+    const keys = ['fixationProgress','currentStage','goalReachedAt','fixationStartedAt','maintenanceStartedAt',
+      'equilibriumCalories','currentFixationCalories','fixationWeekNumber','lastCalorieIncreaseAt'];
+    res.json(Object.fromEntries(keys.map(key => [key, result[key] ?? null])));
+  } catch (e) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    if (e instanceof FixationError) return res.status(409).json({error:e.code});
+    console.error('POST /profile/fixation:', e);
+    res.status(500).json({error:'save_failed'});
+  } finally { client?.release(); }
 });
 
 r.put("/", async (req, res) => {
