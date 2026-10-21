@@ -12,9 +12,12 @@ export function FixationProgressCard({ onMaintenance, onLesson }: { onMaintenanc
   const goal = profile.goalWeight;
   const progress = profile.fixationProgress;
   const goalChanged = progress && progress.goalWeight !== goal;
-  const equilibrium = progress?.equilibriumCalories ?? fixationEquilibrium(profile, weeklyData, today);
+  // API dates may include a midnight ISO suffix; retain the recorded calendar day.
+  const savedWeights = weeklyData.map(entry => ({ ...entry, date: entry.date.split('T')[0] }))
+    .filter(entry => /^\d{4}-\d{2}-\d{2}$/.test(entry.date));
+  const equilibrium = progress?.equilibriumCalories ?? fixationEquilibrium(profile, savedWeights, today);
   const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 6);
-  const weights = weeklyData.filter(entry => entry.date >= localDay(weekStart) && entry.date <= today
+  const weights = savedWeights.filter(entry => entry.date >= localDay(weekStart) && entry.date <= today
     && Number.isFinite(entry.weight) && entry.weight > 0).sort((a,b) => a.date.localeCompare(b.date));
   const latest = weights.at(-1);
   const canComplete = !!goal && latest?.date === today && Math.abs(latest.weight - goal) <= 1;
@@ -41,9 +44,8 @@ export function FixationProgressCard({ onMaintenance, onLesson }: { onMaintenanc
       : <p>За последние 7 дней пока нет сохранённых измерений.</p>}
     {goal && <p>Ваш безопасный коридор веса: {(goal - 1).toLocaleString('ru-RU')}–{(goal + 1).toLocaleString('ru-RU')} кг.</p>}
     {!goalChanged && <>
-      <p>Вы вышли на питание для поддержания веса, и вес остаётся в вашем безопасном коридоре? Можно переходить к сохранению результата.</p>
       <p>Решение о переходе на этап сохранения веса принимаете вы. Для перехода нажмите кнопку «Перейти к сохранению веса».</p>
-      {!canComplete && <p>Для перехода нужен сохранённый сегодняшний вес в вашем коридоре. Если измерений недостаточно, продолжайте наблюдение.</p>}
+      {!canComplete && <p>Для перехода нужен сохранённый сегодняшний вес в вашем коридоре.</p>}
     </>}
     <button type="button" className="inga-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
       disabled={busy || (goalChanged ? !latest || !goal || latest.weight > goal : !canComplete)} onClick={run}>
