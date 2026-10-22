@@ -1,8 +1,11 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useApp } from '@/context/AppContext';
+import { localDay } from '@/lib/achievement-client';
 
 interface Props {
   equilibriumCalories: number | null;
   onBack: () => void;
+  onMaintenance?: () => void;
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -12,7 +15,33 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   </section>;
 }
 
-export function FixationLesson({ equilibriumCalories, onBack }: Props) {
+export function FixationLesson({ equilibriumCalories, onBack, onMaintenance }: Props) {
+  const { profile, weeklyData, performFixationAction } = useApp();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const inFlight = useRef(false);
+  const today = localDay();
+  const goal = profile.goalWeight;
+  const goalChanged = profile.fixationProgress && profile.fixationProgress.goalWeight !== goal;
+  const showTransition = profile.currentStage === 'fixation' && !goalChanged && !!onMaintenance;
+  const latest = weeklyData.map(entry => ({ ...entry, date: entry.date.split('T')[0] }))
+    .filter(entry => /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && entry.date <= today
+      && Number.isFinite(entry.weight) && entry.weight > 0)
+    .sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+  const canComplete = !!goal && latest?.date === today && Math.abs(latest.weight - goal) <= 1;
+  const complete = async () => {
+    if (!showTransition || !canComplete || inFlight.current) return;
+    inFlight.current = true; setBusy(true); setError('');
+    try {
+      await performFixationAction({ action: 'complete', confirmed: true });
+      onMaintenance?.();
+    } catch (e) {
+      const code = e instanceof Error ? e.message : '';
+      setError(code === 'fresh_weight_required' ? 'Сначала сохраните сегодняшний вес, затем вернитесь к этому шагу.'
+        : code === 'weight_outside_corridor' ? 'Сегодняшний вес вне вашего коридора. Пока продолжайте фиксацию и наблюдение.'
+        : 'Не удалось сохранить изменения. Повторите попытку.');
+    } finally { inFlight.current = false; setBusy(false); }
+  };
   useEffect(() => { window.scrollTo(0, 0); }, []);
   return (
     <div className="min-h-screen px-5 py-8 animate-fade-in-up">
@@ -73,6 +102,14 @@ export function FixationLesson({ equilibriumCalories, onBack }: Props) {
             <p>Вы вышли на питание для поддержания веса, и вес остаётся в вашем безопасном коридоре? Можно переходить к сохранению результата.</p>
             <p>Решение о переходе на этап сохранения веса принимаете вы. Для перехода нажмите кнопку «Перейти к сохранению веса».</p>
             <p>На этапе сохранения обязательного дневника питания нет. Вы продолжаете жить обычной жизнью, пользоваться освоенными привычками и наблюдать за весом. Рецепты, уроки и поддержка помогают, когда они вам нужны.</p>
+            {showTransition && <div className="space-y-3" aria-busy={busy}>
+              {!canComplete && <p>Для перехода нужен сохранённый сегодняшний вес в вашем коридоре.</p>}
+              <button type="button" onClick={complete} disabled={busy || !canComplete}
+                className="inga-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed">
+                Перейти к сохранению веса
+              </button>
+              {error && <p role="alert" className="text-destructive">{error}</p>}
+            </div>}
           </Section>
           <Section title="Ваш первый шаг">
             <p>Выберите, что измените в привычном питании на этой неделе. Запишите выбранную замену и продолжайте наблюдать за весом.</p>

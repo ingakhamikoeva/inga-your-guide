@@ -300,6 +300,7 @@ export function MenuScreen() {
 
   if (section === 'how-to' && nutrientSection === 'Фиксация' && fixationLessonAvailable) {
     return <FixationLesson
+      onMaintenance={() => setNutrientSection('Сохранение')}
       equilibriumCalories={profile.fixationProgress?.equilibriumCalories ?? fixationEquilibrium(profile, weeklyData, today)}
       onBack={() => goBack(() => setNutrientSection(null))}
     />;
