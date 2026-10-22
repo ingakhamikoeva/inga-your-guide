@@ -1,6 +1,6 @@
-import { currentSession } from '@/lib/auth-storage';
+import { currentSession, subscribe } from '@/lib/auth-storage';
 import { useAchievements } from '@/lib/achievement-client';
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport, Medal, FixationAction } from '@/lib/types';
 import { calculateAll, roundTo50 } from '@/lib/calculations';
 import {
@@ -58,19 +58,27 @@ const STORAGE_KEY = 'inga-app-state';
 function loadState(): Partial<AppState> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      const userId = currentSession()?.user.id;
+      if (!userId || (saved.userId !== undefined && saved.userId !== userId)) return {};
+      return saved;
+    }
   } catch {}
   return {};
 }
 
-function saveLocalState(state: AppState) {
+function saveLocalState(state: AppState, userId: string | null) {
+  if (!userId || currentSession()?.user.id !== userId) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, userId }));
   } catch {}
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const saved = loadState();
+  const [saved] = useState(loadState);
+  const stateOwner = useRef(currentSession()?.user.id ?? null);
+  const hydrationGeneration = useRef(0);
   const [step, setStep] = useState<AppStep>(saved.step || 'auth');
   const [profile, setProfile] = useState<Partial<UserProfile>>(saved.profile || {});
   const [calculations, setCalculations] = useState<Calculations | null>(saved.calculations || null);
@@ -79,16 +87,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const { medals, streakDays: achievementStreak, uniqueRecipes, reset: resetAchievements } = useAchievements();
 
   const state: AppState = { step, profile, calculations, dailyReports, weeklyData, medals };
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const ownerId = stateOwner.current;
 
   // Save to localStorage on every change
   useEffect(() => {
-    saveLocalState(state);
-  }, [step, profile, calculations, dailyReports, weeklyData, medals]);
+    saveLocalState(state, ownerId);
+  }, [step, profile, calculations, dailyReports, weeklyData, medals, ownerId]);
 
   // Extra safety: flush state to localStorage on tab hide / page unload
   // (iOS Safari may discard the page when screen locks)
   useEffect(() => {
-    const flush = () => saveLocalState(state);
+    const flush = () => saveLocalState(state, ownerId);
     window.addEventListener('visibilitychange', flush);
     window.addEventListener('pagehide', flush);
     window.addEventListener('beforeunload', flush);
@@ -151,7 +162,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addWeightEntry = useCallback(async (date: string, weight: number) => {
+    const userId = currentSession()?.user.id;
+    if (!userId) throw new Error('account_changed');
     await saveDailyCheckin(date, weight);
+    if (currentSession()?.user.id !== userId) throw new Error('account_changed');
     setWeeklyData(prev => [...prev.filter(entry => entry.date !== date), { date, weight }]);
   }, []);
 
@@ -177,17 +191,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // иначе профиль предыдущего пользователя остаётся в localStorage, подмешивается
   // в hydrateFromDb и новичок проскакивает онбординг сразу в дневник.
   const resetLocalState = useCallback(() => {
+    hydrationGeneration.current++;
+    stateOwner.current = currentSession()?.user.id ?? null;
+    // Reset the live snapshot too: an auth callback may still hold an old hydrate function.
+    stateRef.current = { ...stateRef.current, profile: {}, calculations: null, dailyReports: [], weeklyData: [], medals: [] };
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
     setProfile({});
     setCalculations(null);
     setDailyReports([]);
     setWeeklyData([]);
     resetAchievements();
-  }, []);
+  }, [resetAchievements]);
+
+  useEffect(() => subscribe((_event, session) => {
+    if ((session?.user.id ?? null) !== stateOwner.current) {
+      resetLocalState();
+      if (!session) setStep('auth');
+    }
+  }), [resetLocalState]);
+
+  useEffect(() => () => { hydrationGeneration.current++; }, []);
 
   const hydrateFromDb = useCallback(async (): Promise<AppStep> => {
-    const authed = await isAuthenticated();
-    if (!authed) return 'auth';
+    const userId = currentSession()?.user.id;
+    if (!userId) return 'auth';
+    const generation = ++hydrationGeneration.current;
 
     const [dbProfile, dbPlan, dbBehavior, dbAnswers, dbCheckins] = await Promise.all([
       loadUserProfile(),
@@ -197,9 +225,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       loadCheckins(),
     ]);
 
+    if (currentSession()?.user.id !== userId || generation !== hydrationGeneration.current) return 'auth';
+    // A failed profile read must not be interpreted as a new account or a reset stage.
+    if (!dbProfile) throw new Error('profile_load_failed');
+
+    const sameAccount = stateOwner.current === userId;
+    const localProfile = sameAccount ? stateRef.current.profile : {};
+    const stageKeys = ['goalReachedAt', 'fixationStartedAt', 'maintenanceStartedAt',
+      'equilibriumCalories', 'currentFixationCalories', 'fixationWeekNumber', 'lastCalorieIncreaseAt'] as const;
+
     const merged: Partial<UserProfile> = {
-      ...profile,
-      ...(dbProfile ?? {}),
+      ...localProfile,
+      ...dbProfile,
+      // JSON omits undefined server fields. Clear old stage dates explicitly.
+      ...Object.fromEntries(stageKeys.map(key => [key, dbProfile[key]])),
+      currentStage: dbProfile.currentStage ?? 'loss',
+      fixationProgress: dbProfile.fixationProgress ?? null,
+      goalWeight: dbProfile.goalWeight,
+      goal_weight_kg: dbProfile.goalWeight,
       // A loaded profile is authoritative, including an absent sex.
       ...(dbProfile ? { gender: dbProfile.gender === 'male' || dbProfile.gender === 'female' ? dbProfile.gender : undefined } : {}),
       ...(dbPlan?.paceChoice ? { paceChoice: dbPlan.paceChoice } : {}),
@@ -207,7 +250,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ...(dbBehavior ? { foodProfile: dbBehavior } : {}),
       ...(dbAnswers ? { foodTestAnswers: dbAnswers } : {}),
     };
+    stateOwner.current = userId;
+    if (!sameAccount) {
+      setDailyReports([]);
+      resetAchievements();
+    }
     setProfile(merged);
+    setWeeklyData(dbCheckins);
+    setCalculations(null);
 
     // Require an explicit saved choice before resuming onboarding or the diary.
     if (merged.gender !== 'male' && merged.gender !== 'female') {
@@ -216,9 +266,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return 'survey-name';
     }
 
-    let calc = calculations;
     if (merged.height && merged.weight && merged.age) {
-      calc = calculateAll(merged);
+      const calc = calculateAll(merged);
       // Если калорийность удержания задана вручную в плане — пересчитываем
       // от неё, чтобы коридор остался дефицитом 25% ±100, а не разъехался.
       if (dbPlan?.calorieTarget) {
@@ -229,8 +278,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       setCalculations(calc);
     }
-
-    if (dbCheckins.length > 0) setWeeklyData(dbCheckins);
 
     // Пользователь с чек-инами уже прошёл онбординг
     if (dbCheckins.length > 0) {
@@ -259,7 +306,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setStep(resume);
     return resume;
-  }, [profile, calculations]);
+  }, [resetAchievements]);
 
   return (
     <AppContext.Provider
