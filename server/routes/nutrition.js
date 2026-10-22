@@ -1,3 +1,4 @@
+import { analyzeDay } from "../nutrition/day-analysis.js";
 import { requireAccessForWrite, requireAccess } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
@@ -6,6 +7,21 @@ import { pool, upsert } from "./_helpers.js";
 const r = Router();
 r.use(requireAuth);
 r.use(requireAccessForWrite);
+
+// Analysis reads saved meals only; it never creates food logs or chat messages.
+r.post('/analysis/:date', async (req,res) => {
+  const date = req.params.date;
+  const timezone = typeof req.body?.timezone === 'string' ? req.body.timezone : 'UTC';
+  let currentDay;
+  try {
+    const parts = new Intl.DateTimeFormat('en', {timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+    const part = key => parts.find(p=>p.type===key).value;
+    currentDay = `${part('year')}-${part('month')}-${part('day')}`;
+  } catch { return res.status(400).json({error:'invalid_timezone'}); }
+  if (date !== currentDay) return res.status(400).json({error:'current_day_required'});
+  try { res.json(await analyzeDay(req.userId,date,timezone)); }
+  catch (e) { res.status(e.message==='diary_changed'?409:503).json({error:e.message==='diary_changed'?'diary_changed':'analysis_unavailable'}); }
+});
 
 // Daily nutrition summary
 function rowToSummary(d) {

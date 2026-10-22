@@ -26,6 +26,7 @@ export async function deepseekChat(messages, opts = {}) {
 
   const resp = await fetch(url, {
     method: "POST",
+    signal: opts.signal,
     headers: {
       Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
       "Content-Type": "application/json",

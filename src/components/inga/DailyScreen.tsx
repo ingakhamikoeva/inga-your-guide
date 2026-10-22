@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { analyzeDailyNutrition } from '@/lib/daily-analysis';
+import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
+import { mealFacts } from '../../../server/nutrition/facts.js';
+import { DietAnalysis } from './DietAnalysis';
+import { currentSession } from '@/lib/auth-storage';
 import { analyzeMorningWeight, MorningWeightAnalysis } from '@/lib/morning-analysis';
 import { localDay } from '@/lib/achievement-client';
 import { toast } from 'sonner';
 import { LIGHT_RECIPES, timesLighter, LightRecipeEntry } from '@/lib/light-version';
 import { withName, hasName } from '@/lib/user-name';
 import { VoiceInput } from './VoiceInput';
-import { saveMealPlan, loadMealPlanForDate, saveFoodLog, loadFoodLogs, updateFoodLog, deleteFoodLog, loadLightSavings, loadProgramProgress, logUserEvent, type MealTag, type LightSavings, type ProgramProgress } from '@/lib/db';
+import { saveMealPlan, loadMealPlanForDate, loadTodayCheckin, loadLightSavings, loadProgramProgress, logUserEvent, type MealTag, type LightSavings, type ProgramProgress } from '@/lib/db';
 import { PROGRAM_MONTH1, type ProgramLink } from '@/lib/program-month1';
 import { ProgramDayCard, currentProgramDay, localDateStr } from './ProgramDayCard';
 import { findSwapHint, registerHintShown, muteSwapPair, kgEquivalent, COPILKA_TEXTS, HINT_TEXTS, type SwapPair } from '@/lib/swap-base';
-import { resolveMealNutrition } from '@/lib/nutrition/food-lookup';
-import { DailySummaryCard } from './DailySummaryCard';
 import { GoalReachedModal } from './GoalReachedModal';
 import { FixationProgressCard } from './FixationProgressCard';
 import ingaPhoto from '@/assets/inga-photo.jpg';
@@ -44,16 +45,16 @@ const CATEGORY_RECIPES: Record<string, string[]> = {
 const PLANNING_INTRO_KEY = 'meal_planning_intro_shown';
 
 
-type DailyTab = 'morning' | 'meals' | 'evening';
+type DailyTab = 'morning' | 'meals' | 'analysis';
 
 export function DailyScreen() {
-  const { setStep, addDailyReport, addWeightEntry, profile, calculations, weeklyData, dailyReports, updateProfile, performFixationAction } = useApp();
+  const { setStep, addWeightEntry, profile, calculations, weeklyData, dailyReports, updateProfile, performFixationAction } = useApp();
   const todayInit = localDay();
   const [tab, setTab] = useState<DailyTab>(() => {
     try {
       const savedDate = localStorage.getItem('dailyActiveTabDate');
       const savedTab = localStorage.getItem('dailyActiveTab') as DailyTab | null;
-      if (savedDate === todayInit && savedTab && ['morning', 'meals', 'evening'].includes(savedTab)) {
+      if (savedDate === todayInit && savedTab && ['morning', 'meals', 'analysis'].includes(savedTab)) {
         return savedTab;
       }
     } catch {}
@@ -72,17 +73,31 @@ export function DailyScreen() {
   const [editingTimeIdx, setEditingTimeIdx] = useState<number | null>(null);
   const [editingProteinIdx, setEditingProteinIdx] = useState<number | null>(null);
   const [editingProteinValue, setEditingProteinValue] = useState('');
-  const [meals, setMeals] = useState<string[]>([]);
-  type ProteinPortion = 'small' | 'palm' | 'large';
-  type LightSwapMeta = { recipeIds: string[]; savedKcal: number };
-  type MealMeta = {
-    id?: string;
-    protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean;
-    time: string; name: string; isEvening: boolean; proteinPortion: ProteinPortion;
-    proteinAi: number | null; proteinLoading: boolean; proteinManual: boolean;
-    lightSwap?: LightSwapMeta | null;
-  };
-  const [mealMeta, setMealMeta] = useState<MealMeta[]>([]);
+  const [today, setToday] = useState(localDay);
+  useEffect(() => { const timer = window.setInterval(() => setToday(localDay()), 30000); return () => clearInterval(timer); }, []);
+  const diary = useMealDiary(today);
+  const { meals, mealMeta } = diary;
+  const morningDirty = useRef(new Set<string>());
+  const morningSaving = useRef(false);
+  const [morningReady, setMorningReady] = useState(false);
+  const [morningBusy, setMorningBusy] = useState(false);
+  const owner = currentSession()?.user.id;
+  useEffect(() => {
+    let cancelled = false;
+    morningDirty.current.clear(); setMorningReady(false);
+    setWeight(''); setSleep(''); setSteps(''); setStool(null); setMorningAnalysis(null);
+    loadTodayCheckin(today).then(row => {
+      if (cancelled || currentSession()?.user.id !== owner) return;
+      if (row) {
+        if (!morningDirty.current.has('weight')) setWeight(row.weight == null ? '' : String(row.weight));
+        if (!morningDirty.current.has('sleep')) setSleep(row.sleepHours == null ? '' : String(row.sleepHours));
+        if (!morningDirty.current.has('steps')) setSteps(row.stepsYesterday == null ? '' : String(row.stepsYesterday));
+        if (!morningDirty.current.has('stool')) setStool(row.stoolYesterday ?? null);
+      }
+      setMorningReady(true);
+    });
+    return () => { cancelled = true; };
+  }, [today, owner]);
   // Копилка лёгкости и подсказки замен
   const [lightSavings, setLightSavings] = useState<LightSavings | null>(null);
   const [pendingHint, setPendingHint] = useState<{ pair: SwapPair; revealed: boolean } | null>(null);
@@ -92,13 +107,6 @@ export function DailyScreen() {
   // Лёгкие рецепты, выбранные в текущем окне ввода (своё + лёгкое в одной записи)
   const [draftLightSwaps, setDraftLightSwaps] = useState<{ recipeId: string; name: string; savedKcal: number }[]>([]);
 
-  // Единый payload meta для сохранения (lightSwap не теряется при патчах)
-  const metaPayloadOf = (m: MealMeta) => ({
-    protein: m.protein, carbs: m.carbs, fiber: m.fiber, sweet: m.sweet,
-    isEvening: m.isEvening, proteinPortion: m.proteinPortion,
-    proteinAi: m.proteinAi, proteinManual: m.proteinManual,
-    ...(m.lightSwap ? { lightSwap: m.lightSwap } : {}),
-  });
   const [waterCount, setWaterCount] = useState<number>(() => {
     try {
       const todayStr = localDay();
@@ -123,20 +131,16 @@ export function DailyScreen() {
     try { localStorage.setItem('inga-meal-hint-dismissed', '1'); } catch {}
   };
   const [draftFlags, setDraftFlags] = useState(emptyDraftFlags);
-  const toggleDraftFlag = (key: keyof typeof emptyDraftFlags) =>
+  const draftTouched = useRef(new Set<string>());
+  const toggleDraftFlag = (key: keyof typeof emptyDraftFlags) => {
+    draftTouched.current.add(key);
     setDraftFlags(f => ({ ...f, [key]: !f[key] }));
+  };
   const [showEveningInput, setShowEveningInput] = useState(false);
   const [eveningText, setEveningText] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
-  const [emotion, setEmotion] = useState('');
-  const [hunger, setHunger] = useState(3);
-  const [hardest, setHardest] = useState('');
-  const [dayWin, setDayWin] = useState('');
-  const [sweetPoint, setSweetPoint] = useState<'yes' | 'no' | ''>('');
-
-  const [saved, setSaved] = useState(false);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [showGoalReached, setShowGoalReached] = useState(false);
   const [enteringFixation, setEnteringFixation] = useState(false);
@@ -147,9 +151,7 @@ export function DailyScreen() {
   const [selectedFoods, setSelectedFoods] = useState<string[]>([]);
   const [foodSurveyAnswered, setFoodSurveyAnswered] = useState(false);
   const [showMorningCheckin, setShowMorningCheckin] = useState(false);
-  const analysis = analyzeDailyNutrition(meals, profile.gender);
 
-  const today = localDay();
   const tomorrow = localDay(new Date(Date.now() + 86400000));
 
   // Persist active tab (and current date) so reloading restores it, but reset on a new day
@@ -222,52 +224,6 @@ export function DailyScreen() {
     }
   }, [weeklyData, today]);
 
-  // Load today's persisted food logs on mount.
-  useEffect(() => {
-    let cancelled = false;
-    loadFoodLogs(today).then(rows => {
-      if (cancelled || !rows?.length) return;
-      const texts: string[] = [];
-      const metas: MealMeta[] = [];
-      for (const r of rows) {
-        const m = (r.meta ?? {}) as Record<string, unknown>;
-        const d = new Date(r.datetime);
-        const hh = d.getHours().toString().padStart(2, '0');
-        const mm = d.getMinutes().toString().padStart(2, '0');
-        const time = `${hh}:${mm}`;
-        const isEvening = Boolean(m.isEvening);
-        const name = isEvening ? 'Вечерний перекус' : (() => {
-          const h = d.getHours();
-          if (h >= 6 && h < 10) return 'Завтрак';
-          if (h >= 10 && h < 12) return 'Перекус';
-          if (h >= 12 && h < 15) return 'Обед';
-          if (h >= 15 && h < 18) return 'Полдник';
-          if (h >= 18 && h < 21) return 'Ужин';
-          return 'Вечерний перекус';
-        })();
-        texts.push(r.raw_text ?? '');
-        metas.push({
-          id: r.log_id,
-          protein: Boolean(m.protein),
-          carbs: Boolean(m.carbs),
-          fiber: Boolean(m.fiber),
-          sweet: Boolean(m.sweet),
-          time, name, isEvening,
-          proteinPortion: (m.proteinPortion as ProteinPortion) ?? 'palm',
-          proteinAi: typeof m.proteinAi === 'number' ? (m.proteinAi as number) : null,
-          proteinLoading: false,
-          proteinManual: Boolean(m.proteinManual),
-          lightSwap: (m.lightSwap && typeof m.lightSwap === 'object')
-            ? (m.lightSwap as LightSwapMeta)
-            : null,
-        });
-      }
-      setMeals(texts);
-      setMealMeta(metas);
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [today]);
-
   // Программа «Месяц 1»: прогресс, раскрытие карточки на Утре
   const [programProgress, setProgramProgress] = useState<ProgramProgress | null>(null);
   const [programExpanded, setProgramExpanded] = useState(false);
@@ -327,10 +283,27 @@ export function DailyScreen() {
 
 
   const handleSaveMorning = async () => {
+    if (!morningReady || morningSaving.current) return;
+    const number = (value: string) => Number(value.replace(',', '.'));
+    if ((weight && (!Number.isFinite(number(weight)) || number(weight) <= 0 || number(weight)>999.9)) ||
+        (sleep && (!Number.isFinite(number(sleep)) || number(sleep)<0 || number(sleep)>24)) ||
+        (steps && (!Number.isInteger(number(steps)) || number(steps)<0))) {
+      toast.error('Проверьте введённые показатели.'); return;
+    }
+    morningSaving.current=true; setMorningBusy(true);
+    const savedOwner=owner, savedDate=today;
+    try {
+      await addWeightEntry(today, morningDirty.current.has('weight') && weight ? number(weight) : undefined, {
+        sleepHours:morningDirty.current.has('sleep') && sleep ? number(sleep) : undefined,
+        stepsYesterday:morningDirty.current.has('steps') && steps ? number(steps) : undefined,
+        stoolYesterday:morningDirty.current.has('stool') ? stool : undefined,
+      });
+      if (currentSession()?.user.id !== savedOwner || localDay() !== savedDate) return;
+      morningDirty.current.clear();
+    } catch { toast.error('Не удалось сохранить показатели. Повторите попытку.'); return; }
+    finally { morningSaving.current=false; setMorningBusy(false); }
     if (weight) {
-      const w = parseFloat(weight);
-      try { await addWeightEntry(localDay(), w); }
-      catch { toast.error('Не удалось сохранить вес. Повторите попытку.'); return; }
+      const w = number(weight);
       // Build history excluding today's just-added entry to avoid self-comparison
       const history = weeklyData.filter(e => e.date !== today);
       const yesterdayDateStr = localDay(new Date(Date.now() - 86400000));
@@ -409,90 +382,25 @@ export function DailyScreen() {
     return d.toISOString();
   };
 
-  // Persisted patch helper — fire-and-forget by id
-  const persistMetaPatch = (idx: number, partial: Partial<MealMeta>) => {
-    setMealMeta(prev => {
-      const next = prev.map((m, k) => k === idx ? { ...m, ...partial } : m);
-      const m = next[idx];
-      if (m?.id) {
-        const metaPayload = metaPayloadOf(m);
-        updateFoodLog(m.id, {
-          mealTag: mealTagFromName(m.name),
-          datetime: timeToIso(m.time),
-          meta: metaPayload,
-        }).catch(() => {});
-      }
-      return next;
-    });
+  // Metadata patches do not rewrite datetime or unrelated metadata.
+  const persistMetaPatch = (idx: number, partial: Record<string, unknown>) => {
+    const row=mealMeta[idx];
+    if (row) void diary.patch(row.id, {meta:partial});
   };
-
-  const addMealEntry = (
-    text: string,
-    isEvening = false,
-    timeOverride?: string,
-    lightSwap?: LightSwapMeta,
-    initialFlags?: { protein: boolean; carbs: boolean; fiber: boolean; sweet: boolean },
+  const addMealEntry = async (
+    text: string, isEvening=false, timeOverride?:string, lightSwap?:LightSwapMeta,
+    initialFlags?:{protein:boolean;carbs:boolean;fiber:boolean;sweet:boolean},
   ) => {
-    const t = text.trim();
-    if (!t) return;
-    const time = timeOverride || nowHHMM();
-    const name = isEvening ? 'Вечерний перекус' : mealNameByTime(time);
-    let newIdx = -1;
-    setMeals(prev => {
-      newIdx = prev.length;
-      // kick off AI estimation
-      resolveMealNutrition(t)
-        .then(res => {
-          const grams = Math.round(res.protein_g || 0);
-          setMealMeta(curr => {
-            const next = curr.map((mm, k) => k === newIdx
-              ? { ...mm, proteinAi: grams, proteinLoading: false }
-              : mm);
-            const m = next[newIdx];
-            if (m?.id) {
-              updateFoodLog(m.id, { meta: metaPayloadOf(m) }).catch(() => {});
-            }
-            return next;
-          });
-        })
-        .catch(() => {
-          setMealMeta(curr => curr.map((mm, k) => k === newIdx
-            ? { ...mm, proteinLoading: false }
-            : mm));
-        });
-      return [...prev, t];
-    });
-    const meta: MealMeta = {
-      protein: initialFlags?.protein ?? false,
-      carbs: initialFlags?.carbs ?? false,
-      fiber: initialFlags?.fiber ?? false,
-      sweet: (!isEvening && initialFlags?.sweet) || false,
-      time, name, isEvening, proteinPortion: 'palm',
-      proteinAi: null, proteinLoading: true, proteinManual: false,
-      lightSwap: lightSwap ?? null,
-    };
-    setMealMeta(prev => [...prev, meta]);
-
-    // Fire-and-forget DB save; backfill id on the row when it returns.
-    saveFoodLog(t, mealTagFromName(name), {
-      datetime: timeToIso(time),
-      meta: metaPayloadOf(meta),
-    })
-      .then(row => {
-        if (!row?.log_id) return;
-        setMealMeta(curr => {
-          const next = curr.map((mm, k) => k === newIdx ? { ...mm, id: row.log_id } : mm);
-          const m = next[newIdx];
-          if (m) {
-            // Backfill any meta changes (e.g. AI protein estimate) that
-            // landed before the DB row was persisted.
-            updateFoodLog(row.log_id, { meta: metaPayloadOf(m) }).catch(() => {});
-          }
-          return next;
-        });
-      })
-      .catch(() => {});
-
+    const t=text.trim();
+    if (!t) return false;
+    const time=timeOverride || nowHHMM();
+    const name=isEvening?'Вечерний перекус':mealNameByTime(time);
+    const meta:Record<string,unknown>={isEvening,proteinPortion:'palm',proteinAi:null,proteinManual:false,sweet:!!initialFlags?.sweet,...(lightSwap?{lightSwap}:{})};
+    for (const key of ['protein','carbs','fiber'] as const) {
+      if (draftTouched.current.has(key)) {meta[key]=!!initialFlags?.[key];meta[`${key}FlagManual`]=true;}
+    }
+    const ok=await diary.add(t,mealTagFromName(name),timeToIso(time),meta);
+    if (!ok) return false;
     // Обучающая подсказка о лёгкой замене — только для обычной еды,
     // не для записей «Из лёгких рецептов». Лимиты и «Не сейчас» — в swap-base.
     if (!lightSwap) {
@@ -503,6 +411,7 @@ export function DailyScreen() {
         setPendingHint({ pair, revealed: false });
       }
     }
+    return true;
   };
 
   // Запись еды из лёгкого рецепта: реальная еда → зачёт в Копилку лёгкости.
@@ -521,7 +430,7 @@ export function DailyScreen() {
     setDraftLightSwaps(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleAddMeal = () => {
+  const handleAddMeal = async () => {
     if (mealText.trim()) {
       const lightSwap: LightSwapMeta | undefined = draftLightSwaps.length
         ? {
@@ -529,7 +438,7 @@ export function DailyScreen() {
             savedKcal: draftLightSwaps.reduce((sum, s) => sum + s.savedKcal, 0),
           }
         : undefined;
-      addMealEntry(mealText.trim(), false, mealTime, lightSwap, draftFlags);
+      if (!await addMealEntry(mealText.trim(), false, mealTime, lightSwap, draftFlags)) return;
       if (lightSwap) {
         // Оптимистично обновляем копилку на экране
         setLightSavings(prev => ({
@@ -539,94 +448,31 @@ export function DailyScreen() {
       }
       setMealText('');
       setMealTime(nowHHMM());
-      setDraftFlags(emptyDraftFlags);
+      setDraftFlags(emptyDraftFlags); draftTouched.current.clear();
       setDraftLightSwaps([]);
       setShowMealInput(false);
     }
   };
 
-  const handleAddEveningMeal = () => {
+  const handleAddEveningMeal = async () => {
     if (eveningText.trim()) {
-      addMealEntry(eveningText.trim(), true, undefined, undefined, draftFlags);
+      if (!await addMealEntry(eveningText.trim(), true, undefined, undefined, draftFlags)) return;
       setEveningText('');
-      setDraftFlags(emptyDraftFlags);
+      setDraftFlags(emptyDraftFlags); draftTouched.current.clear();
       setShowEveningInput(false);
     }
   };
 
-  const updateMealTime = (i: number, newTime: string) => {
-    if (!newTime) return;
-    setMealMeta(prev => {
-      const next = prev.map((m, idx) => idx === i
-        ? { ...m, time: newTime, name: m.isEvening ? 'Вечерний перекус' : mealNameByTime(newTime) }
-        : m);
-      const m = next[i];
-      if (m?.id) {
-        updateFoodLog(m.id, {
-          mealTag: mealTagFromName(m.name),
-          datetime: timeToIso(newTime),
-        }).catch(() => {});
-      }
-      return next;
-    });
+  const updateMealTime = (i:number, newTime:string) => {
+    const row=mealMeta[i]; if (!row || !newTime) return;
+    const d=new Date(row.datetime); const [h,m]=newTime.split(':').map(Number); d.setHours(h,m);
+    void diary.patch(row.id,{datetime:d.toISOString(),mealTag:mealTagFromName(row.isEvening?'Вечерний перекус':mealNameByTime(newTime))});
+  };
+  const toggleMealFlag = (i:number,key:'protein'|'carbs'|'fiber'|'sweet') => {
+    persistMetaPatch(i,{[key]:!mealMeta[i]?.[key],...(key!=='sweet'?{[`${key}FlagManual`]:true}:{})});
   };
 
-  const toggleMealFlag = (i: number, key: 'protein' | 'carbs' | 'fiber' | 'sweet') => {
-    persistMetaPatch(i, { [key]: !mealMeta[i]?.[key] } as Partial<MealMeta>);
-  };
-
-  const handleSaveEvening = () => {
-    const report = {
-      date: today,
-      weight: weight ? parseFloat(weight) : undefined,
-      sleepHours: sleep ? parseFloat(sleep) : undefined,
-      stepsYesterday: steps ? parseInt(steps) : undefined,
-      stoolYesterday: stool,
-      meals: meals.map((m, i) => ({ time: '', description: m, type: 'snack' as const })),
-      eveningEmotion: emotion,
-      hungerLevel: hunger,
-      hardestPart: hardest,
-      dayWin: dayWin.trim() || undefined,
-      sweetPointDone: sweetPoint === '' ? null : sweetPoint === 'yes',
-
-    };
-    addDailyReport(report);
-    setSaved(true);
-  };
-
-  const startNewDay = () => {
-    setSaved(false);
-    setShowPlanning(false);
-    setPlanText('');
-    setPlanSavedMessage(false);
-    // Planning does not advance the calendar date or erase today's diary.
-    if (localDay() === today) {
-      setTab('meals');
-      return;
-    }
-    setTab('morning');
-    setMeals([]);
-    setMealMeta([]);
-    setMealText('');
-    setWeight('');
-    setSleep('');
-    setSteps('');
-    setEmotion('');
-    setHunger(3);
-    setHardest('');
-    setDayWin('');
-    setSweetPoint('');
-    setWaterCount(0);
-    setMorningAnalysis(null);
-    try {
-      localStorage.removeItem('dailyActiveTab');
-      localStorage.removeItem('dailyActiveTabDate');
-      localStorage.removeItem('waterCount');
-      localStorage.removeItem('waterDate');
-    } catch {}
-  };
-
-
+  const startNewDay = () => { setShowPlanning(false); setTab('meals'); };
 
   if (showPlanning) {
     return (
@@ -656,116 +502,17 @@ export function DailyScreen() {
           </div>
 
           <button onClick={startNewDay} className="inga-btn-primary w-full">
-            Продумала, начнём новый день →
+            Вернуться к питанию →
           </button>
         </div>
       </div>
     );
   }
 
-  // Use the same protein amount and target in the diary and evening summary.
-  const portionGrams: Record<ProteinPortion, number> = { small: 15, palm: 25, large: 40 };
-  const proteinGrams = mealMeta.reduce(
-    (sum, m) => sum + (m.proteinAi ?? (m.protein ? portionGrams[m.proteinPortion] : 0)),
-    0
-  );
-  const anyProteinLoading = mealMeta.some(m => m.proteinLoading);
-  const proteinTarget = Math.round((profile.weight || 80) * 1.5);
-
-  if (saved) {
-    // Achievement calculations
-    const mealCount = mealMeta.length;
-    const fiberCount = mealMeta.filter(m => m.fiber).length;
-    const eveningSnack = mealMeta.some(m => m.isEvening);
-    const fiberPct = mealCount > 0 ? fiberCount / mealCount : 0;
-
-    const waterOk = waterCount >= 6;
-    const proteinOk = !anyProteinLoading && proteinGrams >= proteinTarget;
-    const fiberOk = fiberPct >= 0.6;
-    const sweetOk = sweetPoint === 'yes';
-    const perfect = mealCount > 1 && waterOk && proteinOk && fiberOk;
-
-    const achievements: { icon: string; label: string }[] = [];
-    if (waterOk) achievements.push({ icon: '💧', label: 'Вода' });
-    if (proteinOk) achievements.push({ icon: '🥩', label: 'Белок' });
-    if (fiberOk) achievements.push({ icon: '🥦', label: 'Клетчатка' });
-    if (sweetOk) achievements.push({ icon: '🍰', label: 'Сладкая точка' });
-    if (eveningSnack) achievements.push({ icon: '🌙', label: 'Вечерний перекус' });
-
-    const userName = hasName(profile.name) ? profile.name : '';
-    const greeting = userName ? `${userName}, ` : '';
-
-    let ingaMessage: string;
-    if (mealCount === 1 && !anyProteinLoading) {
-      ingaMessage = `Сегодня в дневнике один приём пищи: примерно ${proteinGrams} г белка из цели ${proteinTarget} г. Если были другие приёмы пищи, добавьте их — тогда итог будет точнее`;
-    } else if (perfect) {
-      ingaMessage = `${greeting}сегодня вы держали структуру весь день. Это именно то, что меняет привычки 🧡`;
-    } else {
-      const wins: string[] = [];
-      if (proteinOk) wins.push('план по белку');
-      if (fiberOk) wins.push('клетчатку');
-      if (waterOk) wins.push('норму воды');
-      if (sweetOk) wins.push('сладкую точку');
-      const improvements: string[] = [];
-      if (!fiberOk) improvements.push('добавьте больше клетчатки — свежие овощи к каждому приёму пищи');
-      else if (!proteinOk) improvements.push('добавьте белок в каждый приём пищи');
-      else if (!waterOk) improvements.push('выпейте побольше воды — хотя бы 6 стаканов');
-      else improvements.push('продолжайте в том же духе 🧡');
-
-      if (wins.length > 0) {
-        ingaMessage = `Вы отлично выполнили ${wins.slice(0, 2).join(' и ')}! Завтра ${improvements[0]}.`;
-      } else {
-        ingaMessage = `${greeting}завтра ${improvements[0]}. Один маленький шаг — и день уже другой 🧡`;
-      }
-    }
-
-    return (
-      <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
-        <div className="inga-bubble mb-6 w-full max-w-sm space-y-4">
-          <h2 className="text-xl font-bold text-center">День завершён ✨</h2>
-
-          {perfect && (
-            <div className="inga-card border-primary/40 bg-primary/5 text-center">
-              <div className="text-5xl mb-2">🌟</div>
-              <p className="font-semibold text-primary">Идеальный день!</p>
-            </div>
-          )}
-
-          {achievements.length > 0 && (
-            <div>
-              <p className="font-semibold mb-2 text-sm">Ваши достижения</p>
-              <div className="flex flex-wrap gap-2">
-                {achievements.map(a => (
-                  <div
-                    key={a.label}
-                    className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm"
-                  >
-                    <span>{a.icon}</span>
-                    <span className="font-medium">{a.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="inga-card">
-            <p className="text-sm">{ingaMessage}</p>
-          </div>
-
-          <button
-            onClick={() => {
-              try { localStorage.setItem(PLANNING_INTRO_KEY, 'true'); } catch {}
-              setShowPlanning(true);
-            }}
-            className="inga-btn-primary w-full"
-          >
-            Спланировать завтра →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  const facts = mealFacts(mealMeta, profile.weight);
+  const proteinGrams = facts.protein;
+  const proteinTarget = facts.proteinTarget;
+  const anyProteinLoading = mealMeta.some(m=>m.proteinLoading);
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 pb-[80px] animate-fade-in-up" style={{ maxWidth: 480, margin: '0 auto', width: '100%' }}>
@@ -804,15 +551,18 @@ export function DailyScreen() {
         </div>
       </div>
 
+      {diary.loading && <p role="status" className="text-sm mb-3">Загружаем дневник…</p>}
+      {diary.error && <div className="inga-card mb-3"><p>Не удалось загрузить дневник.</p><button onClick={diary.retry} className="inga-btn-secondary">Повторить</button></div>}
+      {!diary.loading && diary.pending===0 && mealMeta.some(m=>!m.nutritionVersion) && <button onClick={diary.retry} className="text-sm underline mb-3">Повторить оценку состава</button>}
       {/* Tab navigation */}
       <div className="flex gap-2 mb-6 w-full max-w-sm">
-        {(['morning', 'meals', 'evening'] as DailyTab[]).map(t => (
+        {(['morning', 'meals', 'analysis'] as DailyTab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${tab === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
           >
-            {t === 'morning' ? '🌅 Утро' : t === 'meals' ? '🍽️ Питание' : '🌙 Вечер'}
+            {t === 'morning' ? '🌅 Утро' : t === 'meals' ? '🍽️ Питание' : '🔎 Разбор'}
           </button>
         ))}
       </div>
@@ -969,30 +719,30 @@ export function DailyScreen() {
             <h3 className="text-xl font-bold">Доброе утро! ☀️</h3>
             <div>
               <label className="block text-sm font-medium mb-1">Вес сегодня (кг)</label>
-              <input type="number" value={weight} onChange={e => {
-                setWeight(e.target.value);
+              <input disabled={morningBusy} type="number" value={weight} onChange={e => {
+                morningDirty.current.add('weight'); setWeight(e.target.value);
                 setMorningAnalysis(null);
               }} className="inga-input" placeholder="70.5" step="0.1" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Сколько часов вы спали?</label>
-              <input type="number" value={sleep} onChange={e => setSleep(e.target.value)} className="inga-input" placeholder="7" step="0.5" />
+              <input disabled={morningBusy} type="number" value={sleep} onChange={e => {morningDirty.current.add('sleep');setSleep(e.target.value);setMorningAnalysis(null);}} className="inga-input" placeholder="7" step="0.5" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Шаги вчера</label>
-              <input type="number" value={steps} onChange={e => setSteps(e.target.value)} className="inga-input" placeholder="6000" />
+              <input disabled={morningBusy} type="number" value={steps} onChange={e => {morningDirty.current.add('steps');setSteps(e.target.value);setMorningAnalysis(null);}} className="inga-input" placeholder="6000" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Вчера был стул?</label>
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStool(true)}
+                  disabled={morningBusy} onClick={() => {morningDirty.current.add('stool');setStool(true);setMorningAnalysis(null);}}
                   className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${stool === true ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-muted-foreground'}`}
                 >
                   Да
                 </button>
                 <button
-                  onClick={() => setStool(false)}
+                  disabled={morningBusy} onClick={() => {morningDirty.current.add('stool');setStool(false);setMorningAnalysis(null);}}
                   className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${stool === false ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-muted-foreground'}`}
                 >
                   Нет
@@ -1027,7 +777,7 @@ export function DailyScreen() {
             )}
 
             {!morningAnalysis ? (
-              <button onClick={handleSaveMorning} className="inga-btn-primary w-full">
+              <button disabled={!morningReady || morningBusy} onClick={handleSaveMorning} className="inga-btn-primary w-full">
                 Сохранить →
               </button>
             ) : (
@@ -1042,42 +792,20 @@ export function DailyScreen() {
 
         {tab === 'meals' && (() => {
           const totalMeals = mealMeta.length;
-          const carbsMeals = mealMeta.filter(m => m.carbs).length;
-          const fiberMeals = mealMeta.filter(m => m.fiber).length;
-          const carbsTarget = Math.max(3, totalMeals || 3);
-          const fiberTarget = Math.max(3, totalMeals || 3);
-          const pct = (v: number, t: number) => Math.min(100, Math.round((v / Math.max(1, t)) * 100));
-          const userName = profile.name || 'Друг';
-
-          const ingaMsg = (() => {
-            if (totalMeals === 0) return 'Добавьте первый приём пищи — не доводите себя до голода 🧡';
-            if (waterCount < 4) return `${userName}, выпейте ещё воды — пока только ${waterCount} из 6 стаканов 💧`;
-            if (proteinGrams < proteinTarget * 0.6) return 'Белка маловато сегодня. Добавьте мясо, рыбу, яичный белок или творог к следующему приёму.';
-            if (fiberMeals / totalMeals < 0.5) return 'Маловато клетчатки. Добавьте овощи или ягоды к следующему приёму 🥦';
-            if (waterCount >= 5 && proteinGrams >= proteinTarget * 0.8 && fiberMeals / totalMeals >= 0.6) {
-              return 'Хороший день — структура держится. Продолжайте в том же духе 🧡';
-            }
-            return 'Структура дня складывается. Не забывайте про воду, белок и клетчатку 🧡';
-          })();
-
+          const pct = (v:number,t:number) => Math.min(100,Math.round(v/Math.max(1,t)*100));
           const regular = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => !m.isEvening);
           const evening = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => m.isEvening);
 
-          const removeMeal = (idx: number) => {
-            const target = mealMeta[idx];
-            if (target?.id) deleteFoodLog(target.id).catch(() => {});
-            setMeals(prev => prev.filter((_, k) => k !== idx));
-            setMealMeta(prev => prev.filter((_, k) => k !== idx));
-          };
-
-          const setMealPortion = (idx: number, portion: ProteinPortion) => {
-            persistMetaPatch(idx, { proteinPortion: portion });
+          const removeMeal = (idx:number) => { const row=mealMeta[idx]; if(row)void diary.remove(row.id); };
+          const setMealPortion = (idx:number,portion:ProteinPortion) => {
+            const grams={small:15,palm:25,large:40};
+            persistMetaPatch(idx,{proteinPortion:portion,proteinAi:grams[portion],proteinManual:true});
           };
 
           const saveManualProtein = (idx: number, value: string) => {
             const n = parseInt(value, 10);
             if (!isNaN(n) && n >= 0 && n < 500) {
-              persistMetaPatch(idx, { proteinAi: n, proteinLoading: false, proteinManual: true });
+              persistMetaPatch(idx, { proteinAi: n, proteinManual: true });
             }
             setEditingProteinIdx(null);
             setEditingProteinValue('');
@@ -1121,7 +849,7 @@ export function DailyScreen() {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setEditingTimeIdx(m.i)}
+                      disabled={diary.pending>0} onClick={() => setEditingTimeIdx(m.i)}
                       style={{
                         color: '#6A5A50',
                         background: 'transparent',
@@ -1138,7 +866,7 @@ export function DailyScreen() {
                   )}
                 </span>
                 <button
-                  onClick={() => setConfirmDeleteIndex(m.i)}
+                  disabled={diary.pending>0} onClick={() => setConfirmDeleteIndex(m.i)}
                   className="flex items-center justify-center"
                   style={{ color: '#E53935' }}
                   aria-label="Удалить"
@@ -1168,7 +896,7 @@ export function DailyScreen() {
                     <span>г белка</span>
                   </>
                 ) : m.proteinLoading ? (
-                  <span>... оценка белка</span>
+                  <span>... оценка состава</span>
                 ) : m.proteinAi !== null ? (
                   <>
                     <span>~{m.proteinAi}г белка{m.proteinManual ? '' : ''}</span>
@@ -1195,20 +923,20 @@ export function DailyScreen() {
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5 mb-2 items-center">
-                <button onClick={() => toggleMealFlag(m.i, 'protein')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
-                  {m.protein ? '✓' : '+'} Белок
+                <button disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'protein')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
+                  {m.protein === null ? '?' : m.protein ? '✓' : '+'} Белок
                 </button>
                 {!hideCarbs && (
-                  <button onClick={() => toggleMealFlag(m.i, 'carbs')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.carbs, 'carbs')}>
-                    {m.carbs ? '✓' : '+'} Углеводы
+                  <button disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'carbs')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.carbs, 'carbs')}>
+                    {m.carbs === null ? '?' : m.carbs ? '✓' : '+'} Углеводы
                   </button>
                 )}
-                <button onClick={() => toggleMealFlag(m.i, 'fiber')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.fiber, 'fiber')}>
-                  {m.fiber ? '✓' : '+'} Клетчатка
+                <button disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'fiber')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.fiber, 'fiber')}>
+                  {m.fiber === null ? '?' : m.fiber ? '✓' : '+'} Клетчатка
                 </button>
                 {!m.isEvening && (
                   <button
-                    onClick={() => toggleMealFlag(m.i, 'sweet')}
+                    disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'sweet')}
                     className="text-[11px] font-medium"
                     style={{ color: m.sweet ? '#CF7B5A' : '#8A7A70', background: 'transparent', border: 'none', padding: 0 }}
                   >
@@ -1229,7 +957,7 @@ export function DailyScreen() {
                       return (
                         <button
                           key={opt.key}
-                          onClick={() => setMealPortion(m.i, opt.key)}
+                          disabled={diary.pending>0} onClick={() => setMealPortion(m.i, opt.key)}
                           className="text-[11px] px-2.5 py-1 rounded-full font-medium"
                           style={{
                             background: active ? '#F9EDEA' : '#F7F2EE',
@@ -1301,7 +1029,7 @@ export function DailyScreen() {
                     onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
                   />
                   <VoiceInput
-                    onConfirm={(text) => { addMealEntry(text, false, mealTime, undefined, draftFlags); setDraftFlags(emptyDraftFlags); setDraftLightSwaps([]); }}
+                    onConfirm={async(text) => { if(await addMealEntry(text,false,mealTime,undefined,draftFlags)){setDraftFlags(emptyDraftFlags);draftTouched.current.clear();setDraftLightSwaps([]);} }}
                     onEdit={(text) => setMealText(text)}
                   />
                 </div>
@@ -1329,7 +1057,7 @@ export function DailyScreen() {
                 )}
                 {showMealHint && (
                   <div className="text-xs leading-relaxed" style={{ background: '#FFF7F0', border: '1px solid #FFD9C2', borderRadius: 10, padding: '8px 10px', color: '#6A5A50' }}>
-                    Отметьте, что было в приёме — белок, углеводы, клетчатка помогут видеть баланс дня. «Из лёгких рецептов» — если готовили по нашему рецепту, впишем экономию в Копилку лёгкости.
+                    Источники белка, углеводов и клетчатки определяются по описанию блюда. Проверьте отметки и при необходимости поправьте их. «Из лёгких рецептов» — если готовили по нашему рецепту, впишем экономию в Копилку лёгкости.
                     <button onClick={dismissMealHint} className="block mt-1.5 font-semibold" style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}>
                       Понятно
                     </button>
@@ -1350,8 +1078,8 @@ export function DailyScreen() {
                   </button>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleAddMeal} className="inga-btn-primary flex-1">Добавить</button>
-                  <button onClick={() => { setShowMealInput(false); setMealText(''); setDraftFlags(emptyDraftFlags); setDraftLightSwaps([]); }} className="inga-btn-secondary flex-1">Отмена</button>
+                  <button disabled={diary.loading || diary.error} onClick={handleAddMeal} className="inga-btn-primary flex-1">Добавить</button>
+                  <button onClick={() => { setShowMealInput(false); setMealText(''); setDraftFlags(emptyDraftFlags); draftTouched.current.clear(); setDraftLightSwaps([]); }} className="inga-btn-secondary flex-1">Отмена</button>
                 </div>
               </div>
             )}
@@ -1483,28 +1211,11 @@ export function DailyScreen() {
             })()}
 
 
-            {/* Nutrition structure */}
-            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
-              <p className="text-xs font-bold tracking-wide mb-3" style={{ color: '#8A7A70' }}>СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
-              {[
-                { icon: '🥩', label: 'Белок', val: anyProteinLoading ? `...` : `~${proteinGrams}г из ${proteinTarget}г`, color: '#CF7B5A', pct: pct(proteinGrams, proteinTarget) },
-                { icon: '🌾', label: 'Углеводы', val: `${carbsMeals}/${carbsTarget}`, color: '#C49A3E', pct: pct(carbsMeals, carbsTarget) },
-                { icon: '🥦', label: 'Клетчатка', val: `${fiberMeals}/${fiberTarget}`, color: '#5E9E72', pct: pct(fiberMeals, fiberTarget) },
-              ].map(row => (
-                <div key={row.label}>
-                  <div className="flex items-center gap-3 py-1.5">
-                    <span className="text-base">{row.icon}</span>
-                    <span className="text-sm w-20">{row.label}</span>
-                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F2EBE5' }}>
-                      <div style={{ width: `${row.pct}%`, height: '100%', background: row.color, transition: 'width 0.3s' }} />
-                    </div>
-                    <span className="text-xs tabular-nums w-24 text-right" style={{ color: '#8A7A70' }}>{row.val}</span>
-                  </div>
-                  {row.label === 'Белок' && (
-                    <p className="text-[10px] ml-8" style={{ color: '#A89A8E' }}>оценка по описанию блюд</p>
-                  )}
-                </div>
-              ))}
+            <div className="bg-white space-y-3" style={{borderRadius:14,border:'1px solid #EDE5DF',padding:14}}>
+              <p className="text-xs font-bold tracking-wide text-muted-foreground">СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
+              <div className="flex justify-between gap-3 text-sm"><span>🥩 Белок</span><span>{anyProteinLoading?'Оценка…':facts.unknownProtein===totalMeals?'Недостаточно данных':`≈${proteinGrams} г${facts.unknownProtein?' в оценённых записях':''}`}{proteinTarget?` · цель ${proteinTarget} г`:''}</span></div>
+              {([['🌾 Углеводы',facts.carbs],['🥦 Клетчатка',facts.fiber]] as const).map(([label,group])=><div key={label} className="flex justify-between gap-3 text-sm"><span>{label}</span><span>{group.count ? `В ${group.count} из ${totalMeals} записей` : group.unknown ? 'Недостаточно данных' : 'Источники не отмечены'}{group.unknown>0 && group.count>0?' · есть неоценённые':''}</span></div>)}
+              <p className="text-xs text-muted-foreground">Отметки показывают наличие источников в блюдах, а не выполнение дневной нормы. Их можно поправить вручную.</p>
             </div>
 
             {/* Копилка лёгкости — свёрнутая строка, детали по тапу */}
@@ -1540,11 +1251,7 @@ export function DailyScreen() {
               )}
             </button>
 
-            {/* Inga smart card */}
-            <div className="inga-bubble flex gap-3 items-start">
-              <img src={ingaPhoto} alt="Инга" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-              <p className="text-sm">{ingaMsg}</p>
-            </div>
+            <button onClick={()=>setTab('analysis')} className="inga-btn-secondary w-full">Разбор питания сегодня →</button>
 
             {/* Regular meal cards */}
             {regular.map(m => <MealCard key={m.i} m={m} />)}
@@ -1562,7 +1269,7 @@ export function DailyScreen() {
               <p className="text-xs mb-3" style={{ color: '#4A3580', opacity: 0.85 }}>
                 Только белок + клетчатка, без жира и углеводов. Можно есть даже на ночь.
               </p>
-              {evening.map(m => <div key={m.i} className="mb-2"><MealCard m={m} hideCarbs /></div>)}
+              {evening.map(m => <div key={m.i} className="mb-2"><MealCard m={m} /></div>)}
               {!showEveningInput ? (
                 <button
                   onClick={() => setShowEveningInput(true)}
@@ -1583,7 +1290,7 @@ export function DailyScreen() {
                       onKeyDown={e => e.key === 'Enter' && handleAddEveningMeal()}
                     />
                     <VoiceInput
-                      onConfirm={(text) => { addMealEntry(text, true, undefined, undefined, draftFlags); setDraftFlags(emptyDraftFlags); }}
+                      onConfirm={async(text) => { if(await addMealEntry(text,true,undefined,undefined,draftFlags)){setDraftFlags(emptyDraftFlags);draftTouched.current.clear();} }}
                       onEdit={(text) => setEveningText(text)}
                     />
                   </div>
@@ -1597,7 +1304,7 @@ export function DailyScreen() {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleAddEveningMeal} className="flex-1 py-2 rounded-xl text-sm font-medium" style={{ background: '#4A3580', color: '#fff' }}>Добавить</button>
-                    <button onClick={() => { setShowEveningInput(false); setEveningText(''); setDraftFlags(emptyDraftFlags); }} className="inga-btn-secondary flex-1">Отмена</button>
+                    <button onClick={() => { setShowEveningInput(false); setEveningText(''); setDraftFlags(emptyDraftFlags); draftTouched.current.clear(); }} className="inga-btn-secondary flex-1">Отмена</button>
                   </div>
                 </div>
               )}
@@ -1609,7 +1316,7 @@ export function DailyScreen() {
                     <p className="text-base font-semibold mb-2">Удалить приём пищи?</p>
                     <p className="text-sm text-muted-foreground mb-5">Это действие нельзя отменить.</p>
                     <div className="flex gap-2">
-                      <button onClick={() => setConfirmDeleteIndex(null)} className="inga-btn-secondary flex-1 text-sm py-2">
+                      <button disabled={diary.pending>0} onClick={() => setConfirmDeleteIndex(null)} className="inga-btn-secondary flex-1 text-sm py-2">
                         Отмена
                       </button>
                       <button
@@ -1630,84 +1337,12 @@ export function DailyScreen() {
 
 
 
-        {tab === 'evening' && (
-          <div className="space-y-4 animate-fade-in-up">
-            <h3 className="text-xl font-bold">Вечерний итог 🌙</h3>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Эмоция дня</label>
-              <div className="flex flex-wrap gap-2">
-                {['😊 Спокойствие', '😴 Усталость', '😰 Тревога', '😐 Скука', '😢 Грусть'].map(e => (
-                  <button
-                    key={e}
-                    onClick={() => setEmotion(e)}
-                    className={emotion === e ? 'inga-chip-active' : 'inga-chip-inactive'}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Уровень голода (1–5)</label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <button
-                    key={n}
-                    onClick={() => setHunger(n)}
-                    className={`w-10 h-10 rounded-xl font-bold transition-colors ${hunger === n ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Что сегодня получилось? 🌟</label>
-              <input
-                value={dayWin}
-                onChange={e => setDayWin(e.target.value)}
-                className="inga-input"
-                placeholder="Выпила норму воды, съела норму белка, не сорвалась вечером..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Была ли сладкая точка сегодня?</label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setSweetPoint('yes')}
-                  className={sweetPoint === 'yes' ? 'inga-chip-active' : 'inga-chip-inactive'}
-                >
-                  🍰 Да, была
-                </button>
-                <button
-                  onClick={() => setSweetPoint('no')}
-                  className={sweetPoint === 'no' ? 'inga-chip-active' : 'inga-chip-inactive'}
-                >
-                  Нет
-                </button>
-              </div>
-              {sweetPoint === 'no' && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Запланируйте на завтра — это помогает не срываться
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Что далось с трудом?</label>
-              <input value={hardest} onChange={e => setHardest(e.target.value)} className="inga-input" placeholder="Вечером хотелось сладкого..." />
-            </div>
-
-
-            <button onClick={handleSaveEvening} className="inga-btn-primary w-full">
-              Завершить день ✨
-            </button>
-          </div>
-        )}
+        {tab === 'analysis' && <DietAnalysis
+          date={today} revision={JSON.stringify([mealMeta,profile.currentStage,profile.weight,profile.goalWeight,profile.currentFixationCalories])}
+          ready={!diary.loading && !diary.error && diary.pending===0} mealCount={facts.mealCount}
+          protein={facts.protein} unknownProtein={facts.unknownProtein} proteinTarget={facts.proteinTarget}
+          onRecipe={recipe=>{localStorage.setItem('inga-menu-jump',JSON.stringify({section:'recipes',recipeSection:recipe.recipeSection,activeRecipe:recipe.recipeId,returnTo:'daily'}));setStep('menu');}}
+          onPlan={()=>setShowPlanning(true)} />}
       </div>
 
       <button

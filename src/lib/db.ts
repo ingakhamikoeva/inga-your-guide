@@ -137,6 +137,7 @@ export async function loadCheckins(): Promise<{ date: string; weight: number }[]
 }
 
 export interface TodayCheckin {
+  stoolYesterday: boolean | null;
   date: string;
   weight: number | null;
   sleepHours: number | null;

@@ -37,7 +37,7 @@ interface AppContextValue extends AppState {
   runCalculations: () => Calculations;
   performFixationAction: (action: FixationAction) => Promise<void>;
   addDailyReport: (report: DailyReport) => void;
-  addWeightEntry: (date: string, weight: number) => Promise<void>;
+  addWeightEntry: (date: string, weight?: number, metrics?: {sleepHours?:number;stepsYesterday?:number;stoolYesterday?:boolean|null}) => Promise<void>;
   achievementStreak: number | null;
   uniqueRecipes: number | null;
   syncToDb: () => Promise<void>;
@@ -161,12 +161,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   }, []);
 
-  const addWeightEntry = useCallback(async (date: string, weight: number) => {
+  const addWeightEntry = useCallback(async (date: string, weight?: number, metrics?: {sleepHours?:number;stepsYesterday?:number;stoolYesterday?:boolean|null}) => {
     const userId = currentSession()?.user.id;
     if (!userId) throw new Error('account_changed');
-    await saveDailyCheckin(date, weight);
+    await saveDailyCheckin(date, weight, metrics?.sleepHours, metrics?.stepsYesterday, metrics?.stoolYesterday);
     if (currentSession()?.user.id !== userId) throw new Error('account_changed');
-    setWeeklyData(prev => [...prev.filter(entry => entry.date !== date), { date, weight }]);
+    if (weight != null) setWeeklyData(prev => [...prev.filter(entry => entry.date !== date), { date, weight }]);
   }, []);
 
   // Full sync to DB (called manually or on key events)

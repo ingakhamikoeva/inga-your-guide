@@ -1,3 +1,4 @@
+import { analyzeSavedMeal } from "../nutrition/meal-estimation.js";
 import { requireAccessForWrite } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
@@ -99,6 +100,15 @@ r.post("/", async (req, res) => {
   }
 });
 
+r.post('/:id/analyze', async (req, res) => {
+  if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(400).json({error:'invalid_id'});
+  try {
+    const meal = await analyzeSavedMeal(req.userId, req.params.id);
+    if (!meal) return res.status(404).json({error:'not_found'});
+    res.json(meal);
+  } catch { res.status(503).json({error:'nutrition_unavailable'}); }
+});
+
 r.patch("/:id", async (req, res) => {
   const { id } = req.params;
   const { description, mealTag, datetime, meta } = req.body || {};
@@ -109,7 +119,7 @@ r.patch("/:id", async (req, res) => {
           SET raw_text = COALESCE($3, raw_text),
               meal_tag = COALESCE($4, meal_tag),
               datetime = COALESCE($5::timestamptz, datetime),
-              meta     = COALESCE($6::jsonb, meta)
+              meta     = CASE WHEN $6::jsonb IS NULL THEN meta ELSE COALESCE(meta, '{}'::jsonb) || $6::jsonb END
         WHERE log_id = $1 AND user_id = $2
         RETURNING log_id, raw_text, meal_tag, datetime, meta`,
       [
