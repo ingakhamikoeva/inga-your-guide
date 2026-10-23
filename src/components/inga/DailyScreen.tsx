@@ -553,7 +553,7 @@ export function DailyScreen() {
 
       {diary.loading && <p role="status" className="text-sm mb-3">Загружаем дневник…</p>}
       {diary.error && <div className="inga-card mb-3"><p>Не удалось загрузить дневник.</p><button onClick={diary.retry} className="inga-btn-secondary">Повторить</button></div>}
-      {!diary.loading && diary.pending===0 && mealMeta.some(m=>!m.nutritionVersion) && <button onClick={diary.retry} className="text-sm underline mb-3">Повторить оценку состава</button>}
+      {!diary.loading && diary.pending===0 && mealMeta.some(m=>m.nutritionVersion!==3) && <button onClick={diary.retry} className="text-sm underline mb-3">Повторить оценку состава</button>}
       {/* Tab navigation */}
       <div className="flex gap-2 mb-6 w-full max-w-sm">
         {(['morning', 'meals', 'analysis'] as DailyTab[]).map(t => (

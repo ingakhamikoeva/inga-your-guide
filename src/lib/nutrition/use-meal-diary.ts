@@ -40,7 +40,7 @@ export function useMealDiary(date:string) {
   const live=(g:number) => g===generation.current && currentSession()?.user.id===owner;
   const apply=(row:FoodLogRow,g:number) => {if(live(g))setRows(prev=>prev.map(r=>r.log_id===row.log_id?row:r));};
   const analyze=async(row:FoodLogRow,g:number) => {
-    if(row.meta?.nutritionVersion===2 || !live(g))return;
+    if(row.meta?.nutritionVersion===3 || !live(g))return;
     setPending(n=>n+1);setEstimating(ids=>[...ids,row.log_id]);
     const task=apiFetch<FoodLogRow>(`/food-logs/${row.log_id}/analyze`,{method:'POST'});
     queues.current.set(row.log_id,task);
