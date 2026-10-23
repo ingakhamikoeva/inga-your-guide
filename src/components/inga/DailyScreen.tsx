@@ -1213,8 +1213,29 @@ export function DailyScreen() {
 
             <div className="bg-white space-y-3" style={{borderRadius:14,border:'1px solid #EDE5DF',padding:14}}>
               <p className="text-xs font-bold tracking-wide text-muted-foreground">СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
-              <div className="flex justify-between gap-3 text-sm"><span>🥩 Белок</span><span>{anyProteinLoading?'Оценка…':facts.unknownProtein===totalMeals?'Недостаточно данных':`≈${proteinGrams} г${facts.unknownProtein?' в оценённых записях':''}`}{proteinTarget?` · цель ${proteinTarget} г`:''}</span></div>
-              {([['🌾 Углеводы',facts.carbs],['🥦 Клетчатка',facts.fiber]] as const).map(([label,group])=><div key={label} className="flex justify-between gap-3 text-sm"><span>{label}</span><span>{group.count ? `В ${group.count} из ${totalMeals} записей` : group.unknown ? 'Недостаточно данных' : 'Источники не отмечены'}{group.unknown>0 && group.count>0?' · есть неоценённые':''}</span></div>)}
+              <div className="space-y-2">
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="shrink-0">🥩 Белок</span>
+                  <span className="min-w-0 text-right">{anyProteinLoading?'Оценка…':facts.unknownProtein===totalMeals?'Недостаточно данных':`≈${proteinGrams} г${facts.unknownProtein?' в оценённых записях':''}`}{proteinTarget?` · цель ${proteinTarget} г`:''}</span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{background:'#F2EBE5'}} aria-hidden="true">
+                  <div style={{width:`${proteinTarget && facts.unknownProtein<totalMeals ? pct(proteinGrams,proteinTarget) : 0}%`,height:'100%',background:'#CF7B5A',transition:'width 0.3s'}} />
+                </div>
+              </div>
+              {([
+                ['🌾 Углеводы',facts.carbs,'#C49A3E'],
+                ['🥦 Клетчатка',facts.fiber,'#5E9E72'],
+              ] as const).map(([label,group,color])=>(
+                <div key={label} className="space-y-2">
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="shrink-0">{label}</span>
+                    <span className="min-w-0 text-right">{group.count ? `В ${group.count} из ${totalMeals} записей` : group.unknown ? 'Недостаточно данных' : 'Источники не отмечены'}{group.unknown>0 && group.count>0?' · есть неоценённые':''}</span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{background:'#F2EBE5'}} aria-hidden="true">
+                    <div style={{width:`${pct(group.count,totalMeals)}%`,height:'100%',background:color,transition:'width 0.3s'}} />
+                  </div>
+                </div>
+              ))}
               <p className="text-xs text-muted-foreground">Отметки показывают наличие источников в блюдах, а не выполнение дневной нормы. Их можно поправить вручную.</p>
             </div>
 
