@@ -611,7 +611,7 @@ export const mainDishRecipes = [
 {
     "id": "kefir-chicken",
     "name": "Куриная грудка в кефире",
-    "subtitle": "",
+    "subtitle": "По-быстрому",
     "kbju": "132 / 22.8 / 3.6 / 2.4",
     "image": kefirChicken,
     "emoji": "🍗",
