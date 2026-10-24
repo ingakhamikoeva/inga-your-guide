@@ -1,3 +1,6 @@
+import kefirChicken from '@/assets/kefirChicken.png';
+import kefirMarinade from '@/assets/kefirMarinade.png';
+import kefirBeforeBaking from '@/assets/kefirBeforeBaking.png';
 import galette from '@/assets/recipe_galette.jpg';
 import pumpkin_soup from '@/assets/recipe_pumpkin_soup.jpg';
 import apple_roll from '@/assets/recipe_apple_roll.jpg';
@@ -605,6 +608,26 @@ export const soupRecipes = [
 ];
 
 export const mainDishRecipes = [
+{
+    "id": "kefir-chicken",
+    "name": "Куриная грудка в кефире",
+    "subtitle": "",
+    "kbju": "132 / 22.8 / 3.6 / 2.4",
+    "image": kefirChicken,
+    "emoji": "🍗",
+    "video": null,
+    "ingredients": [
+        "Филе куриной грудки — 300 г",
+        "Кефир 1% — 250 г",
+        "Соль, любимые приправы — по вкусу"
+    ],
+    "steps": [
+        "Филе отбить, посолить и посыпать любимыми приправами.",
+        "Сложить в контейнер и залить кефиром. Оставить мариноваться в холодильнике минимум на час, можно на ночь.",
+        "Переложить грудку в форму вместе с кефиром, который остался на ней. Весь маринад переливать не нужно — оставьте лишний кефир в контейнере.",
+        "Запекать в разогретой до 180°C духовке 20–30 минут до готовности."
+    ]
+},
   {
     id: 'turkey-cutlets',
     name: 'Котлеты из индейки',
@@ -711,11 +734,13 @@ export const drinksRecipes = [
 
 // Photos are optional; existing recipe cards keep their original layout.
 export const recipeStepPhotos: Record<string, Record<number, string>> = {
+  'kefir-chicken': {1: kefirMarinade, 2: kefirBeforeBaking},
   'apple-roll': {1: apple_roll_apples, 3: apple_roll_batter, 4: apple_roll_baked, 5: apple_roll_flip, 6: apple_roll_wrapped},
 };
 
 // Analysis links need no invented comparison with a classic recipe.
 export const analysisRecipeLinks = [
+  ...mainDishRecipes.map(r => ({recipeId:r.id, recipeSection:'lunches' as const, name:r.subtitle ? `${r.name} «${r.subtitle}»` : r.name})),
   ...sweetRecipes.map(r => ({recipeId:r.id, recipeSection:'sweet' as const, name:r.subtitle ? `${r.name} «${r.subtitle}»` : r.name})),
   ...soupRecipes.map(r => ({recipeId:r.id, recipeSection:'soups' as const, name:r.subtitle ? `${r.name} «${r.subtitle}»` : r.name})),
 ];

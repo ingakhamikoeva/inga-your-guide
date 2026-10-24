@@ -1508,8 +1508,8 @@ export function MenuScreen() {
             <button onClick={() => goBack(() => setActiveRecipe(null))} className="text-base text-muted-foreground mb-4 block">← Назад</button>
             <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
             <div className="mb-4">
-              <h2 className="text-2xl font-bold">{recipe.name}{recipe.id === 'apple-roll' && ` «${recipe.subtitle}»`}</h2>
-              {recipe.id !== 'apple-roll' && <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>}
+              <h2 className="text-2xl font-bold">{recipe.name}</h2>
+              <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>
               <div className="mt-2 inline-block bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">
                 КБЖУ на 100 г: {recipe.kbju}
               </div>
@@ -1571,8 +1571,8 @@ export function MenuScreen() {
                   className="w-full inga-card flex gap-4 items-center text-left">
                   <img src={recipe.image} alt={recipe.name} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{recipe.name}{recipe.id === 'apple-roll' && ` «${recipe.subtitle}»`}</p>
-                    {recipe.id !== 'apple-roll' && recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
                     <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0" />
@@ -1601,8 +1601,8 @@ export function MenuScreen() {
               </div>
             )}
             <div className="mb-4">
-              <h2 className="text-2xl font-bold">{recipe.name}{recipe.id === 'pumpkin-soup' && ` «${recipe.subtitle}»`}</h2>
-              {recipe.id !== 'pumpkin-soup' && recipe.subtitle && <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>}
+              <h2 className="text-2xl font-bold">{recipe.name}</h2>
+              {recipe.subtitle && <p className="text-sm text-muted-foreground">{recipe.subtitle}</p>}
               <div className="mt-2 inline-block bg-primary/10 text-primary text-xs px-3 py-1 rounded-full font-medium">
                 КБЖУ на 100 г: {recipe.kbju}
               </div>
@@ -1624,7 +1624,10 @@ export function MenuScreen() {
                 {recipe.steps.map((step, i) => (
                   <div key={i} className="flex gap-3 items-start">
                     <span className="shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium mt-0.5">{i + 1}</span>
-                    <span className="text-xs text-muted-foreground leading-relaxed">{step}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs text-muted-foreground leading-relaxed">{step}</span>
+                      {recipeStepPhotos[recipe.id]?.[i] && <img src={recipeStepPhotos[recipe.id][i]} alt={`${recipe.name}: шаг ${i + 1}`} loading="lazy" className="w-full rounded-xl mt-2" />}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1731,8 +1734,8 @@ export function MenuScreen() {
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{recipe.name}{recipe.id === 'pumpkin-soup' && ` «${recipe.subtitle}»`}</p>
-                    {recipe.id !== 'pumpkin-soup' && recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
+                    <p className="text-sm font-semibold">{recipe.name}</p>
+                    {recipe.subtitle && <p className="text-xs text-muted-foreground">{recipe.subtitle}</p>}
                     <p className="text-xs text-primary mt-1">{recipe.kbju} ккал/б/ж/у</p>
                   </div>
                   <ChevronRight size={16} className="text-muted-foreground shrink-0" />
