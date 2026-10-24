@@ -24,7 +24,7 @@ import logoTelegram from '@/assets/logo_telegram.png';
 import logoVk from '@/assets/logo_vk.png';
 import logoMax from '@/assets/logo_max.png';
 import { FoodCheatsheet } from '@/components/inga/FoodCheatsheet';
-import { breakfastRecipes, sweetRecipes, soupRecipes, mainDishRecipes, bakingRecipes, drinksRecipes } from '@/lib/recipes-data';
+import { recipeStepPhotos, breakfastRecipes, sweetRecipes, soupRecipes, mainDishRecipes, bakingRecipes, drinksRecipes } from '@/lib/recipes-data';
 import { PROGRAM_MONTH1 } from '@/lib/program-month1';
 import { ProgramDayCard, currentProgramDay } from './ProgramDayCard';
 import { loadProgramProgress, logUserEvent, redeemPromoCode, type ProgramProgress } from '@/lib/db';
@@ -1474,7 +1474,7 @@ export function MenuScreen() {
             </div>
             {recipe.note && (
               <div className="inga-card mb-3">
-                <p className="text-xs text-muted-foreground leading-relaxed italic">{recipe.note}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed italic whitespace-pre-line">{recipe.note}</p>
               </div>
             )}
             <a
@@ -1531,14 +1531,17 @@ export function MenuScreen() {
                 {recipe.steps.map((step, i) => (
                   <div key={i} className="flex gap-3 items-start">
                     <span className="shrink-0 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center font-medium mt-0.5">{i + 1}</span>
-                    <span className="text-xs text-muted-foreground leading-relaxed">{step}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs text-muted-foreground leading-relaxed">{step}</span>
+                      {recipeStepPhotos[recipe.id]?.[i] && <img src={recipeStepPhotos[recipe.id][i]} alt={`${recipe.name}: шаг ${i + 1}`} loading="lazy" className="w-full rounded-xl mt-2" />}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
             {recipe.note && (
               <div className="inga-card mb-3">
-                <p className="text-xs text-muted-foreground leading-relaxed italic">{recipe.note}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed italic whitespace-pre-line">{recipe.note}</p>
               </div>
             )}
             {recipe.video ? (
@@ -1628,7 +1631,7 @@ export function MenuScreen() {
             </div>
             {recipe.note && (
               <div className="inga-card mb-3">
-                <p className="text-xs text-muted-foreground leading-relaxed italic">{recipe.note}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed italic whitespace-pre-line">{recipe.note}</p>
               </div>
             )}
             {recipe.video ? (

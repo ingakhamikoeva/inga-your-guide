@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { apiFetch, ApiError } from '@/lib/api-client';
 import { LIGHT_RECIPES, LightRecipeEntry } from '@/lib/light-version';
+import { analysisRecipeLinks } from '@/lib/recipes-data';
 import { currentSession } from '@/lib/auth-storage';
 
 type Analysis = {present:string[];attention:string[];next:string[];recipeIds:string[]};
 export function DietAnalysis({date,revision,ready,mealCount,protein,unknownProtein,proteinTarget,onRecipe,onPlan}: {
   date:string;revision:string;ready:boolean;mealCount:number;protein:number;unknownProtein:number;proteinTarget:number|null;
-  onRecipe:(recipe:LightRecipeEntry)=>void;onPlan:()=>void;
+  onRecipe:(recipe:Pick<LightRecipeEntry,'recipeId'|'recipeSection'|'name'>)=>void;onPlan:()=>void;
 }) {
   const owner=currentSession()?.user.id;
   const [result,setResult]=useState<Analysis|null>(null);
@@ -39,7 +40,7 @@ export function DietAnalysis({date,revision,ready,mealCount,protein,unknownProte
       {error && <div className="inga-card"><p className="text-sm">Не удалось загрузить разбор. Ваши записи сохранены.</p><button className="inga-btn-secondary mt-3" onClick={()=>setRetry(n=>n+1)}>Повторить</button></div>}
       {result && <>
         {([['Что уже есть в рационе',result.present],['На что обратить внимание',result.attention],['Как дополнить следующий приём пищи',result.next]] as const).map(([title,lines])=>lines.length>0 && <section className="inga-card space-y-3" key={title}><h4 className="font-semibold">{title}</h4>{lines.map((line,i)=><p className="text-sm leading-relaxed" key={i}>{line}</p>)}</section>)}
-        {result.recipeIds.map(id=>{const recipe=LIGHT_RECIPES.find(r=>r.recipeId===id);return recipe?<button key={id} onClick={()=>onRecipe(recipe)} className="inga-btn-secondary w-full text-left">{recipe.name} →</button>:null;})}
+        {result.recipeIds.map(id=>{const recipe=LIGHT_RECIPES.find(r=>r.recipeId===id) ?? analysisRecipeLinks.find(r=>r.recipeId===id);return recipe?<button key={id} onClick={()=>onRecipe(recipe)} className="inga-btn-secondary w-full text-left">{recipe.name} →</button>:null;})}
       </>}
     </>}
     <button onClick={onPlan} className="inga-btn-secondary w-full">Спланировать завтра →</button>
