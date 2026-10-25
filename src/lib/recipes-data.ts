@@ -291,7 +291,7 @@ export const sweetRecipes = [
   {
     "id": "curd-galette",
     "name": "Творожная галета с фруктами и ягодами",
-    "subtitle": "",
+    "subtitle": "Идеальный перекус",
     "kbju": "122 / 11 / 2 / 14.5",
     "image": galette,
     "video": null,

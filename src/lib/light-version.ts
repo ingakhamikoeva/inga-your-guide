@@ -1,6 +1,6 @@
 // «Лёгкая версия» — поиск любимого блюда и его облегчённой версии.
 // Суть метода: человек продолжает есть то, что любит, только легче — и худеет.
-// Цифры классических версий согласованы с Ингой (июль 2026).
+// Цифры классических версий согласованы с Ингой (июль 2026; новые рецепты — октябрь 2026).
 
 export interface LightRecipeEntry {
   recipeId: string;                 // id рецепта в MenuScreen
@@ -74,6 +74,18 @@ export const LIGHT_RECIPES: LightRecipeEntry[] = [
   { recipeId: 'okroshka', portionGrams: 300, recipeSection: 'soups', name: 'Окрошка', lightKcal: 42, hasVideo: false,
     aliases: ['окрошка'],
     classicLabel: 'окрошка с колбасой и сметаной', classicKcal: 100, tagline: 'тот же летний вкус' },
+  { recipeId: 'curd-galette', portionGrams: 100, recipeSection: 'sweet', name: 'Творожная галета с фруктами и ягодами «Идеальный перекус»', lightKcal: 122, hasVideo: false,
+    aliases: ['галета', 'творожная галета', 'галета с фруктами', 'галета с ягодами', 'идеальный перекус'],
+    classicLabel: 'обычная галета с фруктами и ягодами', classicKcal: 300, tagline: '' },
+  { recipeId: 'apple-roll', portionGrams: 100, recipeSection: 'sweet', name: 'Яблочный рулет «Ароматный»', lightKcal: 83, hasVideo: false,
+    aliases: ['яблочный рулет', 'рулет с яблоками', 'ароматный'],
+    classicLabel: 'обычный яблочный рулет', classicKcal: 240, tagline: '' },
+  { recipeId: 'pumpkin-soup', portionGrams: 300, recipeSection: 'soups', name: 'Тыквенный суп «Осенний»', lightKcal: 43, hasVideo: false,
+    aliases: ['тыквенный суп', 'суп из тыквы', 'тыквенный суп пюре', 'осенний'],
+    classicLabel: 'обычный тыквенный суп', classicKcal: 90, tagline: '' },
+  { recipeId: 'kefir-chicken', portionGrams: 100, recipeSection: 'lunches', name: 'Куриная грудка в кефире «По-быстрому»', lightKcal: 132, hasVideo: false,
+    aliases: ['куриная грудка в кефире', 'курица в кефире', 'грудка в кефире', 'свиная отбивная', 'по быстрому'],
+    classicLabel: 'свиная отбивная', classicKcal: 230, tagline: '' },
   { recipeId: 'turkey-cutlets', portionGrams: 100, recipeSection: 'lunches', name: 'Котлеты из индейки', lightKcal: 136, hasVideo: false,
     aliases: ['котлеты', 'котлета', 'биточки'],
     classicLabel: 'жареные котлеты', classicKcal: 250, tagline: 'тот же сочный вкус' },
@@ -83,6 +95,10 @@ export const LIGHT_RECIPES: LightRecipeEntry[] = [
   { recipeId: 'pizza', portionGrams: 200, recipeSection: 'baking', name: 'Пицца «Я худею»', lightKcal: 118.3, hasVideo: true,
     aliases: ['пицца'],
     classicLabel: 'магазинная пицца', classicKcal: 265, tagline: '' },
+  // Калорийность обычной версии согласована с Ингой: 215 ккал/100 г готового пирога.
+  { recipeId: 'cabbage-pie', portionGrams: 100, recipeSection: 'baking', name: 'Заливной пирог с капустой «По-домашнему»', lightKcal: 114, hasVideo: false,
+    aliases: ['заливной пирог с капустой', 'пирог с капустой', 'капустный пирог'],
+    classicLabel: 'обычный пирог с капустой', classicKcal: 215, tagline: '' },
   { recipeId: 'cappuccino', portionGrams: 200, recipeSection: 'drinks', name: 'Протеиновый капучино', lightKcal: 54, hasVideo: true,
     aliases: ['капучино', 'латте', 'кофе с молоком', 'раф'],
     classicLabel: 'капучино из кофейни (порция)', classicKcal: 120, tagline: '' },
