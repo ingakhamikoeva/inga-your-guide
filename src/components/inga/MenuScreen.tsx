@@ -1612,7 +1612,7 @@ export function MenuScreen() {
               <div className="space-y-1">
                 {recipe.ingredients.map(ing => (
                   <div key={ing} className="flex gap-2 items-start">
-                    <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                    {!ing.trim().endsWith(':') && <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />}
                     <span className="text-xs text-muted-foreground leading-relaxed">{ing}</span>
                   </div>
                 ))}

@@ -1,3 +1,6 @@
+import cabbagePie from '@/assets/cabbagePie.png';
+import cabbagePieFilling from '@/assets/cabbagePieFilling.png';
+import cabbagePieBatter from '@/assets/cabbagePieBatter.png';
 import kefirChicken from '@/assets/kefirChicken.png';
 import kefirMarinade from '@/assets/kefirMarinade.png';
 import kefirBeforeBaking from '@/assets/kefirBeforeBaking.png';
@@ -677,6 +680,39 @@ export const mainDishRecipes = [
 const pirozhkiRef = breakfastRecipes.find(r => r.id === 'pirozhki')!;
 
 export const bakingRecipes = [
+  {
+    "id": "cabbage-pie",
+    "name": "Заливной пирог с капустой",
+    "subtitle": "",
+    "kbju": "114 / 7 / 3.3 / 13.3",
+    "emoji": "🥧",
+    "video": "",
+    "ingredients": [
+      "Для теста:",
+      "Яйца — 2 шт.",
+      "Яичные белки — 70 г",
+      "Кефир — 500 г",
+      "Мука — 200 г (можно 100 г рисовой и 100 г пшеничной)",
+      "Разрыхлитель — 1 ч. л.",
+      "Соль, подсластитель — по вкусу",
+      "Для начинки:",
+      "Капуста — 600 г",
+      "Варёные яйца — 4 шт.",
+      "Соль, перец — по вкусу",
+      "Для формы:",
+      "Немного масла для смазывания"
+    ],
+    "steps": [
+      "Капусту нашинковать и потушить до полуготовности. Варёные яйца нарезать, смешать с капустой, посолить и поперчить.",
+      "В кефир добавить соль, подсластитель и половину муки. Перемешать венчиком.",
+      "Добавить 2 яйца и 70 г яичных белков, снова перемешать. Всыпать оставшуюся муку и разрыхлитель. Тесто должно получиться гладким и тягучим, как на оладьи.",
+      "Форму слегка смазать маслом и налить немного теста. Равномерно выложить капустно-яичную начинку.",
+      "Залить начинку оставшимся тестом.",
+      "Выпекать в разогретой до 180°C духовке в режиме «верх–низ» 50–60 минут до готовности."
+    ],
+    "note": "В форме диаметром 26–28 см пирог получится большим и невысоким. В форме меньшего диаметра (22–24 см) он будет выше.",
+    image: cabbagePie as string | undefined,
+  },
   { ...pirozhkiRef, emoji: '🥟', image: pirozhkiRef.image as string | undefined },
   {
     id: 'pizza',
@@ -734,12 +770,14 @@ export const drinksRecipes = [
 
 // Photos are optional; existing recipe cards keep their original layout.
 export const recipeStepPhotos: Record<string, Record<number, string>> = {
+  'cabbage-pie': {3: cabbagePieFilling, 4: cabbagePieBatter},
   'kefir-chicken': {1: kefirMarinade, 2: kefirBeforeBaking},
   'apple-roll': {1: apple_roll_apples, 3: apple_roll_batter, 4: apple_roll_baked, 5: apple_roll_flip, 6: apple_roll_wrapped},
 };
 
 // Analysis links need no invented comparison with a classic recipe.
 export const analysisRecipeLinks = [
+  ...bakingRecipes.map(r => ({recipeId:r.id, recipeSection:'baking' as const, name:r.subtitle ? `${r.name} «${r.subtitle}»` : r.name})),
   ...mainDishRecipes.map(r => ({recipeId:r.id, recipeSection:'lunches' as const, name:r.subtitle ? `${r.name} «${r.subtitle}»` : r.name})),
   ...sweetRecipes.map(r => ({recipeId:r.id, recipeSection:'sweet' as const, name:r.subtitle ? `${r.name} «${r.subtitle}»` : r.name})),
   ...soupRecipes.map(r => ({recipeId:r.id, recipeSection:'soups' as const, name:r.subtitle ? `${r.name} «${r.subtitle}»` : r.name})),
