@@ -683,7 +683,7 @@ export const bakingRecipes = [
   {
     "id": "cabbage-pie",
     "name": "Заливной пирог с капустой",
-    "subtitle": "",
+    "subtitle": "По-домашнему",
     "kbju": "114 / 7 / 3.3 / 13.3",
     "emoji": "🥧",
     "video": "",
