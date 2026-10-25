@@ -80,7 +80,7 @@ function PilotCheckout({owner}:{owner:string}) {
       <h2 className="text-xl font-bold">Оплата подтверждена</h2>
       <p>Оплачено 100 ₽. Доступ продлён до {formatBillingDate(state!.order!.accessUntil!)}.</p>
       <p>Автопродление выключено. Следующего автоматического списания не будет.</p>
-      <Link to="/" className="inga-btn-primary block text-center">Вернуться в приложение</Link>
+      <Link to="/" className="inga-btn-primary flex w-full items-center justify-center text-center">Вернуться в приложение</Link>
     </section> : state && <section className="inga-card space-y-4">
       <h2 className="text-xl font-bold">Месяц доступа · 100 ₽</h2>
       <p>Разовый платёж без автопродления. Месяц добавится к текущему периоду доступа, а если доступ уже завершён — начнётся после оплаты.</p>
