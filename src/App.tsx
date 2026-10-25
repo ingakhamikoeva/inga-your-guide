@@ -12,6 +12,7 @@ import VerifyEmail from "./pages/VerifyEmail.tsx";
 
 const SubscriptionPreview = lazy(() => import("./pages/SubscriptionPreview.tsx"));
 const SubscriptionTest = lazy(() => import("./pages/SubscriptionTest.tsx"));
+const PaymentCheck = lazy(() => import("./pages/PaymentCheck.tsx"));
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/subscription-preview" element={<Suspense fallback={null}><SubscriptionPreview /></Suspense>} />
           <Route path="/subscription-test" element={<Suspense fallback={null}><SubscriptionTest /></Suspense>} />
+          <Route path="/payment-check" element={<Suspense fallback={null}><PaymentCheck /></Suspense>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
