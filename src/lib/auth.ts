@@ -12,6 +12,8 @@ import {
   getStoredUser,
   notifyAuthChange,
   setTokens,
+  sessionSnapshot,
+  commitSession,
   subscribe,
 } from './auth-storage';
 import { getStoredUtm, clearStoredUtm } from './utm';
@@ -55,6 +57,7 @@ bootstrapRecovery();
 export const auth = {
   async signUp(args: { email: string; password: string; termsConsent?: boolean; pdConsent?: boolean; marketingConsent?: boolean }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
     try {
+      const snapshot = sessionSnapshot();
       const r = await apiFetch<TokenResp>('/auth/signup', {
         method: 'POST',
         body: {
@@ -68,8 +71,11 @@ export const auth = {
         },
         auth: false,
       });
-      setTokens(r.access_token, r.refresh_token, r.user);
-      notifyAuthChange('SIGNED_IN');
+      const committed = await commitSession(snapshot, () => {
+        setTokens(r.access_token, r.refresh_token, r.user);
+        notifyAuthChange('SIGNED_IN');
+      });
+      if (!committed) throw new DOMException('account_changed', 'AbortError');
       clearStoredUtm();
       return { data: { session: currentSession(), user: r.user }, error: null };
     } catch (e) {
@@ -79,13 +85,17 @@ export const auth = {
 
   async signInWithPassword(args: { email: string; password: string }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
     try {
+      const snapshot = sessionSnapshot();
       const r = await apiFetch<TokenResp>('/auth/login', {
         method: 'POST',
         body: args,
         auth: false,
       });
-      setTokens(r.access_token, r.refresh_token, r.user);
-      notifyAuthChange('SIGNED_IN');
+      const committed = await commitSession(snapshot, () => {
+        setTokens(r.access_token, r.refresh_token, r.user);
+        notifyAuthChange('SIGNED_IN');
+      });
+      if (!committed) throw new DOMException('account_changed', 'AbortError');
       return { data: { session: currentSession(), user: r.user }, error: null };
     } catch (e) {
       return { data: { session: null, user: null }, error: toError(e) };
@@ -93,11 +103,14 @@ export const auth = {
   },
 
   async signOut(): Promise<AuthResult> {
+    const snapshot = sessionSnapshot();
     try {
       await apiFetch('/auth/logout', { method: 'POST', retryOn401: false }).catch(() => undefined);
     } finally {
-      clearTokens();
-      notifyAuthChange('SIGNED_OUT');
+      await commitSession(snapshot, () => {
+        clearTokens();
+        notifyAuthChange('SIGNED_OUT');
+      });
     }
     return { error: null };
   },
@@ -109,6 +122,7 @@ export const auth = {
   async getUser(opts: { refresh?: boolean } = {}): Promise<UserResult> {
     const cached = getStoredUser();
     if (cached && !opts.refresh) return { data: { user: cached }, error: null };
+    const snapshot = sessionSnapshot();
     const owner = currentSession()?.user.id;
     if (opts.refresh && !owner) return { data: { user: null }, error: null };
     try {
@@ -118,8 +132,13 @@ export const auth = {
         return { data: { user: null }, error: null };
       }
       if (session && session.user.id === r.user.id) {
-        setTokens(session.access_token, session.refresh_token, r.user);
-        notifyAuthChange('USER_UPDATED');
+        const committed = await commitSession(snapshot, () => {
+          const latest = currentSession();
+          if (!latest) return;
+          setTokens(latest.access_token, latest.refresh_token, r.user, false);
+          notifyAuthChange('USER_UPDATED');
+        });
+        if (!committed) return { data: { user: null }, error: null };
       }
       return { data: { user: r.user }, error: null };
     } catch (e) {
@@ -177,6 +196,7 @@ export const auth = {
 
   // Consumes the recovery token captured at page load.
   async updateUser(args: { password: string }): Promise<AuthResult> {
+    const snapshot = sessionSnapshot();
     const token = sessionStorage.getItem(RECOVERY_KEY);
     if (!token) return { error: new Error('No recovery token in session') };
     try {
@@ -186,8 +206,10 @@ export const auth = {
         auth: false,
       });
       sessionStorage.removeItem(RECOVERY_KEY);
-      clearTokens();
-      notifyAuthChange('SIGNED_OUT');
+      await commitSession(snapshot, () => {
+        clearTokens();
+        notifyAuthChange('SIGNED_OUT');
+      });
       return { error: null };
     } catch (e) {
       return { error: toError(e) };

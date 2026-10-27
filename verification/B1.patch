@@ -1,0 +1,535 @@
+--- a/src/lib/api-client.ts
++++ b/src/lib/api-client.ts
+@@ -5,7 +5,11 @@
+ 
+ import {
+   getAccessToken,
+-  getStoredUser,
++  sessionSnapshot,
++  isSessionCurrent,
++  commitSession,
++  subscribe,
++  type SessionSnapshot,
+   getRefreshToken,
+   setTokens,
+   clearTokens,
+@@ -57,73 +61,129 @@
+   });
+ }
+ 
+-let refreshInFlight: Promise<string | null> | null = null;
++type RefreshFlight = { snapshot: SessionSnapshot; promise: Promise<string | null> };
++let refreshInFlight: RefreshFlight | null = null;
+ 
+-async function attemptRefresh(): Promise<string | null> {
+-  if (refreshInFlight) return refreshInFlight;
++function assertSession(snapshot: SessionSnapshot) {
++  if (!isSessionCurrent(snapshot)) throw new DOMException('account_changed', 'AbortError');
++}
++
++async function attemptRefresh(snapshot: SessionSnapshot): Promise<string | null> {
++  assertSession(snapshot);
++  if (refreshInFlight && refreshInFlight.snapshot.generation === snapshot.generation
++    && refreshInFlight.snapshot.owner === snapshot.owner) return refreshInFlight.promise;
+   const refresh_token = getRefreshToken();
++  const access_token = getAccessToken();
+   if (!refresh_token) return null;
+-
+-  refreshInFlight = (async () => {
++  const controller = new AbortController();
++  const unsubscribe = subscribe(() => {
++    if (!isSessionCurrent(snapshot)) controller.abort();
++  });
++  const flight: RefreshFlight = { snapshot, promise: Promise.resolve(null) };
++  flight.promise = (async () => {
+     try {
+-      const res = await rawFetch('/auth/refresh', { method: 'POST', body: { refresh_token } });
++      const res = await rawFetch('/auth/refresh', { method: 'POST', body: { refresh_token }, signal: controller.signal });
++      assertSession(snapshot);
++      // Another tab may already have refreshed this same session.
++      if (getAccessToken() !== access_token) return getAccessToken();
+       if (!res.ok) return null;
+       const json = await res.json();
++      assertSession(snapshot);
++      if (getAccessToken() !== access_token) return getAccessToken();
+       if (json?.access_token) {
+-        setTokens(json.access_token, json.refresh_token || refresh_token);
+-        notifyAuthChange('TOKEN_REFRESHED');
+-        return json.access_token as string;
++        await commitSession(snapshot, () => {
++          if (getAccessToken() !== access_token) return;
++          setTokens(json.access_token, json.refresh_token || refresh_token);
++          notifyAuthChange('TOKEN_REFRESHED');
++        });
++        assertSession(snapshot);
++        return getAccessToken();
+       }
+       return null;
+     } catch {
++      assertSession(snapshot);
++      if (getAccessToken() !== access_token) return getAccessToken();
+       return null;
+     } finally {
+-      refreshInFlight = null;
++      unsubscribe();
++      if (refreshInFlight === flight) refreshInFlight = null;
+     }
+   })();
+-  return refreshInFlight;
++  refreshInFlight = flight;
++  return flight.promise;
+ }
+ 
+ export async function apiFetch<T = unknown>(path: string, opts: ApiOptions = {}): Promise<T> {
+   if (!HAS_API) throw new ApiError(0, null, 'API base URL not configured');
+-  const requestOwner = getStoredUser()?.id || getStoredUser()?.user_id;
++  const snapshot = sessionSnapshot();
++  const requestOwner = snapshot.owner;
+   const useAuth = opts.auth !== false;
+   const token = useAuth ? getAccessToken() : null;
+ 
+-  let res = await rawFetch(path, opts, token);
++  const controller = new AbortController();
++  const abort = () => controller.abort(opts.signal?.reason);
++  if (opts.signal?.aborted) abort();
++  else opts.signal?.addEventListener('abort', abort, { once: true });
++  const unsubscribe = useAuth ? subscribe(() => {
++    if (!isSessionCurrent(snapshot)) controller.abort();
++  }) : () => {};
++  const check = () => {
++    if (useAuth) assertSession(snapshot);
++    if (controller.signal.aborted) throw new DOMException('Aborted', 'AbortError');
++  };
++  const requestOpts = { ...opts, signal: controller.signal };
++  try {
++    check();
++    let res = await rawFetch(path, requestOpts, token);
++    check();
+ 
+-  if (res.status === 401 && useAuth && opts.retryOn401 !== false) {
+-    const newToken = await attemptRefresh();
+-    if (newToken) {
+-      res = await rawFetch(path, opts, newToken);
+-    } else {
+-      clearTokens();
+-      notifyAuthChange('SIGNED_OUT');
++    if (res.status === 401 && useAuth && opts.retryOn401 !== false) {
++      const newToken = getAccessToken() !== token ? getAccessToken() : await attemptRefresh(snapshot);
++      check();
++      if (newToken) {
++        res = await rawFetch(path, requestOpts, newToken);
++        check();
++      } else {
++        const text = await res.text();
++        check();
++        let body: unknown = null;
++        if (text) { try { body = JSON.parse(text); } catch { body = text; } }
++        await commitSession(snapshot, () => {
++          if (getAccessToken() !== token) return;
++          clearTokens();
++          notifyAuthChange('SIGNED_OUT');
++        });
++        throw new ApiError(res.status, body);
++      }
+     }
++
++    const text = await res.text();
++    check();
++    let json: unknown = null;
++    if (text) {
++      try { json = JSON.parse(text); } catch { json = text; }
++    }
++
++    if (!res.ok) {
++      const code = (json as { error?: string } | null)?.error;
++      const currentOwner = sessionSnapshot().owner;
++      if (useAuth && requestOwner && requestOwner === currentOwner
++        && ((res.status === 403 && code === 'access_required') || (res.status === 503 && code === 'access_unavailable'))) {
++        window.dispatchEvent(new CustomEvent('legche:access-denied', {
++          detail: { userId: requestOwner, access: (json as { access?: unknown })?.access ?? null },
++        }));
++      }
++      throw new ApiError(res.status, json);
++    }
++    const currentOwner = sessionSnapshot().owner;
++    if (useAuth && requestOwner && currentOwner === requestOwner
++      && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(opts.method || 'GET')
++      && /^\/(profile|checkins|food-logs)(\/|$)/.test(path)) {
++      window.dispatchEvent(new CustomEvent('legche:diary-saved', { detail: { userId: requestOwner } }));
++    }
++    return json as T;
++  } finally {
++    unsubscribe();
++    opts.signal?.removeEventListener('abort', abort);
+   }
+-
+-  const text = await res.text();
+-  let json: unknown = null;
+-  if (text) {
+-    try { json = JSON.parse(text); } catch { json = text; }
+-  }
+-
+-  if (!res.ok) {
+-    const code = (json as { error?: string } | null)?.error;
+-    const currentOwner = getStoredUser()?.id || getStoredUser()?.user_id;
+-    if (useAuth && requestOwner && requestOwner === currentOwner
+-      && ((res.status === 403 && code === 'access_required') || (res.status === 503 && code === 'access_unavailable'))) {
+-      window.dispatchEvent(new CustomEvent('legche:access-denied', {
+-        detail: { userId: requestOwner, access: (json as { access?: unknown })?.access ?? null },
+-      }));
+-    }
+-    throw new ApiError(res.status, json);
+-  }
+-  const currentOwner = getStoredUser()?.id || getStoredUser()?.user_id;
+-  if (useAuth && requestOwner && currentOwner === requestOwner
+-    && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(opts.method || 'GET')
+-    && /^\/(profile|checkins|food-logs)(\/|$)/.test(path)) {
+-    window.dispatchEvent(new CustomEvent('legche:diary-saved', { detail: { userId: requestOwner } }));
+-  }
+-  return json as T;
+ }
+--- a/src/lib/auth-storage.ts
++++ b/src/lib/auth-storage.ts
+@@ -4,6 +4,8 @@
+ const ACCESS_KEY = 'inga_access_token';
+ const REFRESH_KEY = 'inga_refresh_token';
+ const USER_KEY = 'inga_user';
++// Commit credentials and their owner together, including an explicit logout.
++const SESSION_KEY = 'inga_session_v1';
+ 
+ export interface StoredUser {
+   id: string;
+@@ -31,50 +33,124 @@
+ type Listener = (event: AuthEvent, session: AppSession | null) => void;
+ const listeners = new Set<Listener>();
+ 
++export interface SessionSnapshot {
++  generation: string;
++  owner: string | null;
++}
++interface SessionRecord {
++  generation: string;
++  session: AppSession | null;
++}
++
++function readRecord(): SessionRecord {
++  try {
++    const raw = localStorage.getItem(SESSION_KEY);
++    if (raw !== null) return JSON.parse(raw) as SessionRecord;
++    // Existing installations keep their session until the first atomic write.
++    const access_token = localStorage.getItem(ACCESS_KEY);
++    const refresh_token = localStorage.getItem(REFRESH_KEY);
++    const rawUser = localStorage.getItem(USER_KEY);
++    const user = rawUser ? JSON.parse(rawUser) as StoredUser : null;
++    return {
++      generation: `legacy:${refresh_token || ''}`,
++      session: access_token && refresh_token && user ? { access_token, refresh_token, user } : null,
++    };
++  } catch { return { generation: 'unavailable', session: null }; }
++}
++
++export function sessionSnapshot(): SessionSnapshot {
++  const record = readRecord();
++  return { generation: record.generation, owner: record.session?.user.id || record.session?.user.user_id || null };
++}
++
++export function isSessionCurrent(snapshot: SessionSnapshot): boolean {
++  const current = sessionSnapshot();
++  return current.generation === snapshot.generation && current.owner === snapshot.owner;
++}
++
++// Serialize commits across tabs where Web Locks is available. The callback is
++// synchronous: no network operation holds the lock. Always recheck after waiting.
++export async function commitSession(snapshot: SessionSnapshot, update: () => void): Promise<boolean> {
++  const commit = () => {
++    if (!isSessionCurrent(snapshot)) return false;
++    update();
++    return true;
++  };
++  if (typeof navigator !== 'undefined' && navigator.locks) {
++    return navigator.locks.request('legche-auth-session', commit);
++  }
++  return commit();
++}
++
+ export function getAccessToken(): string | null {
+-  try { return localStorage.getItem(ACCESS_KEY); } catch { return null; }
++  return currentSession()?.access_token ?? null;
+ }
+ export function getRefreshToken(): string | null {
+-  try { return localStorage.getItem(REFRESH_KEY); } catch { return null; }
++  return currentSession()?.refresh_token ?? null;
+ }
+ export function getStoredUser(): StoredUser | null {
+-  try {
+-    const raw = localStorage.getItem(USER_KEY);
+-    return raw ? (JSON.parse(raw) as StoredUser) : null;
+-  } catch { return null; }
++  return currentSession()?.user ?? null;
+ }
+ 
+-export function setTokens(access: string, refresh: string, user?: StoredUser) {
+-  try {
+-    localStorage.setItem(ACCESS_KEY, access);
+-    localStorage.setItem(REFRESH_KEY, refresh);
+-    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+-  } catch {}
+-}
+-
+-export function clearTokens() {
++function writeRecord(record: SessionRecord) {
++  // Do not swallow a failed write and report a successful login/refresh.
++  localStorage.setItem(SESSION_KEY, JSON.stringify(record));
++  observed = record;
++  // The new record is authoritative; these old keys cannot revive a logout.
+   try {
+     localStorage.removeItem(ACCESS_KEY);
+     localStorage.removeItem(REFRESH_KEY);
+     localStorage.removeItem(USER_KEY);
+-  } catch {}
++  } catch { /* The atomic session record remains authoritative. */ }
++}
++
++export function setTokens(access: string, refresh: string, user?: StoredUser, newSession = !!user) {
++  const previous = readRecord();
++  const owner = user || previous.session?.user;
++  if (!owner) return;
++  writeRecord({
++    generation: newSession ? crypto.randomUUID() : previous.generation,
++    session: { access_token: access, refresh_token: refresh, user: owner },
++  });
++}
++
++export function clearTokens() {
++  writeRecord({ generation: crypto.randomUUID(), session: null });
+ }
+ 
+ export function currentSession(): AppSession | null {
+-  const access_token = getAccessToken();
+-  const refresh_token = getRefreshToken();
+-  const user = getStoredUser();
+-  if (!access_token || !refresh_token || !user) return null;
+-  return { access_token, refresh_token, user };
++  return readRecord().session;
++}
++
++let observed = readRecord();
++function onStorage(event: StorageEvent) {
++  if (event.storageArea && event.storageArea !== localStorage) return;
++  if (event.key !== null && ![SESSION_KEY, ACCESS_KEY, REFRESH_KEY, USER_KEY].includes(event.key)) return;
++  const previous = observed;
++  const next = readRecord();
++  if (JSON.stringify(previous) === JSON.stringify(next)) return;
++  const eventName: AuthEvent = !next.session ? 'SIGNED_OUT'
++    : previous.generation !== next.generation ? 'SIGNED_IN'
++    : previous.session?.access_token !== next.session.access_token ? 'TOKEN_REFRESHED'
++    : 'USER_UPDATED';
++  notifyAuthChange(eventName);
+ }
+ 
+ export function subscribe(fn: Listener): () => void {
++  if (!listeners.size) {
++    observed = readRecord();
++    window.addEventListener('storage', onStorage);
++  }
+   listeners.add(fn);
+-  return () => listeners.delete(fn);
++  return () => {
++    listeners.delete(fn);
++    if (!listeners.size) window.removeEventListener('storage', onStorage);
++  };
+ }
+ 
+ export function notifyAuthChange(event: AuthEvent) {
+-  const session = currentSession();
++  observed = readRecord();
++  const session = observed.session;
+   for (const fn of listeners) {
+     try { fn(event, session); } catch (e) { console.error('auth listener error', e); }
+   }
+--- a/src/lib/auth.ts
++++ b/src/lib/auth.ts
+@@ -12,6 +12,8 @@
+   getStoredUser,
+   notifyAuthChange,
+   setTokens,
++  sessionSnapshot,
++  commitSession,
+   subscribe,
+ } from './auth-storage';
+ import { getStoredUtm, clearStoredUtm } from './utm';
+@@ -55,6 +57,7 @@
+ export const auth = {
+   async signUp(args: { email: string; password: string; termsConsent?: boolean; pdConsent?: boolean; marketingConsent?: boolean }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
+     try {
++      const snapshot = sessionSnapshot();
+       const r = await apiFetch<TokenResp>('/auth/signup', {
+         method: 'POST',
+         body: {
+@@ -68,8 +71,11 @@
+         },
+         auth: false,
+       });
+-      setTokens(r.access_token, r.refresh_token, r.user);
+-      notifyAuthChange('SIGNED_IN');
++      const committed = await commitSession(snapshot, () => {
++        setTokens(r.access_token, r.refresh_token, r.user);
++        notifyAuthChange('SIGNED_IN');
++      });
++      if (!committed) throw new DOMException('account_changed', 'AbortError');
+       clearStoredUtm();
+       return { data: { session: currentSession(), user: r.user }, error: null };
+     } catch (e) {
+@@ -79,13 +85,17 @@
+ 
+   async signInWithPassword(args: { email: string; password: string }): Promise<{ data: { session: AppSession | null; user: StoredUser | null }; error: Error | null }> {
+     try {
++      const snapshot = sessionSnapshot();
+       const r = await apiFetch<TokenResp>('/auth/login', {
+         method: 'POST',
+         body: args,
+         auth: false,
+       });
+-      setTokens(r.access_token, r.refresh_token, r.user);
+-      notifyAuthChange('SIGNED_IN');
++      const committed = await commitSession(snapshot, () => {
++        setTokens(r.access_token, r.refresh_token, r.user);
++        notifyAuthChange('SIGNED_IN');
++      });
++      if (!committed) throw new DOMException('account_changed', 'AbortError');
+       return { data: { session: currentSession(), user: r.user }, error: null };
+     } catch (e) {
+       return { data: { session: null, user: null }, error: toError(e) };
+@@ -93,11 +103,14 @@
+   },
+ 
+   async signOut(): Promise<AuthResult> {
++    const snapshot = sessionSnapshot();
+     try {
+       await apiFetch('/auth/logout', { method: 'POST', retryOn401: false }).catch(() => undefined);
+     } finally {
+-      clearTokens();
+-      notifyAuthChange('SIGNED_OUT');
++      await commitSession(snapshot, () => {
++        clearTokens();
++        notifyAuthChange('SIGNED_OUT');
++      });
+     }
+     return { error: null };
+   },
+@@ -109,6 +122,7 @@
+   async getUser(opts: { refresh?: boolean } = {}): Promise<UserResult> {
+     const cached = getStoredUser();
+     if (cached && !opts.refresh) return { data: { user: cached }, error: null };
++    const snapshot = sessionSnapshot();
+     const owner = currentSession()?.user.id;
+     if (opts.refresh && !owner) return { data: { user: null }, error: null };
+     try {
+@@ -118,8 +132,13 @@
+         return { data: { user: null }, error: null };
+       }
+       if (session && session.user.id === r.user.id) {
+-        setTokens(session.access_token, session.refresh_token, r.user);
+-        notifyAuthChange('USER_UPDATED');
++        const committed = await commitSession(snapshot, () => {
++          const latest = currentSession();
++          if (!latest) return;
++          setTokens(latest.access_token, latest.refresh_token, r.user, false);
++          notifyAuthChange('USER_UPDATED');
++        });
++        if (!committed) return { data: { user: null }, error: null };
+       }
+       return { data: { user: r.user }, error: null };
+     } catch (e) {
+@@ -177,6 +196,7 @@
+ 
+   // Consumes the recovery token captured at page load.
+   async updateUser(args: { password: string }): Promise<AuthResult> {
++    const snapshot = sessionSnapshot();
+     const token = sessionStorage.getItem(RECOVERY_KEY);
+     if (!token) return { error: new Error('No recovery token in session') };
+     try {
+@@ -186,8 +206,10 @@
+         auth: false,
+       });
+       sessionStorage.removeItem(RECOVERY_KEY);
+-      clearTokens();
+-      notifyAuthChange('SIGNED_OUT');
++      await commitSession(snapshot, () => {
++        clearTokens();
++        notifyAuthChange('SIGNED_OUT');
++      });
+       return { error: null };
+     } catch (e) {
+       return { error: toError(e) };
+--- a/src/pages/Index.tsx
++++ b/src/pages/Index.tsx
+@@ -2,6 +2,7 @@
+ import { SubscriptionProvider, useSubscription } from '@/context/SubscriptionContext';
+ import { AccessScreen } from '@/components/inga/AccessScreen';
+ import { auth } from '@/lib/auth';
++import { sessionSnapshot, subscribe } from '@/lib/auth-storage';
+ import { AppProvider, useApp } from '@/context/AppContext';
+ import { AppStep } from '@/lib/types';
+ import { AuthScreen } from '@/components/inga/AuthScreen';
+@@ -24,7 +25,9 @@
+   const hydratedRef = useState({ done: false })[0];
+ 
+   useEffect(() => {
++    let active = true;
+     const handleAuth = async (authed: boolean) => {
++      if (!active) return;
+       setIsAuthed(authed);
+       setAuthReady(true);
+       if (!authed) {
+@@ -34,10 +37,11 @@
+       if (!hydratedRef.done) {
+         hydratedRef.done = true;
+         setTimeout(async () => {
++          if (!active) return;
+           try {
+             await hydrateFromDb();
+           } catch {
+-            if (step === 'auth') setStep('survey-name' as AppStep);
++            if (active && step === 'auth') setStep('survey-name' as AppStep);
+           }
+         }, 0);
+       }
+@@ -51,7 +55,7 @@
+       handleAuth(!!session?.user);
+     });
+ 
+-    return () => subscription.unsubscribe();
++    return () => { active = false; subscription.unsubscribe(); };
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+ 
+@@ -84,14 +88,25 @@
+   }
+ }
+ 
+-const Index = ({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) => (
+-  <AppProvider>
++const Index = ({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) => {
++  const [generation, setGeneration] = useState(() => sessionSnapshot().generation);
++  useEffect(() => {
++    const sync = () => setGeneration(sessionSnapshot().generation);
++    const unsubscribe = subscribe(sync);
++    sync();
++    return unsubscribe;
++  }, []);
++  // Reset contexts and screen drafts together on login/logout, including other tabs.
++  // Ordinary token refresh keeps the same generation and does not remount forms.
++  return (
++  <AppProvider key={generation}>
+     <SubscriptionProvider>
+     <div className="min-h-screen">
+       <AppFlow initialAuthMode={initialAuthMode} />
+     </div>
+     </SubscriptionProvider>
+   </AppProvider>
+-);
++  );
++};
+ 
+ export default Index;

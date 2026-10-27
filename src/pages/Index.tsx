@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { SubscriptionProvider, useSubscription } from '@/context/SubscriptionContext';
 import { AccessScreen } from '@/components/inga/AccessScreen';
 import { auth } from '@/lib/auth';
+import { sessionSnapshot, subscribe } from '@/lib/auth-storage';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AppStep } from '@/lib/types';
 import { AuthScreen } from '@/components/inga/AuthScreen';
@@ -24,7 +25,9 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
   const hydratedRef = useState({ done: false })[0];
 
   useEffect(() => {
+    let active = true;
     const handleAuth = async (authed: boolean) => {
+      if (!active) return;
       setIsAuthed(authed);
       setAuthReady(true);
       if (!authed) {
@@ -34,10 +37,11 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
       if (!hydratedRef.done) {
         hydratedRef.done = true;
         setTimeout(async () => {
+          if (!active) return;
           try {
             await hydrateFromDb();
           } catch {
-            if (step === 'auth') setStep('survey-name' as AppStep);
+            if (active && step === 'auth') setStep('survey-name' as AppStep);
           }
         }, 0);
       }
@@ -51,7 +55,7 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
       handleAuth(!!session?.user);
     });
 
-    return () => subscription.unsubscribe();
+    return () => { active = false; subscription.unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -84,14 +88,25 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
   }
 }
 
-const Index = ({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) => (
-  <AppProvider>
+const Index = ({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) => {
+  const [generation, setGeneration] = useState(() => sessionSnapshot().generation);
+  useEffect(() => {
+    const sync = () => setGeneration(sessionSnapshot().generation);
+    const unsubscribe = subscribe(sync);
+    sync();
+    return unsubscribe;
+  }, []);
+  // Reset contexts and screen drafts together on login/logout, including other tabs.
+  // Ordinary token refresh keeps the same generation and does not remount forms.
+  return (
+  <AppProvider key={generation}>
     <SubscriptionProvider>
     <div className="min-h-screen">
       <AppFlow initialAuthMode={initialAuthMode} />
     </div>
     </SubscriptionProvider>
   </AppProvider>
-);
+  );
+};
 
 export default Index;

@@ -1,0 +1,152 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> vite_react_shadcn_ts@0.0.0 test
+> vitest run --reporter=dot src/lib/auth-session.test.ts
+
+
+ RUN  v3.2.7 /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main
+
+xxxxxxx···xx
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: delayed 401 never replays A profile with B credentials
+AssertionError: expected { ok: true } to be an instance of Error
+ ❯ src/lib/auth-session.test.ts:34:24
+     32|   storage.setTokens('access-B', 'refresh-B', person('B')); storage.not…
+     33|   first.resolve(json({}, 401));
+     34|   expect(await result).toBeInstanceOf(Error);
+       |                        ^
+     35|   expect(fetch).toHaveBeenCalledTimes(1);
+     36|   expect(storage.currentSession()?.access_token).toBe('access-B');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: late A refresh (success) cannot overwrite or sign out B
+AssertionError: expected { ok: true } to be an instance of Error
+ ❯ src/lib/auth-session.test.ts:50:26
+     48|     refresh.resolve(outcome === 'success' ? json({ access_token: 'acce…
+     49|       : outcome === '401' ? json({}, 401) : { get ok() { throw new Typ…
+     50|     expect(await result).toBeInstanceOf(Error);
+       |                          ^
+     51|     expect(storage.currentSession()).toMatchObject({ access_token: 'ac…
+     52|     expect(fetch).toHaveBeenCalledTimes(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: late A refresh (401) cannot overwrite or sign out B
+ FAIL  src/lib/auth-session.test.ts > B1: late A refresh (network) cannot overwrite or sign out B
+AssertionError: expected null to match object { access_token: 'access-B', …(1) }
+
+- Expected: 
+{
+  "access_token": "access-B",
+  "user": {
+    "email": "B@example.invalid",
+    "id": "B",
+    "user_id": "B",
+  },
+}
+
++ Received: 
+null
+
+ ❯ src/lib/auth-session.test.ts:51:38
+     49|       : outcome === '401' ? json({}, 401) : { get ok() { throw new Typ…
+     50|     expect(await result).toBeInstanceOf(Error);
+     51|     expect(storage.currentSession()).toMatchObject({ access_token: 'ac…
+       |                                      ^
+     52|     expect(fetch).toHaveBeenCalledTimes(2);
+     53|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: late successful response and diary event are discarded after account switch
+AssertionError: expected { name: 'A' } to be an instance of Error
+ ❯ src/lib/auth-session.test.ts:64:24
+     62|   storage.setTokens('access-B', 'refresh-B', person('B')); storage.not…
+     63|   first.resolve(json({ name: 'A' }));
+     64|   expect(await result).toBeInstanceOf(Error); expect(saved).not.toHave…
+       |                        ^
+     65| });
+     66| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: successful response body delayed across account switch is discarded
+AssertionError: expected { name: 'A' } to be an instance of Error
+ ❯ src/lib/auth-session.test.ts:75:24
+     73|   storage.setTokens('access-B', 'refresh-B', person('B'));
+     74|   body.resolve('{"name":"A"}');
+     75|   expect(await result).toBeInstanceOf(Error);
+       |                        ^
+     76| });
+     77| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: logout and login to the same user invalidates the previous request
+AssertionError: expected "spy" to be called 1 times, but got 3 times
+ ❯ src/lib/auth-session.test.ts:85:61
+     83|   storage.clearTokens(); storage.setTokens('access-A2', 'refresh-A2', …
+     84|   first.resolve(json({}, 401));
+     85|   expect(await result).toBeInstanceOf(Error); expect(fetch).toHaveBeen…
+       |                                                             ^
+     86| });
+     87| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: delayed logout of A does not clear a newer login B
+AssertionError: expected undefined to be 'B' // Object.is equality
+
+- Expected: 
+"B"
+
++ Received: 
+undefined
+
+ ❯ src/lib/auth-session.test.ts:126:45
+    124|   storage.setTokens('access-B', 'refresh-B', person('B')); storage.not…
+    125|   pending.resolve(json({ ok: true })); await result;
+    126|   expect(storage.currentSession()?.user.id).toBe('B');
+       |                                             ^
+    127| });
+    128| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯
+
+ FAIL  src/lib/auth-session.test.ts > B1: other-tab login, token refresh, logout and clear notify subscribers
+AssertionError: expected last "spy" call to have been called with [ 'SIGNED_IN', ObjectContaining{…} ]
+
+- Expected: 
+[
+  "SIGNED_IN",
+  ObjectContaining {
+    "user": {
+      "email": "B@example.invalid",
+      "id": "B",
+      "user_id": "B",
+    },
+  },
+]
+
++ Received: 
+undefined
+
+ ❯ src/lib/auth-session.test.ts:142:19
+    140|   };
+    141|   publish(() => otherTab.setTokens('access-B', 'refresh-B', person('B'…
+    142|   expect(changed).toHaveBeenLastCalledWith('SIGNED_IN', expect.objectC…
+       |                   ^
+    143|   publish(() => otherTab.setTokens('access-B-new', 'refresh-B'));
+    144|   expect(changed).toHaveBeenLastCalledWith('TOKEN_REFRESHED', expect.o…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed | 3 passed (12)
+   Start at  01:29:17
+   Duration  1.04s (transform 78ms, setup 47ms, collect 33ms, tests 351ms, environment 276ms, prepare 154ms)
+

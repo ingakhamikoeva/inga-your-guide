@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+src/components/inga/LightVersionScreen.tsx(58,39): error TS2345: Argument of type '"sweet" | "breakfasts" | "soups" | "lunches" | "baking" | "drinks"' is not assignable to parameter of type '"sweet" | "breakfasts"'.
+  Type '"soups"' is not assignable to type '"sweet" | "breakfasts"'.
+src/components/inga/LightVersionScreen.tsx(91,39): error TS2345: Argument of type '"sweet" | "breakfasts" | "soups" | "lunches" | "baking" | "drinks"' is not assignable to parameter of type '"sweet" | "breakfasts"'.
+  Type '"soups"' is not assignable to type '"sweet" | "breakfasts"'.
+src/components/inga/MenuScreen.tsx(2052,7): error TS2367: This comparison appears to be unintentional because the types '"profile" | "light-version" | "consultation"' and '"how-to"' have no overlap.
