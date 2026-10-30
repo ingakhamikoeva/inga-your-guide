@@ -1,11 +1,10 @@
-import { currentSession, subscribe } from '@/lib/auth-storage';
+import { currentSession, subscribe, sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
 import { useAchievements } from '@/lib/achievement-client';
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport, Medal, FixationAction } from '@/lib/types';
 import { calculateAll, roundTo50 } from '@/lib/calculations';
 import {
   saveFixationAction,
-  isAuthenticated,
   saveUserProfile,
   saveUserPlan,
   saveAssessmentAnswers,
@@ -33,7 +32,7 @@ interface AppState {
 
 interface AppContextValue extends AppState {
   setStep: (step: AppStep) => void;
-  updateProfile: (data: Partial<UserProfile>) => void;
+  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   runCalculations: () => Calculations;
   performFixationAction: (action: FixationAction) => Promise<void>;
   addDailyReport: (report: DailyReport) => void;
@@ -110,10 +109,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
   });
 
-  const updateProfile = useCallback((data: Partial<UserProfile>) => {
-    setProfile(prev => ({ ...prev, ...data }));
-    // Send only the edit: unrelated updates must not resubmit a legacy goal.
-    saveUserProfile(data).catch(() => {});
+  const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
+    const session = sessionSnapshot();
+    if (!session.owner) throw new Error('account_changed');
+    // Send only the edit; publish it locally only after the server confirms it.
+    await saveUserProfile(data);
+    if (!isSessionCurrent(session)) throw new Error('account_changed');
+    const nextProfile = { ...stateRef.current.profile, ...data };
+    stateRef.current = { ...stateRef.current, profile: nextProfile };
+    setProfile(nextProfile);
   }, []);
 
   const performFixationAction = useCallback(async (action: FixationAction) => {
@@ -139,10 +143,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [profile.fixationProgress?.revision]);
 
   const runCalculations = useCallback(() => {
-    const calc = calculateAll(profile);
+    const calc = calculateAll(stateRef.current.profile);
+    stateRef.current = { ...stateRef.current, calculations: calc };
     setCalculations(calc);
-    // Sync plan to DB
-    saveUserPlan(profile, calc).catch(() => {});
+    // This is a preview. syncToDb explicitly persists it before starting the trial.
     return calc;
   }, [profile]);
 
@@ -171,20 +175,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Full sync to DB (called manually or on key events)
   const syncToDb = useCallback(async () => {
-    const authed = await isAuthenticated();
-    if (!authed) return;
-
-    await saveUserProfile(profile);
-    if (calculations) {
-      await saveUserPlan(profile, calculations);
+    const session = sessionSnapshot();
+    const check = () => {
+      if (!session.owner || !isSessionCurrent(session)) throw new Error('account_changed');
+    };
+    check();
+    const { profile: currentProfile, calculations: currentCalculations } = stateRef.current;
+    await saveUserProfile(currentProfile);
+    check();
+    // RouteReady's effect may not have rendered its preview yet.
+    const plan = currentCalculations || (currentProfile.height && currentProfile.weight && currentProfile.age
+      ? calculateAll(currentProfile) : null);
+    if (plan) {
+      await saveUserPlan(currentProfile, plan);
+      check();
     }
-    if (profile.foodTestAnswers) {
-      await saveAssessmentAnswers(profile.foodTestAnswers);
+    if (currentProfile.foodTestAnswers) {
+      await saveAssessmentAnswers(currentProfile.foodTestAnswers);
+      check();
     }
-    if (profile.foodProfile) {
-      await saveBehaviorProfile(profile.foodProfile);
+    if (currentProfile.foodProfile) {
+      await saveBehaviorProfile(currentProfile.foodProfile);
+      check();
     }
-  }, [profile, calculations]);
+  }, []);
 
   // Hydrate state from DB after auth (essential for cross-domain login where localStorage is empty)
   // Полный сброс локального состояния. Нужен при регистрации нового аккаунта:
@@ -218,11 +232,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const generation = ++hydrationGeneration.current;
 
     const [dbProfile, dbPlan, dbBehavior, dbAnswers, dbCheckins] = await Promise.all([
-      loadUserProfile(),
-      loadUserPlan(),
-      loadBehaviorProfile(),
-      loadAssessmentAnswers(),
-      loadCheckins(),
+      loadUserProfile({ strict: true }),
+      loadUserPlan({ strict: true }),
+      loadBehaviorProfile({ strict: true }),
+      loadAssessmentAnswers({ strict: true }),
+      loadCheckins({ strict: true }),
     ]);
 
     if (currentSession()?.user.id !== userId || generation !== hydrationGeneration.current) return 'auth';

@@ -1,0 +1,115 @@
+{
+  "basis": "supplied original archive + B1",
+  "files": [
+    {
+      "path": "src/components/inga/AccessScreen.tsx",
+      "sha256": "71f8787a18f4bc0f40cc7acba2a547ab41042b7b3269594dc130222395cdfee6",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/DailyScreen.tsx",
+      "sha256": "e904cd17585a68c1672a74c1a68091b901273e10e8ac95ef7d3cdf255d2592c5",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/FoodTestScreen.tsx",
+      "sha256": "4c45345404a6132de270c399d14e984255ccd9da94ecf35efa3c4f83432ab332",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/GoalScreen.tsx",
+      "sha256": "b758b1242d5dc41b85978f9ffc73f17108fa7ca45cdd11116e84d6ffcecbc466",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/GoalWeightScreen.tsx",
+      "sha256": "d70a7c1456a62ba9cb30299299ba2dcf9c3bec8a50f3c32d4d1f45775d509029",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/MeasurementsScreen.tsx",
+      "sha256": "427828a7999e19f3df0219fc03d0bd53bc1a4245f3358dbd2e0d547b13da046a",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/MenuScreen.tsx",
+      "sha256": "80f20d7d350ecfbbad881977ca14dfb8af1f0d15d36dd636aec132f099f307bd",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/PaceChoiceScreen.tsx",
+      "sha256": "7c8df0b17cc2723727059b5c93610ac95a564ecd8eb12bc98e900045b554be4f",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/RouteReadyScreen.tsx",
+      "sha256": "72a82ba6b920b6da25ad3c202f97cea4ed3508fbaee97d8d0f67fa9231a7e5ab",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/SurveyDataScreen.tsx",
+      "sha256": "b94269770936d3fdc4740d969ab81d6ab7276190c9d1acce40d3cbeba10c9a00",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/SurveyEmotionsScreen.tsx",
+      "sha256": "7563fd7771f739c19ee5847ebbce283fa372742f0e9e254e13f80ffe4c24f131",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/SurveyNameScreen.tsx",
+      "sha256": "fdf6da2101c11fcef63d0cc9395298fabcd76d1cc035e3a591841a956ba8906f",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/SurveyReasonsScreen.tsx",
+      "sha256": "ede9c83a1ff7559083077f299f62cd3656fa80ad52789b55c26dbffe18187d81",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/TrackingMethodScreen.tsx",
+      "sha256": "69782c799072df07a2e8ae75196edad2dddb9aaa4773d30e1a5d619252e46795",
+      "new": false
+    },
+    {
+      "path": "src/components/inga/WhyScreen.tsx",
+      "sha256": "61a2e0fea7cd1a85afe1447fe1c6f32eb0970a81720a36bc0650d2b48e65fc39",
+      "new": false
+    },
+    {
+      "path": "src/context/AppContext.tsx",
+      "sha256": "49e7c17ec9442db0e71b3ccd13aef842f80fdd7b672a21e9a38d440d1ef66b27",
+      "new": false
+    },
+    {
+      "path": "src/hooks/use-save-action.ts",
+      "sha256": "614e43225f49b7dd2f3043f3a5cece8c28425ba5a06bb27757302b6b1259245a",
+      "new": true
+    },
+    {
+      "path": "src/lib/db.ts",
+      "sha256": "85f8d3a70ac3f80ee511bfddf45d1746382b2c2f77e91564626923bd6b688088",
+      "new": false
+    },
+    {
+      "path": "src/pages/Index.session.test.tsx",
+      "sha256": "8da19bf9cb0faae189d31a871916b04b3a912a06538df2bdd2fd726fd182b4fc",
+      "new": false
+    },
+    {
+      "path": "src/pages/Index.tsx",
+      "sha256": "76d9196bbbdbe0bc87d3de651ebdf8df77155c5940cd36c9cbe980c56af5e0a5",
+      "new": false
+    },
+    {
+      "path": "src/test/profile-save-api.test.tsx",
+      "sha256": "350a07190ba9ac9d51af9acd62477fbddb17d18435f8a1f77c486bacfb379da1",
+      "new": true
+    },
+    {
+      "path": "src/test/profile-save.test.tsx",
+      "sha256": "2e23f9233f48499a8330e07a9e96b621e0906ecb76dcd2b9e5a120216b9fad1a",
+      "new": true
+    }
+  ]
+}

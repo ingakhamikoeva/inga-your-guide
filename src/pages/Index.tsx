@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { LOAD_ERROR } from '@/hooks/use-save-action';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SubscriptionProvider, useSubscription } from '@/context/SubscriptionContext';
 import { AccessScreen } from '@/components/inga/AccessScreen';
 import { auth } from '@/lib/auth';
-import { sessionSnapshot, subscribe } from '@/lib/auth-storage';
+import { sessionSnapshot, isSessionCurrent, subscribe } from '@/lib/auth-storage';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { AppStep } from '@/lib/types';
 import { AuthScreen } from '@/components/inga/AuthScreen';
@@ -22,48 +23,65 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
   const subscription = useSubscription();
   const [authReady, setAuthReady] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
-  const hydratedRef = useState({ done: false })[0];
+  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const hydration = useRef(0);
+  const started = useRef(false);
+
+  const loadProfile = useCallback(async () => {
+    const request = ++hydration.current;
+    const session = sessionSnapshot();
+    setLoadStatus('loading');
+    try {
+      await hydrateFromDb();
+      if (request === hydration.current && isSessionCurrent(session)) setLoadStatus('ready');
+    } catch {
+      if (request === hydration.current && isSessionCurrent(session)) setLoadStatus('error');
+    }
+  }, [hydrateFromDb]);
 
   useEffect(() => {
     let active = true;
-    const handleAuth = async (authed: boolean) => {
+    const handleAuth = (authed: boolean) => {
       if (!active) return;
       setIsAuthed(authed);
       setAuthReady(true);
       if (!authed) {
-        hydratedRef.done = false;
+        started.current = false;
+        ++hydration.current;
         return;
       }
-      if (!hydratedRef.done) {
-        hydratedRef.done = true;
-        setTimeout(async () => {
-          if (!active) return;
-          try {
-            await hydrateFromDb();
-          } catch {
-            if (active && step === 'auth') setStep('survey-name' as AppStep);
-          }
-        }, 0);
+      if (!started.current) {
+        started.current = true;
+        void loadProfile();
       }
     };
-
     const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
       handleAuth(!!session?.user);
     });
-
-    auth.getSession().then(({ data: { session } }) => {
-      handleAuth(!!session?.user);
-    });
-
-    return () => { active = false; subscription.unsubscribe(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    auth.getSession().then(({ data: { session } }) => handleAuth(!!session?.user));
+    return () => {
+      active = false;
+      started.current = false;
+      ++hydration.current;
+      subscription.unsubscribe();
+    };
+  }, [loadProfile]);
 
   if (!authReady) return null;
 
-  if (!isAuthed || step === 'auth') {
+  if (!isAuthed) {
     return <AuthScreen initialMode={initialAuthMode} />;
   }
+
+  // Do not render stale local data or interpret a failed load as a new account.
+  if (loadStatus === 'loading') return null;
+  if (loadStatus === 'error') {
+    return <div className="min-h-screen flex flex-col items-center justify-center px-6">
+      <p role="alert" className="inga-bubble mb-4">{LOAD_ERROR}</p>
+      <button onClick={() => { void loadProfile(); }} className="inga-btn-primary">Повторить</button>
+    </div>;
+  }
+  if (step === 'auth') return <AuthScreen initialMode={initialAuthMode} />;
 
   if ((step === 'daily' || step === 'chat')
     && (subscription.error || !subscription.access?.active)) {

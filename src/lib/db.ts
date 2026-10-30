@@ -28,10 +28,11 @@ export async function saveUserProfile(profile: Partial<UserProfile>) {
   await apiFetch('/profile', { method: 'PUT', body });
 }
 
-export async function loadUserProfile(): Promise<Partial<UserProfile> | null> {
+export async function loadUserProfile(options: { strict?: boolean } = {}): Promise<Partial<UserProfile> | null> {
   try {
     return await apiFetch<Partial<UserProfile> | null>('/profile');
   } catch (e) {
+    if (options.strict) throw e;
     console.error('loadUserProfile failed', e);
     return null;
   }
@@ -45,7 +46,7 @@ export async function saveFixationAction(action: FixationAction, revision: numbe
 
 // ============ USER PLAN ============
 
-export async function loadUserPlan(): Promise<{
+export async function loadUserPlan(options: { strict?: boolean } = {}): Promise<{
   paceChoice?: 'fast' | 'slow';
   trackingMethod?: 'calories' | 'palm' | 'plate';
   calorieTarget?: number;
@@ -55,6 +56,7 @@ export async function loadUserPlan(): Promise<{
   try {
     return await apiFetch('/plan');
   } catch (e) {
+    if (options.strict) throw e;
     console.error('loadUserPlan failed', e);
     return null;
   }
@@ -75,10 +77,11 @@ export async function saveUserPlan(profile: Partial<UserProfile>, calculations: 
 
 // ============ BEHAVIOR PROFILE ============
 
-export async function loadBehaviorProfile(): Promise<FoodProfile | null> {
+export async function loadBehaviorProfile(options: { strict?: boolean } = {}): Promise<FoodProfile | null> {
   try {
     return await apiFetch<FoodProfile | null>('/behavior');
   } catch (e) {
+    if (options.strict) throw e;
     console.error('loadBehaviorProfile failed', e);
     return null;
   }
@@ -90,11 +93,12 @@ export async function saveBehaviorProfile(foodProfile: FoodProfile) {
 
 // ============ ASSESSMENT ============
 
-export async function loadAssessmentAnswers(): Promise<number[] | null> {
+export async function loadAssessmentAnswers(options: { strict?: boolean } = {}): Promise<number[] | null> {
   try {
     const arr = await apiFetch<number[] | null>('/assessment');
     return Array.isArray(arr) ? arr : null;
   } catch (e) {
+    if (options.strict) throw e;
     console.error('loadAssessmentAnswers failed', e);
     return null;
   }
@@ -127,10 +131,11 @@ export async function saveDailyCheckin(
   });
 }
 
-export async function loadCheckins(): Promise<{ date: string; weight: number }[]> {
+export async function loadCheckins(options: { strict?: boolean } = {}): Promise<{ date: string; weight: number }[]> {
   try {
     return await apiFetch<{ date: string; weight: number }[]>('/checkins');
   } catch (e) {
+    if (options.strict) throw e;
     console.error('loadCheckins failed', e);
     return [];
   }

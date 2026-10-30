@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { AppStep } from '@/lib/types';
@@ -30,6 +31,7 @@ export function FoodTestIntroScreen() {
 
 export function FoodTestScreen() {
   const { updateProfile, setStep, profile } = useApp();
+  const { save, saving, saveError } = useSaveAction();
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
 
@@ -39,15 +41,15 @@ export function FoodTestScreen() {
     ? question.text
     : getText(question.text.female, question.text.male, profile.gender);
 
-  const handleAnswer = (optionIndex: number) => {
-    const newAnswers = [...answers, optionIndex];
+  const handleAnswer = async (optionIndex: number) => {
+    const newAnswers = [...answers.slice(0, currentQ), optionIndex];
     setAnswers(newAnswers);
 
     if (currentQ < total - 1) {
       setCurrentQ(currentQ + 1);
     } else {
       const result = interpretFoodTest(newAnswers);
-      updateProfile({
+      if (!(await save(() => updateProfile({
         foodTestAnswers: newAnswers,
         foodProfile: {
           pattern: result.pattern,
@@ -56,13 +58,14 @@ export function FoodTestScreen() {
           awareness: result.awareness,
           supportStyle: result.supportStyle,
         },
-      });
+      })))) return;
       setStep('food-test-result' as AppStep);
     }
   };
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       <div className="w-full max-w-sm mb-4">
         <div className="text-sm text-muted-foreground mb-2">Вопрос {currentQ + 1} из {total}</div>
         <div className="inga-progress">
@@ -74,7 +77,7 @@ export function FoodTestScreen() {
 
       <div className="w-full max-w-sm space-y-3">
         {question.options.map((opt, i) => (
-          <button
+          <button disabled={saving}
             key={i}
             onClick={() => handleAnswer(i)}
             className="inga-card w-full text-left hover:border-primary transition-colors cursor-pointer"

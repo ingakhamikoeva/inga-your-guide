@@ -1,7 +1,9 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+import { sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { saveBehaviorProfile, saveAssessmentAnswers, logUserEvent, startTrial } from '@/lib/db';
+import { logUserEvent, startTrial } from '@/lib/db';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
 
@@ -12,6 +14,7 @@ export function RouteReadyScreen() {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState(false);
   const { refresh } = useSubscription();
+  const { save, saving, saveError, isSaving } = useSaveAction();
 
   // Расчёты считались только на экранах выбора темпа и «ВАШ РАСЧЁТ», а они
   // из онбординга убраны. Из-за этого у нового пользователя calculations
@@ -38,23 +41,20 @@ export function RouteReadyScreen() {
   // trial_started_at и никому не уходили. При ошибке создания триала остаёмся
   // здесь и предлагаем повторить; повторный запрос не продлевает срок.
   const handleStart = async () => {
-    if (starting) return;
+    if (starting || isSaving()) return;
+    const session = sessionSnapshot();
     setStarting(true);
     setStartError(false);
     try {
-      await syncToDb().catch(() => {});
-      if (profile.foodProfile) {
-        await saveBehaviorProfile(profile.foodProfile).catch(() => {});
-      }
-      if (profile.foodTestAnswers) {
-        await saveAssessmentAnswers(profile.foodTestAnswers).catch(() => {});
-      }
+      if (!(await save(syncToDb))) return;
+      if (!isSessionCurrent(session)) return;
       await startTrial();
+      if (!isSessionCurrent(session)) return;
       await refresh();
       await logUserEvent('first_day', { step: 'route-ready' }).catch(() => {});
-      setStep('daily');
+      if (isSessionCurrent(session)) setStep('daily');
     } catch {
-      setStartError(true);
+      if (isSessionCurrent(session)) setStartError(true);
     } finally {
       setStarting(false);
     }
@@ -212,19 +212,20 @@ export function RouteReadyScreen() {
         </div>
       </div>
 
+      {saveError && <p role="alert" className="inga-bubble w-full max-w-sm mb-3">{SAVE_ERROR}</p>}
       {startError && <p role="alert" className="inga-bubble w-full max-w-sm mb-3">Не удалось запустить пробный период. Попробуйте ещё раз.</p>}
       {/* CTA */}
       <div className="w-full max-w-sm mt-auto pt-2 pb-safe">
         <button
           onClick={handleStart}
-          disabled={starting}
+          disabled={starting || saving}
           className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] disabled:opacity-60"
           style={{
             backgroundColor: '#FF6200',
             color: '#FFFFFF',
           }}
         >
-          {starting ? 'Секунду…' : startError ? 'Повторить' : name ? `Начнём, ${name} →` : 'Начнём →'}
+          {starting ? 'Секунду…' : (startError || saveError) ? 'Повторить' : name ? `Начнём, ${name} →` : 'Начнём →'}
         </button>
       </div>
     </div>

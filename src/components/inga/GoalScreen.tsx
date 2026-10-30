@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
@@ -16,6 +17,7 @@ function monthWordForY(y: number): string {
 
 export function GoalScreen() {
   const { profile, updateProfile, setStep } = useApp();
+  const { save, saving, saveError } = useSaveAction();
   const [value, setValue] = useState<number[]>([Math.min(40, Math.max(3, profile.kgToLose ?? 10))]);
 
   const sliderValue = value[0];
@@ -36,11 +38,11 @@ export function GoalScreen() {
     ? `${name}, на сколько кг вы хотите похудеть?`
     : 'На сколько кг вы хотите похудеть?';
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Height and current weight are entered later; do not invent a target yet.
-    updateProfile({
+    if (!(await save(() => updateProfile({
       kgToLose: sliderValue,
-    });
+    })))) return;
     setStep('why');
   };
 
@@ -49,9 +51,10 @@ export function GoalScreen() {
       className="flex flex-col items-center min-h-screen px-6 py-6 animate-fade-in-up"
       style={{ backgroundColor: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}
     >
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       {/* Progress + back button */}
       <div className="w-full max-w-sm flex items-center gap-3 mb-8">
-        <button
+        <button disabled={saving}
           type="button"
           onClick={() => setStep('survey-name')}
           className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
@@ -107,7 +110,7 @@ export function GoalScreen() {
 
       {/* Slider */}
       <div className="w-full max-w-sm mt-4 mb-1">
-        <Slider
+        <Slider disabled={saving}
           value={value}
           onValueChange={setValue}
           min={3}
@@ -134,7 +137,7 @@ export function GoalScreen() {
 
       {/* CTA */}
       <div className="w-full max-w-sm mt-auto pt-6">
-        <button
+        <button disabled={saving}
           onClick={handleNext}
           className="inga-btn-primary w-full"
         >

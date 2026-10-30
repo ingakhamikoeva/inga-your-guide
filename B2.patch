@@ -1,0 +1,1700 @@
+--- a/src/components/inga/AccessScreen.tsx
++++ b/src/components/inga/AccessScreen.tsx
+@@ -1,18 +1,28 @@
+ import { useState } from 'react';
+ import { useSubscription } from '@/context/SubscriptionContext';
+ import { beginTrial } from '@/lib/subscription';
++import { useApp } from '@/context/AppContext';
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
++import { sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
+ import { DiaryHistoryScreen } from './DiaryHistoryScreen';
+ 
+ export function AccessScreen({ onProfile }: { onProfile: (promo?: boolean) => void }) {
+   const { access, checking, error, refresh } = useSubscription();
++  const { syncToDb } = useApp();
++  const { save, saving, saveError, isSaving } = useSaveAction();
+   const [history, setHistory] = useState(false);
+   const [starting, setStarting] = useState(false);
+   const [startError, setStartError] = useState(false);
+   const start = async () => {
+-    if (starting) return;
++    if (starting || isSaving()) return;
++    const session = sessionSnapshot();
+     setStarting(true); setStartError(false);
+-    try { await beginTrial(); await refresh(); }
+-    catch { setStartError(true); }
++    try {
++      if (!(await save(syncToDb)) || !isSessionCurrent(session)) return;
++      await beginTrial();
++      if (isSessionCurrent(session)) await refresh();
++    }
++    catch { if (isSessionCurrent(session)) setStartError(true); }
+     finally { setStarting(false); }
+   };
+   if (history) return <DiaryHistoryScreen onBack={() => setHistory(false)} />;
+@@ -27,8 +37,9 @@
+         ) : access?.status === 'not_started' ? (
+           <div className="inga-bubble">
+             {startError && <p role="alert" className="mb-3">Не удалось запустить пробный период. Попробуйте ещё раз.</p>}
+-            <button onClick={start} disabled={starting} className="inga-btn-primary w-full">
+-              {starting ? 'Секунду…' : startError ? 'Повторить' : 'Начать 7 бесплатных дней'}
++            {saveError && <p role="alert" className="mb-3">{SAVE_ERROR}</p>}
++            <button onClick={start} disabled={starting || saving} className="inga-btn-primary w-full">
++              {starting ? 'Секунду…' : startError || saveError ? 'Повторить' : 'Начать 7 бесплатных дней'}
+             </button>
+           </div>
+         ) : (
+--- a/src/components/inga/DailyScreen.tsx
++++ b/src/components/inga/DailyScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState, useEffect, useRef } from 'react';
+ import { Trash2 } from 'lucide-react';
+ import { useApp } from '@/context/AppContext';
+@@ -179,9 +180,10 @@
+     setSelectedFoods(prev => prev.includes(label) ? prev.filter(x => x !== label) : [...prev, label]);
+   };
+ 
+-  const handleSubmitFoodSurvey = () => {
++  const { save, saving, saveError } = useSaveAction();
++  const handleSubmitFoodSurvey = async () => {
+     if (selectedFoods.length === 0) return;
+-    updateProfile({ food_preferences: selectedFoods });
++    if (!(await save(() => updateProfile({ food_preferences: selectedFoods })))) return;
+     setFoodSurveyAnswered(true);
+     setTimeout(() => setShowMorningCheckin(true), 600);
+   };
+@@ -612,6 +614,7 @@
+                     return (
+                       <button
+                         key={opt.label}
++                        disabled={saving}
+                         onClick={() => toggleFood(opt.label)}
+                         className="text-left p-3 rounded-2xl text-sm font-medium transition-colors flex items-start gap-2"
+                         style={{
+@@ -626,9 +629,10 @@
+                   })}
+                 </div>
+ 
++                {saveError && <p role="alert" className="inga-bubble">{SAVE_ERROR}</p>}
+                 <button
+                   onClick={handleSubmitFoodSurvey}
+-                  disabled={selectedFoods.length === 0}
++                  disabled={saving || selectedFoods.length === 0}
+                   className="inga-btn-primary w-full disabled:opacity-50"
+                 >
+                   Показать лёгкие версии →
+--- a/src/components/inga/FoodTestScreen.tsx
++++ b/src/components/inga/FoodTestScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import { AppStep } from '@/lib/types';
+@@ -30,6 +31,7 @@
+ 
+ export function FoodTestScreen() {
+   const { updateProfile, setStep, profile } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [currentQ, setCurrentQ] = useState(0);
+   const [answers, setAnswers] = useState<number[]>([]);
+ 
+@@ -39,15 +41,15 @@
+     ? question.text
+     : getText(question.text.female, question.text.male, profile.gender);
+ 
+-  const handleAnswer = (optionIndex: number) => {
+-    const newAnswers = [...answers, optionIndex];
++  const handleAnswer = async (optionIndex: number) => {
++    const newAnswers = [...answers.slice(0, currentQ), optionIndex];
+     setAnswers(newAnswers);
+ 
+     if (currentQ < total - 1) {
+       setCurrentQ(currentQ + 1);
+     } else {
+       const result = interpretFoodTest(newAnswers);
+-      updateProfile({
++      if (!(await save(() => updateProfile({
+         foodTestAnswers: newAnswers,
+         foodProfile: {
+           pattern: result.pattern,
+@@ -56,13 +58,14 @@
+           awareness: result.awareness,
+           supportStyle: result.supportStyle,
+         },
+-      });
++      })))) return;
+       setStep('food-test-result' as AppStep);
+     }
+   };
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       <div className="w-full max-w-sm mb-4">
+         <div className="text-sm text-muted-foreground mb-2">Вопрос {currentQ + 1} из {total}</div>
+         <div className="inga-progress">
+@@ -74,7 +77,7 @@
+ 
+       <div className="w-full max-w-sm space-y-3">
+         {question.options.map((opt, i) => (
+-          <button
++          <button disabled={saving}
+             key={i}
+             onClick={() => handleAnswer(i)}
+             className="inga-card w-full text-left hover:border-primary transition-colors cursor-pointer"
+--- a/src/components/inga/GoalScreen.tsx
++++ b/src/components/inga/GoalScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import ingaPhoto from '@/assets/inga-photo.jpg';
+@@ -16,6 +17,7 @@
+ 
+ export function GoalScreen() {
+   const { profile, updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [value, setValue] = useState<number[]>([Math.min(40, Math.max(3, profile.kgToLose ?? 10))]);
+ 
+   const sliderValue = value[0];
+@@ -36,11 +38,11 @@
+     ? `${name}, на сколько кг вы хотите похудеть?`
+     : 'На сколько кг вы хотите похудеть?';
+ 
+-  const handleNext = () => {
++  const handleNext = async () => {
+     // Height and current weight are entered later; do not invent a target yet.
+-    updateProfile({
++    if (!(await save(() => updateProfile({
+       kgToLose: sliderValue,
+-    });
++    })))) return;
+     setStep('why');
+   };
+ 
+@@ -49,9 +51,10 @@
+       className="flex flex-col items-center min-h-screen px-6 py-6 animate-fade-in-up"
+       style={{ backgroundColor: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}
+     >
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       {/* Progress + back button */}
+       <div className="w-full max-w-sm flex items-center gap-3 mb-8">
+-        <button
++        <button disabled={saving}
+           type="button"
+           onClick={() => setStep('survey-name')}
+           className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
+@@ -107,7 +110,7 @@
+ 
+       {/* Slider */}
+       <div className="w-full max-w-sm mt-4 mb-1">
+-        <Slider
++        <Slider disabled={saving}
+           value={value}
+           onValueChange={setValue}
+           min={3}
+@@ -134,7 +137,7 @@
+ 
+       {/* CTA */}
+       <div className="w-full max-w-sm mt-auto pt-6">
+-        <button
++        <button disabled={saving}
+           onClick={handleNext}
+           className="inga-btn-primary w-full"
+         >
+--- a/src/components/inga/GoalWeightScreen.tsx
++++ b/src/components/inga/GoalWeightScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import { AppStep } from '@/lib/types';
+@@ -5,6 +6,7 @@
+ 
+ export function GoalWeightScreen() {
+   const { profile, updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [goalWeight, setGoalWeight] = useState('');
+   const [message, setMessage] = useState('');
+   const [safeWeight, setSafeWeight] = useState<number | null>(null);
+@@ -18,7 +20,7 @@
+     setStatus(null);
+   };
+ 
+-  const handleCheck = () => {
++  const handleCheck = async () => {
+     const gw = parseFloat(goalWeight);
+     if (!gw || !profile.height) return;
+ 
+@@ -33,47 +35,48 @@
+       setMessage(`Это очень низкий вес для вашего роста. Он находится на нижней границе нормы, и удерживать его может быть сложно. Обычно комфортнее чувствуется диапазон немного выше. Если хотите, можно начать с более устойчивой цели — например, ${check.comfortableWeight} кг, а дальше двигаться постепенно.`);
+       setStatus('borderline');
+     } else if (check.isHealthy) {
++      if (!(await save(() => updateProfile({ goalWeight: gw })))) return;
+       setMessage('Отличная цель. Всё получится, я рядом 💛');
+-      updateProfile({ goalWeight: gw });
+       setStatus('ready');
+     } else {
++      if (!(await save(() => updateProfile({ goalWeight: gw })))) return;
+       setMessage('Это хорошая промежуточная цель. Можно двигаться поэтапно — так спокойнее и устойчивее.');
+-      updateProfile({ goalWeight: gw });
+       setStatus('ready');
+     }
+   };
+ 
+-  const chooseSafeGoal = () => {
++  const chooseSafeGoal = async () => {
+     if (!safeWeight) return;
+-    updateProfile({ goalWeight: safeWeight });
++    if (!(await save(() => updateProfile({ goalWeight: safeWeight })))) return;
+     setGoalWeight(String(safeWeight));
+     setStatus('ready');
+     setMessage('Хорошо, берём эту цель как более устойчивую отправную точку.');
+   };
+ 
+-  const chooseComfortableGoal = () => {
++  const chooseComfortableGoal = async () => {
+     if (!comfortableWeight) return;
+-    updateProfile({ goalWeight: comfortableWeight });
++    if (!(await save(() => updateProfile({ goalWeight: comfortableWeight })))) return;
+     setGoalWeight(String(comfortableWeight));
+     setStatus('ready');
+     setMessage('Отлично, начнём с более комфортной цели и дальше будем двигаться постепенно.');
+   };
+ 
+-  const keepBorderlineGoal = () => {
++  const keepBorderlineGoal = async () => {
+     const gw = parseFloat(goalWeight);
+     if (!gw) return;
+-    updateProfile({ goalWeight: gw });
++    if (!(await save(() => updateProfile({ goalWeight: gw })))) return;
+     setStatus('ready');
+     setMessage('Хорошо, оставляем эту цель и будем следить, чтобы путь к ней был устойчивым.');
+   };
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       <h2 className="text-2xl font-bold mb-2">Какая у вас цель по весу?</h2>
+       <p className="text-muted-foreground mb-6">Введи желаемый вес в кг</p>
+ 
+       <div className="w-full max-w-sm space-y-4">
+-        <input
++        <input disabled={saving}
+           type="number"
+           value={goalWeight}
+           onChange={e => { setGoalWeight(e.target.value); resetCheck(); }}
+@@ -82,9 +85,9 @@
+         />
+ 
+         {!message && (
+-          <button
++          <button disabled={saving || (!goalWeight)}
+             onClick={handleCheck}
+-            disabled={!goalWeight}
++
+             className="inga-btn-primary w-full disabled:opacity-40"
+           >
+             Проверить
+@@ -99,10 +102,10 @@
+ 
+         {status === 'unsafe' && (
+           <div className="space-y-3">
+-            <button onClick={chooseSafeGoal} className="inga-btn-primary w-full">
++            <button disabled={saving} onClick={chooseSafeGoal} className="inga-btn-primary w-full">
+               Поставить безопасную цель
+             </button>
+-            <button onClick={resetCheck} className="inga-btn-secondary w-full">
++            <button disabled={saving} onClick={resetCheck} className="inga-btn-secondary w-full">
+               Изменить цель
+             </button>
+           </div>
+@@ -110,17 +113,17 @@
+ 
+         {status === 'borderline' && (
+           <div className="space-y-3">
+-            <button onClick={keepBorderlineGoal} className="inga-btn-primary w-full">
++            <button disabled={saving} onClick={keepBorderlineGoal} className="inga-btn-primary w-full">
+               Оставить эту цель
+             </button>
+-            <button onClick={chooseComfortableGoal} className="inga-btn-secondary w-full">
++            <button disabled={saving} onClick={chooseComfortableGoal} className="inga-btn-secondary w-full">
+               Выбрать более комфортную
+             </button>
+           </div>
+         )}
+ 
+         {status === 'ready' && (
+-          <button onClick={() => setStep('measurements' as AppStep)} className="inga-btn-primary w-full">
++          <button disabled={saving} onClick={() => setStep('measurements' as AppStep)} className="inga-btn-primary w-full">
+             Далее →
+           </button>
+         )}
+--- a/src/components/inga/MeasurementsScreen.tsx
++++ b/src/components/inga/MeasurementsScreen.tsx
+@@ -1,19 +1,22 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import { AppStep } from '@/lib/types';
+ 
+ export function MeasurementsScreen() {
+   const { updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [waist, setWaist] = useState('');
+   const [hips, setHips] = useState('');
+ 
+-  const handleNext = () => {
+-    updateProfile({ waist: parseInt(waist), hips: parseInt(hips) });
++  const handleNext = async () => {
++    if (!(await save(() => updateProfile({ waist: parseInt(waist), hips: parseInt(hips) })))) return;
+     setStep('pace-choice' as AppStep);
+   };
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       <h2 className="text-2xl font-bold mb-2">Зафиксируем объёмы</h2>
+       <div className="inga-bubble mb-6 text-center">
+         <p>Вес — не единственный показатель стройности.</p>
+@@ -23,16 +26,16 @@
+       <div className="w-full max-w-sm space-y-4">
+         <div>
+           <label className="block text-sm font-medium mb-1">Охват талии (см)</label>
+-          <input type="number" value={waist} onChange={e => setWaist(e.target.value)} className="inga-input" placeholder="75" />
++          <input disabled={saving} type="number" value={waist} onChange={e => setWaist(e.target.value)} className="inga-input" placeholder="75" />
+         </div>
+         <div>
+           <label className="block text-sm font-medium mb-1">Охват бёдер (см)</label>
+-          <input type="number" value={hips} onChange={e => setHips(e.target.value)} className="inga-input" placeholder="100" />
++          <input disabled={saving} type="number" value={hips} onChange={e => setHips(e.target.value)} className="inga-input" placeholder="100" />
+         </div>
+ 
+-        <button
++        <button disabled={saving || (!waist || !hips)}
+           onClick={handleNext}
+-          disabled={!waist || !hips}
++
+           className="inga-btn-primary w-full disabled:opacity-40"
+         >
+           Далее →
+--- a/src/components/inga/MenuScreen.tsx
++++ b/src/components/inga/MenuScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useSubscription } from '@/context/SubscriptionContext';
+ import { AccessScreen } from './AccessScreen';
+ import { FixationLesson } from './FixationLesson';
+@@ -2178,6 +2179,7 @@
+   const { profile, calculations, updateProfile, setStep, weeklyData, dailyReports, resetLocalState } = useApp();
+ 
+   const subscription = useSubscription();
++  const { save, saving, saveError, isSaving } = useSaveAction();
+ 
+   // ---------- name ----------
+   const [editingName, setEditingName] = useState(false);
+@@ -2365,20 +2367,21 @@
+     // window.open already called above
+   };
+ 
+-  const handleSaveName = () => {
+-    updateProfile({ name: cleanName(name) });
++  const handleSaveName = async () => {
++    if (!(await save(() => updateProfile({ name: cleanName(name) })))) return;
+     setEditingName(false);
+   };
+ 
+   const startEdit = (field: Exclude<EditField, null>, current: number | undefined) => {
++    if (isSaving()) return;
+     setGoalErrorHeight(null);
+     setPendingHeight(null);
+     setDraft(current ? String(current) : '');
+     setEditField(field);
+   };
+ 
+-  const commitEdit = () => {
+-    if (!editField) return;
++  const commitEdit = async () => {
++    if (!editField || isSaving()) return;
+     const num = parseFloat(draft.replace(',', '.'));
+     if (!Number.isFinite(num) || num <= 0) { setEditField(null); return; }
+     const nextHeight = editField === 'height' ? Math.round(num) : (pendingHeight ?? profile.height);
+@@ -2409,21 +2412,22 @@
+         break;
+       case 'waist':
+         patch.waist = num;
+-        try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
+         break;
+       case 'hips':
+         patch.hips = num;
+-        try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
+         break;
+     }
+-    updateProfile(patch);
++    if (!(await save(() => updateProfile(patch)))) return;
++    if (editField === 'waist' || editField === 'hips') {
++      try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
++    }
+     setGoalErrorHeight(null);
+     setPendingHeight(null);
+     setEditField(null);
+   };
+ 
+-  const setGender = (g: 'female' | 'male') => {
+-    if (profile.gender !== g) updateProfile({ gender: g });
++  const setGender = async (g: 'female' | 'male') => {
++    if (profile.gender !== g) await save(() => updateProfile({ gender: g }));
+   };
+ 
+   const doSignOut = async () => {
+@@ -2474,7 +2478,7 @@
+         <span className="text-sm text-muted-foreground">{label}</span>
+         {isEditing ? (
+           <div className="flex items-center gap-2">
+-            <input
++            <input disabled={saving}
+               type="number"
+               inputMode="decimal"
+               autoFocus
+@@ -2489,7 +2493,7 @@
+         ) : (
+           <div className="flex items-center gap-2">
+             <span className="text-sm font-medium">{value ? `${value} ${suffix}` : 'не указано'}</span>
+-            <button onClick={() => startEdit(field, value)} className="text-xs text-primary underline">Изменить</button>
++            <button disabled={saving} onClick={() => startEdit(field, value)} className="text-xs text-primary underline">Изменить</button>
+           </div>
+         )}
+       </div>
+@@ -2498,13 +2502,14 @@
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       <div className="w-full max-w-md">
+-        <button onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
++        <button disabled={saving} onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
+         <h2 className="text-2xl font-bold mb-5">Профиль</h2>
+         {goalErrorHeight !== null && (
+           <div className="inga-bubble mb-3" role="alert">
+             <p>{goalWeightWarning(goalErrorHeight)}</p>
+-            <button
++            <button disabled={saving}
+               type="button"
+               onClick={() => {
+                 setPendingHeight(goalErrorHeight);
+@@ -2524,13 +2529,13 @@
+           {!editingName ? (
+             <div className="flex items-center justify-between gap-3">
+               <div className="text-xl font-semibold">{cleanName(profile.name) || 'Не указано'}</div>
+-              <button onClick={() => { setName(profile.name ?? ''); setEditingName(true); }} className="inga-btn-secondary">
++              <button disabled={saving} onClick={() => { if (isSaving()) return; setName(profile.name ?? ''); setEditingName(true); }} className="inga-btn-secondary">
+                 Изменить
+               </button>
+             </div>
+           ) : (
+             <div className="space-y-3">
+-              <input
++              <input disabled={saving}
+                 type="text"
+                 value={name}
+                 onChange={(e) => setName(e.target.value)}
+@@ -2540,8 +2545,8 @@
+                 placeholder="Ваше имя"
+               />
+               <div className="flex gap-2">
+-                <button onClick={handleSaveName} className="inga-btn-primary flex-1">Сохранить</button>
+-                <button onClick={() => setEditingName(false)} className="inga-btn-secondary flex-1">Отмена</button>
++                <button disabled={saving} onClick={handleSaveName} className="inga-btn-primary flex-1">Сохранить</button>
++                <button disabled={saving} onClick={() => setEditingName(false)} className="inga-btn-secondary flex-1">Отмена</button>
+               </div>
+             </div>
+           )}
+@@ -2554,11 +2559,11 @@
+           <div className="flex items-center justify-between gap-3 py-2.5">
+             <span className="text-sm text-muted-foreground">Пол</span>
+             <div className="inline-flex rounded-full border border-border overflow-hidden">
+-              <button
++              <button disabled={saving}
+                 onClick={() => setGender('female')}
+                 className={`px-3 py-1 text-xs ${profile.gender === 'female' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground'}`}
+               >Женский</button>
+-              <button
++              <button disabled={saving}
+                 onClick={() => setGender('male')}
+                 className={`px-3 py-1 text-xs ${profile.gender === 'male' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground'}`}
+               >Мужской</button>
+--- a/src/components/inga/PaceChoiceScreen.tsx
++++ b/src/components/inga/PaceChoiceScreen.tsx
+@@ -1,16 +1,19 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useApp } from '@/context/AppContext';
+ 
+ export function PaceChoiceScreen() {
+   const { updateProfile, setStep, profile, runCalculations } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+ 
+-  const handleChoice = (pace: 'fast' | 'slow') => {
+-    updateProfile({ paceChoice: pace });
++  const handleChoice = async (pace: 'fast' | 'slow') => {
++    if (!(await save(() => updateProfile({ paceChoice: pace })))) return;
+     const calc = runCalculations();
+     setStep('tracking-method');
+   };
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       <h2 className="text-2xl font-bold mb-2">Выберите темп</h2>
+       <div className="inga-bubble mb-6 text-center">
+         <p>Безопасный темп снижения веса — до 6 кг в месяц.</p>
+@@ -19,12 +22,12 @@
+       </div>
+ 
+       <div className="w-full max-w-sm space-y-4">
+-        <button onClick={() => handleChoice('fast')} className="inga-card w-full text-left hover:border-primary transition-colors cursor-pointer">
++        <button disabled={saving} onClick={() => handleChoice('fast')} className="inga-card w-full text-left hover:border-primary transition-colors cursor-pointer">
+           <div className="font-bold text-lg">🚀 Быстро</div>
+           <div className="text-muted-foreground text-sm mt-1">4–6 кг/мес • дефицит 40%</div>
+         </button>
+ 
+-        <button onClick={() => handleChoice('slow')} className="inga-card w-full text-left hover:border-primary transition-colors cursor-pointer">
++        <button disabled={saving} onClick={() => handleChoice('slow')} className="inga-card w-full text-left hover:border-primary transition-colors cursor-pointer">
+           <div className="font-bold text-lg">🐢 Медленно</div>
+           <div className="text-muted-foreground text-sm mt-1">2–3 кг/мес • дефицит 20%</div>
+         </button>
+--- a/src/components/inga/RouteReadyScreen.tsx
++++ b/src/components/inga/RouteReadyScreen.tsx
+@@ -1,7 +1,9 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
++import { sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
+ import { useSubscription } from '@/context/SubscriptionContext';
+ import { useEffect, useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+-import { saveBehaviorProfile, saveAssessmentAnswers, logUserEvent, startTrial } from '@/lib/db';
++import { logUserEvent, startTrial } from '@/lib/db';
+ import ingaPhoto from '@/assets/inga-photo.jpg';
+ 
+ 
+@@ -12,6 +14,7 @@
+   const [starting, setStarting] = useState(false);
+   const [startError, setStartError] = useState(false);
+   const { refresh } = useSubscription();
++  const { save, saving, saveError, isSaving } = useSaveAction();
+ 
+   // Расчёты считались только на экранах выбора темпа и «ВАШ РАСЧЁТ», а они
+   // из онбординга убраны. Из-за этого у нового пользователя calculations
+@@ -38,23 +41,20 @@
+   // trial_started_at и никому не уходили. При ошибке создания триала остаёмся
+   // здесь и предлагаем повторить; повторный запрос не продлевает срок.
+   const handleStart = async () => {
+-    if (starting) return;
++    if (starting || isSaving()) return;
++    const session = sessionSnapshot();
+     setStarting(true);
+     setStartError(false);
+     try {
+-      await syncToDb().catch(() => {});
+-      if (profile.foodProfile) {
+-        await saveBehaviorProfile(profile.foodProfile).catch(() => {});
+-      }
+-      if (profile.foodTestAnswers) {
+-        await saveAssessmentAnswers(profile.foodTestAnswers).catch(() => {});
+-      }
++      if (!(await save(syncToDb))) return;
++      if (!isSessionCurrent(session)) return;
+       await startTrial();
++      if (!isSessionCurrent(session)) return;
+       await refresh();
+       await logUserEvent('first_day', { step: 'route-ready' }).catch(() => {});
+-      setStep('daily');
++      if (isSessionCurrent(session)) setStep('daily');
+     } catch {
+-      setStartError(true);
++      if (isSessionCurrent(session)) setStartError(true);
+     } finally {
+       setStarting(false);
+     }
+@@ -212,19 +212,20 @@
+         </div>
+       </div>
+ 
++      {saveError && <p role="alert" className="inga-bubble w-full max-w-sm mb-3">{SAVE_ERROR}</p>}
+       {startError && <p role="alert" className="inga-bubble w-full max-w-sm mb-3">Не удалось запустить пробный период. Попробуйте ещё раз.</p>}
+       {/* CTA */}
+       <div className="w-full max-w-sm mt-auto pt-2 pb-safe">
+         <button
+           onClick={handleStart}
+-          disabled={starting}
++          disabled={starting || saving}
+           className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] disabled:opacity-60"
+           style={{
+             backgroundColor: '#FF6200',
+             color: '#FFFFFF',
+           }}
+         >
+-          {starting ? 'Секунду…' : startError ? 'Повторить' : name ? `Начнём, ${name} →` : 'Начнём →'}
++          {starting ? 'Секунду…' : (startError || saveError) ? 'Повторить' : name ? `Начнём, ${name} →` : 'Начнём →'}
+         </button>
+       </div>
+     </div>
+--- a/src/components/inga/SurveyDataScreen.tsx
++++ b/src/components/inga/SurveyDataScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState, useMemo, useEffect } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import { Slider } from '@/components/ui/slider';
+@@ -6,6 +7,7 @@
+ 
+ export function SurveyDataScreen() {
+   const { profile, updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const sex = profile.gender === 'female' || profile.gender === 'male' ? profile.gender : null;
+ 
+   const [age, setAge] = useState<string>(profile.age ? String(profile.age) : '');
+@@ -38,12 +40,12 @@
+     : Number(goalDraft);
+   const goalIsUnsafe = canProceed && checkGoalBmi(requestedGoal, heightN).isUnsafe;
+ 
+-  const handleNext = () => {
++  const handleNext = async () => {
+     if (!canProceed || sex === null) return;
+     if (goalIsUnsafe) { setShowGoalError(true); return; }
+     const enteredWeight = weightN;
+ 
+-    updateProfile({
++    if (!(await save(() => updateProfile({
+       age: ageN,
+       height: heightN,
+       weight: enteredWeight,
+@@ -54,7 +56,7 @@
+       stepsPerDay: steps,
+       gender: sex,
+       ...({ calorie_target: deficit } as any),
+-    });
++    })))) return;
+     setStep('tracking-method');
+   };
+ 
+@@ -69,9 +71,10 @@
+ 
+   return (
+     <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       {/* Progress bar with back button */}
+       <div className="flex items-center gap-3 mb-6">
+-        <button
++        <button disabled={saving}
+           onClick={() => setStep('why')}
+           className="w-9 h-9 rounded-full flex items-center justify-center text-lg"
+           style={{ background: '#F4EEE8', color: '#3B2A20' }}
+@@ -114,17 +117,17 @@
+       <div className="w-full space-y-3">
+         <div>
+           <label className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Возраст (лет)</label>
+-          <input type="number" value={age} onChange={e => setAge(e.target.value)} className="inga-input" placeholder="30" />
++          <input disabled={saving} type="number" value={age} onChange={e => setAge(e.target.value)} className="inga-input" placeholder="30" />
+         </div>
+ 
+         <div>
+           <label className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Рост (см)</label>
+-          <input type="number" value={height} onChange={e => setHeight(e.target.value)} className="inga-input" placeholder="165" />
++          <input disabled={saving} type="number" value={height} onChange={e => setHeight(e.target.value)} className="inga-input" placeholder="165" />
+         </div>
+ 
+         <div>
+           <label className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Текущий вес (кг)</label>
+-          <input type="number" value={weight} onChange={e => setWeight(e.target.value)} className="inga-input" placeholder="70" />
++          <input disabled={saving} type="number" value={weight} onChange={e => setWeight(e.target.value)} className="inga-input" placeholder="70" />
+         </div>
+ 
+         <div className="pt-2">
+@@ -132,7 +135,7 @@
+             <span>Шагов в день</span>
+             <span className="font-semibold">{fmt(steps)} (+{stepCalories} ккал)</span>
+           </div>
+-          <Slider
++          <Slider disabled={saving}
+             value={[steps]}
+             onValueChange={v => setSteps(v[0])}
+             min={0}
+@@ -166,7 +169,7 @@
+           <div className="inga-bubble" role="alert">
+             <p>{goalWeightWarning(heightN)}</p>
+             {goalDraft === null && (
+-              <button
++              <button disabled={saving}
+                 type="button"
+                 onClick={() => setGoalDraft(String(requestedGoal))}
+                 className="inga-btn-secondary w-full mt-3"
+@@ -180,12 +183,12 @@
+           <div>
+             <label htmlFor="survey-goal-weight" className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Цель</label>
+             <div className="flex items-center gap-2">
+-              <input id="survey-goal-weight" type="number" step="0.1" autoFocus value={goalDraft} onChange={e => setGoalDraft(e.target.value)} className="inga-input" />
++              <input disabled={saving} id="survey-goal-weight" type="number" step="0.1" autoFocus value={goalDraft} onChange={e => setGoalDraft(e.target.value)} className="inga-input" />
+               <span>кг</span>
+             </div>
+           </div>
+         )}
+-        <button
++        <button disabled={saving}
+           onClick={handleNext}
+           className="inga-btn-primary w-full mt-6"
+         >
+--- a/src/components/inga/SurveyEmotionsScreen.tsx
++++ b/src/components/inga/SurveyEmotionsScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import { AppStep } from '@/lib/types';
+@@ -14,19 +15,21 @@
+ 
+ export function SurveyEmotionsScreen() {
+   const { updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [selected, setSelected] = useState<string[]>([]);
+ 
+   const toggle = (id: string) => {
+     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+   };
+ 
+-  const handleNext = () => {
+-    updateProfile({ emotionalTrigger: selected.join(',') });
++  const handleNext = async () => {
++    if (!(await save(() => updateProfile({ emotionalTrigger: selected.join(',') })))) return;
+     setStep('calculations' as AppStep);
+   };
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       <h2 className="text-2xl font-bold mb-2">Эмоция-триггер</h2>
+       <p className="text-muted-foreground mb-6 text-center max-w-sm">
+         После какой эмоции вас тянет на калорийную пищу?
+@@ -34,7 +37,7 @@
+ 
+       <div className="w-full max-w-sm flex flex-wrap gap-3 justify-center mb-8">
+         {emotions.map(e => (
+-          <button
++          <button disabled={saving}
+             key={e.id}
+             onClick={() => toggle(e.id)}
+             className={selected.includes(e.id) ? 'inga-chip-active' : 'inga-chip-inactive'}
+@@ -44,9 +47,9 @@
+         ))}
+       </div>
+ 
+-      <button
++      <button disabled={saving || (selected.length === 0)}
+         onClick={handleNext}
+-        disabled={selected.length === 0}
++
+         className="inga-btn-primary w-full max-w-sm disabled:opacity-40"
+       >
+         Далее →
+--- a/src/components/inga/SurveyNameScreen.tsx
++++ b/src/components/inga/SurveyNameScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState, useEffect } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import { cleanName } from '@/lib/user-name';
+@@ -5,6 +6,7 @@
+ 
+ export function SurveyNameScreen() {
+   const { profile, updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [name, setName] = useState(profile.name ?? '');
+   // Пол не предвыбран: от него зависит формула расчёта калорийности, поэтому
+   // выбор должен быть осознанным, а не следствием того, что человек прошёл
+@@ -21,14 +23,15 @@
+   const trimmed = cleanName(name);
+   const canProceed = trimmed.length > 0 && gender !== null;
+ 
+-  const handleNext = () => {
++  const handleNext = async () => {
+     if (!canProceed || gender === null) return;
+-    updateProfile({ name: trimmed, gender });
++    if (!(await save(() => updateProfile({ name: trimmed, gender })))) return;
+     setStep('goal');
+   };
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up" style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       {/* Progress bar: 7 dashes */}
+       <div className="w-full max-w-sm flex gap-1.5 mb-8">
+         {Array.from({ length: 7 }).map((_, i) => (
+@@ -64,14 +67,14 @@
+         <div>
+           <label className="block text-sm font-medium mb-2">Пол</label>
+           <div className="flex gap-3">
+-            <button
++            <button disabled={saving}
+               type="button"
+               onClick={() => setGender('female')}
+               className={gender === 'female' ? 'inga-chip-active flex-1' : 'inga-chip-inactive flex-1'}
+             >
+               Женщина
+             </button>
+-            <button
++            <button disabled={saving}
+               type="button"
+               onClick={() => setGender('male')}
+               className={gender === 'male' ? 'inga-chip-active flex-1' : 'inga-chip-inactive flex-1'}
+@@ -83,7 +86,7 @@
+ 
+         <div>
+           <label className="block text-sm font-medium mb-2">Ваше имя</label>
+-          <input
++          <input disabled={saving}
+             type="text"
+             value={name}
+             onChange={e => setName(e.target.value)}
+@@ -95,9 +98,9 @@
+           />
+         </div>
+ 
+-        <button
++        <button disabled={saving || (!canProceed)}
+           onClick={handleNext}
+-          disabled={!canProceed}
++
+           className="inga-btn-primary w-full disabled:opacity-40"
+         >
+           Приятно познакомиться →
+--- a/src/components/inga/SurveyReasonsScreen.tsx
++++ b/src/components/inga/SurveyReasonsScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import { AppStep } from '@/lib/types';
+@@ -14,25 +15,27 @@
+ 
+ export function SurveyReasonsScreen() {
+   const { updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [selected, setSelected] = useState<string[]>([]);
+ 
+   const toggle = (id: string) => {
+     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+   };
+ 
+-  const handleNext = () => {
+-    updateProfile({ weightGainReasons: selected });
++  const handleNext = async () => {
++    if (!(await save(() => updateProfile({ weightGainReasons: selected })))) return;
+     setStep('survey-emotions' as AppStep);
+   };
+ 
+   return (
+     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       <h2 className="text-2xl font-bold mb-2">Причины набора веса</h2>
+       <p className="text-muted-foreground mb-6 text-center">Выберите всё, что подходит</p>
+ 
+       <div className="w-full max-w-sm flex flex-wrap gap-3 justify-center mb-8">
+         {reasons.map(r => (
+-          <button
++          <button disabled={saving}
+             key={r.id}
+             onClick={() => toggle(r.id)}
+             className={selected.includes(r.id) ? 'inga-chip-active' : 'inga-chip-inactive'}
+@@ -42,9 +45,9 @@
+         ))}
+       </div>
+ 
+-      <button
++      <button disabled={saving || (selected.length === 0)}
+         onClick={handleNext}
+-        disabled={selected.length === 0}
++
+         className="inga-btn-primary w-full max-w-sm disabled:opacity-40"
+       >
+         Далее →
+--- a/src/components/inga/TrackingMethodScreen.tsx
++++ b/src/components/inga/TrackingMethodScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState, useEffect } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import ingaPhoto from '@/assets/inga-photo.jpg';
+@@ -7,13 +8,14 @@
+ 
+ export function TrackingMethodScreen() {
+   const { profile, updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [selected, setSelected] = useState<Method | null>(
+     (profile.trackingMethod as Method) || null
+   );
+ 
+-  const handleNext = () => {
++  const handleNext = async () => {
+     if (!selected) return;
+-    updateProfile({ trackingMethod: selected });
++    if (!(await save(() => updateProfile({ trackingMethod: selected })))) return;
+     setStep('how-it-works');
+   };
+ 
+@@ -27,9 +29,10 @@
+ 
+   return (
+     <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       {/* Progress bar */}
+       <div className="flex items-center gap-3 mb-6">
+-        <button
++        <button disabled={saving}
+           onClick={() => setStep('survey-data')}
+           className="w-9 h-9 rounded-full flex items-center justify-center text-lg"
+           style={{ background: '#F4EEE8', color: '#3B2A20' }}
+@@ -71,7 +74,7 @@
+ 
+       <div className="space-y-3">
+         {/* Plate method */}
+-        <button
++        <button disabled={saving}
+           onClick={() => setSelected('plate')}
+           className="w-full text-left p-4 transition-all"
+           style={cardStyle(selected === 'plate')}
+@@ -122,7 +125,7 @@
+         </button>
+ 
+         {/* Palm method */}
+-        <button
++        <button disabled={saving}
+           onClick={() => setSelected('palm')}
+           className="w-full text-left p-4 transition-all"
+           style={cardStyle(selected === 'palm')}
+@@ -148,9 +151,9 @@
+           </p>
+         </button>
+ 
+-        <button
++        <button disabled={saving || (!selected)}
+           onClick={handleNext}
+-          disabled={!selected}
++
+           className="inga-btn-primary w-full mt-6 disabled:opacity-40"
+         >
+           Мой метод →
+--- a/src/components/inga/WhyScreen.tsx
++++ b/src/components/inga/WhyScreen.tsx
+@@ -1,3 +1,4 @@
++import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+ import { useState } from 'react';
+ import { useApp } from '@/context/AppContext';
+ import ingaPhoto from '@/assets/inga-photo.jpg';
+@@ -20,6 +21,7 @@
+ 
+ export function WhyScreen() {
+   const { profile, updateProfile, setStep } = useApp();
++  const { save, saving, saveError } = useSaveAction();
+   const [selected, setSelected] = useState<Set<number>>(new Set());
+   const [customOpen, setCustomOpen] = useState(false);
+   const [customText, setCustomText] = useState('');
+@@ -44,14 +46,14 @@
+ 
+   const hasSelection = selected.size > 0 || customText.trim().length > 0;
+ 
+-  const handleNext = () => {
++  const handleNext = async () => {
+     const result: string[] = [];
+     selected.forEach(idx => result.push(OPTIONS[idx].text));
+     const trimmedCustom = customText.trim();
+     if (trimmedCustom) {
+       result.push(trimmedCustom);
+     }
+-    updateProfile({ motivation: result });
++    if (!(await save(() => updateProfile({ motivation: result })))) return;
+     setStep('survey-data');
+   };
+ 
+@@ -60,9 +62,10 @@
+       className="flex flex-col items-center min-h-screen px-6 py-6 animate-fade-in-up"
+       style={{ backgroundColor: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}
+     >
++      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
+       {/* Progress + back button */}
+       <div className="w-full max-w-sm flex items-center gap-3 mb-8">
+-        <button
++        <button disabled={saving}
+           type="button"
+           onClick={() => setStep('goal')}
+           className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
+@@ -111,7 +114,7 @@
+         {OPTIONS.map((opt, i) => {
+           const isSelected = selected.has(i);
+           return (
+-            <button
++            <button disabled={saving}
+               key={i}
+               type="button"
+               onClick={() => toggleOption(i)}
+@@ -137,7 +140,7 @@
+       {/* Custom reason */}
+       <div className="w-full max-w-sm mb-4">
+         {!customOpen ? (
+-          <button
++          <button disabled={saving}
+             type="button"
+             onClick={() => setCustomOpen(true)}
+             className="text-sm font-medium"
+@@ -146,7 +149,7 @@
+             + Своя причина...
+           </button>
+         ) : (
+-          <input
++          <input disabled={saving}
+             type="text"
+             value={customText}
+             onChange={e => setCustomText(e.target.value)}
+@@ -159,9 +162,9 @@
+ 
+       {/* CTA */}
+       <div className="w-full max-w-sm mt-auto pt-6">
+-        <button
++        <button disabled={saving || (!hasSelection)}
+           onClick={handleNext}
+-          disabled={!hasSelection}
++
+           className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] disabled:opacity-40"
+           style={{
+             backgroundColor: hasSelection ? '#FF6200' : '#E8E2DC',
+--- a/src/context/AppContext.tsx
++++ b/src/context/AppContext.tsx
+@@ -1,11 +1,10 @@
+-import { currentSession, subscribe } from '@/lib/auth-storage';
++import { currentSession, subscribe, sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
+ import { useAchievements } from '@/lib/achievement-client';
+ import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+ import { AppStep, UserProfile, Calculations, DailyReport, Medal, FixationAction } from '@/lib/types';
+ import { calculateAll, roundTo50 } from '@/lib/calculations';
+ import {
+   saveFixationAction,
+-  isAuthenticated,
+   saveUserProfile,
+   saveUserPlan,
+   saveAssessmentAnswers,
+@@ -33,7 +32,7 @@
+ 
+ interface AppContextValue extends AppState {
+   setStep: (step: AppStep) => void;
+-  updateProfile: (data: Partial<UserProfile>) => void;
++  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+   runCalculations: () => Calculations;
+   performFixationAction: (action: FixationAction) => Promise<void>;
+   addDailyReport: (report: DailyReport) => void;
+@@ -110,10 +109,15 @@
+     };
+   });
+ 
+-  const updateProfile = useCallback((data: Partial<UserProfile>) => {
+-    setProfile(prev => ({ ...prev, ...data }));
+-    // Send only the edit: unrelated updates must not resubmit a legacy goal.
+-    saveUserProfile(data).catch(() => {});
++  const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
++    const session = sessionSnapshot();
++    if (!session.owner) throw new Error('account_changed');
++    // Send only the edit; publish it locally only after the server confirms it.
++    await saveUserProfile(data);
++    if (!isSessionCurrent(session)) throw new Error('account_changed');
++    const nextProfile = { ...stateRef.current.profile, ...data };
++    stateRef.current = { ...stateRef.current, profile: nextProfile };
++    setProfile(nextProfile);
+   }, []);
+ 
+   const performFixationAction = useCallback(async (action: FixationAction) => {
+@@ -139,10 +143,10 @@
+   }, [profile.fixationProgress?.revision]);
+ 
+   const runCalculations = useCallback(() => {
+-    const calc = calculateAll(profile);
++    const calc = calculateAll(stateRef.current.profile);
++    stateRef.current = { ...stateRef.current, calculations: calc };
+     setCalculations(calc);
+-    // Sync plan to DB
+-    saveUserPlan(profile, calc).catch(() => {});
++    // This is a preview. syncToDb explicitly persists it before starting the trial.
+     return calc;
+   }, [profile]);
+ 
+@@ -171,20 +175,30 @@
+ 
+   // Full sync to DB (called manually or on key events)
+   const syncToDb = useCallback(async () => {
+-    const authed = await isAuthenticated();
+-    if (!authed) return;
+-
+-    await saveUserProfile(profile);
+-    if (calculations) {
+-      await saveUserPlan(profile, calculations);
+-    }
+-    if (profile.foodTestAnswers) {
+-      await saveAssessmentAnswers(profile.foodTestAnswers);
+-    }
+-    if (profile.foodProfile) {
+-      await saveBehaviorProfile(profile.foodProfile);
+-    }
+-  }, [profile, calculations]);
++    const session = sessionSnapshot();
++    const check = () => {
++      if (!session.owner || !isSessionCurrent(session)) throw new Error('account_changed');
++    };
++    check();
++    const { profile: currentProfile, calculations: currentCalculations } = stateRef.current;
++    await saveUserProfile(currentProfile);
++    check();
++    // RouteReady's effect may not have rendered its preview yet.
++    const plan = currentCalculations || (currentProfile.height && currentProfile.weight && currentProfile.age
++      ? calculateAll(currentProfile) : null);
++    if (plan) {
++      await saveUserPlan(currentProfile, plan);
++      check();
++    }
++    if (currentProfile.foodTestAnswers) {
++      await saveAssessmentAnswers(currentProfile.foodTestAnswers);
++      check();
++    }
++    if (currentProfile.foodProfile) {
++      await saveBehaviorProfile(currentProfile.foodProfile);
++      check();
++    }
++  }, []);
+ 
+   // Hydrate state from DB after auth (essential for cross-domain login where localStorage is empty)
+   // Полный сброс локального состояния. Нужен при регистрации нового аккаунта:
+@@ -218,11 +232,11 @@
+     const generation = ++hydrationGeneration.current;
+ 
+     const [dbProfile, dbPlan, dbBehavior, dbAnswers, dbCheckins] = await Promise.all([
+-      loadUserProfile(),
+-      loadUserPlan(),
+-      loadBehaviorProfile(),
+-      loadAssessmentAnswers(),
+-      loadCheckins(),
++      loadUserProfile({ strict: true }),
++      loadUserPlan({ strict: true }),
++      loadBehaviorProfile({ strict: true }),
++      loadAssessmentAnswers({ strict: true }),
++      loadCheckins({ strict: true }),
+     ]);
+ 
+     if (currentSession()?.user.id !== userId || generation !== hydrationGeneration.current) return 'auth';
+--- a/src/hooks/use-save-action.ts
++++ b/src/hooks/use-save-action.ts
+@@ -0,0 +1,35 @@
++import { useCallback, useEffect, useRef, useState } from 'react';
++import { isSessionCurrent, sessionSnapshot } from '@/lib/auth-storage';
++
++export const SAVE_ERROR = 'Не удалось сохранить изменения. Попробуйте ещё раз.';
++export const LOAD_ERROR = 'Не удалось загрузить ваши данные. Попробуйте ещё раз.';
++
++// Keep a failed form mounted with its draft; only the caller's success path may navigate.
++export function useSaveAction() {
++  const busy = useRef(false);
++  const mounted = useRef(true);
++  const [saving, setSaving] = useState(false);
++  const [saveError, setSaveError] = useState(false);
++  useEffect(() => {
++    mounted.current = true;
++    return () => { mounted.current = false; };
++  }, []);
++  const save = useCallback(async (action: () => Promise<unknown>): Promise<boolean> => {
++    if (busy.current || !mounted.current) return false;
++    const session = sessionSnapshot();
++    busy.current = true;
++    setSaving(true);
++    setSaveError(false);
++    try {
++      await action();
++      return mounted.current && isSessionCurrent(session);
++    } catch {
++      if (mounted.current && isSessionCurrent(session)) setSaveError(true);
++      return false;
++    } finally {
++      busy.current = false;
++      if (mounted.current) setSaving(false);
++    }
++  }, []);
++  return { save, saving, saveError, isSaving: () => busy.current };
++}
+--- a/src/lib/db.ts
++++ b/src/lib/db.ts
+@@ -28,10 +28,11 @@
+   await apiFetch('/profile', { method: 'PUT', body });
+ }
+ 
+-export async function loadUserProfile(): Promise<Partial<UserProfile> | null> {
++export async function loadUserProfile(options: { strict?: boolean } = {}): Promise<Partial<UserProfile> | null> {
+   try {
+     return await apiFetch<Partial<UserProfile> | null>('/profile');
+   } catch (e) {
++    if (options.strict) throw e;
+     console.error('loadUserProfile failed', e);
+     return null;
+   }
+@@ -45,7 +46,7 @@
+ 
+ // ============ USER PLAN ============
+ 
+-export async function loadUserPlan(): Promise<{
++export async function loadUserPlan(options: { strict?: boolean } = {}): Promise<{
+   paceChoice?: 'fast' | 'slow';
+   trackingMethod?: 'calories' | 'palm' | 'plate';
+   calorieTarget?: number;
+@@ -55,6 +56,7 @@
+   try {
+     return await apiFetch('/plan');
+   } catch (e) {
++    if (options.strict) throw e;
+     console.error('loadUserPlan failed', e);
+     return null;
+   }
+@@ -75,10 +77,11 @@
+ 
+ // ============ BEHAVIOR PROFILE ============
+ 
+-export async function loadBehaviorProfile(): Promise<FoodProfile | null> {
++export async function loadBehaviorProfile(options: { strict?: boolean } = {}): Promise<FoodProfile | null> {
+   try {
+     return await apiFetch<FoodProfile | null>('/behavior');
+   } catch (e) {
++    if (options.strict) throw e;
+     console.error('loadBehaviorProfile failed', e);
+     return null;
+   }
+@@ -90,11 +93,12 @@
+ 
+ // ============ ASSESSMENT ============
+ 
+-export async function loadAssessmentAnswers(): Promise<number[] | null> {
++export async function loadAssessmentAnswers(options: { strict?: boolean } = {}): Promise<number[] | null> {
+   try {
+     const arr = await apiFetch<number[] | null>('/assessment');
+     return Array.isArray(arr) ? arr : null;
+   } catch (e) {
++    if (options.strict) throw e;
+     console.error('loadAssessmentAnswers failed', e);
+     return null;
+   }
+@@ -127,10 +131,11 @@
+   });
+ }
+ 
+-export async function loadCheckins(): Promise<{ date: string; weight: number }[]> {
++export async function loadCheckins(options: { strict?: boolean } = {}): Promise<{ date: string; weight: number }[]> {
+   try {
+     return await apiFetch<{ date: string; weight: number }[]>('/checkins');
+   } catch (e) {
++    if (options.strict) throw e;
+     console.error('loadCheckins failed', e);
+     return [];
+   }
+--- a/src/pages/Index.session.test.tsx
++++ b/src/pages/Index.session.test.tsx
+@@ -75,3 +75,36 @@
+   expect(screen.queryByLabelText('draft')).not.toBeInTheDocument();
+   expect(unmounted).toHaveBeenCalledTimes(1);
+ });
++
++test('B2: profile load failure shows retry instead of the survey and succeeds on retry', async () => {
++  hydrate.mockRejectedValueOnce(new Error('503'));
++  render(<Index />);
++  expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось загрузить ваши данные. Попробуйте ещё раз.');
++  expect(screen.queryByLabelText('draft')).not.toBeInTheDocument();
++  act(() => { setTokens('A-new', 'RA'); notifyAuthChange('TOKEN_REFRESHED'); });
++  expect(hydrate).toHaveBeenCalledTimes(1);
++  fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
++  expect(await screen.findByLabelText('draft')).toBeVisible();
++  expect(hydrate).toHaveBeenCalledTimes(2);
++});
++
++test('B2: stored form is not rendered until hydration finishes', async () => {
++  let resolve!: () => void;
++  hydrate.mockImplementationOnce(() => new Promise<void>(r => { resolve = r; }));
++  render(<Index />);
++  await waitFor(() => expect(hydrate).toHaveBeenCalledTimes(1));
++  expect(screen.queryByLabelText('draft')).not.toBeInTheDocument();
++  await act(async () => { resolve(); });
++  expect(await screen.findByLabelText('draft')).toBeVisible();
++});
++
++test('B2/B1: late load failure of A does not hide the successfully loaded B screen', async () => {
++  let reject!: (error: Error) => void;
++  hydrate.mockImplementationOnce(() => new Promise<void>((_r, j) => { reject = j; }));
++  render(<Index />); await waitFor(() => expect(hydrate).toHaveBeenCalledTimes(1));
++  act(() => { setTokens('B', 'RB', person('B')); notifyAuthChange('SIGNED_IN'); });
++  expect(await screen.findByLabelText('draft')).toBeVisible();
++  await act(async () => { reject(new Error('late A')); });
++  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
++  expect(screen.getByLabelText('draft')).toBeVisible();
++});
+--- a/src/pages/Index.tsx
++++ b/src/pages/Index.tsx
+@@ -1,8 +1,9 @@
+-import { useEffect, useState } from 'react';
++import { LOAD_ERROR } from '@/hooks/use-save-action';
++import { useCallback, useEffect, useRef, useState } from 'react';
+ import { SubscriptionProvider, useSubscription } from '@/context/SubscriptionContext';
+ import { AccessScreen } from '@/components/inga/AccessScreen';
+ import { auth } from '@/lib/auth';
+-import { sessionSnapshot, subscribe } from '@/lib/auth-storage';
++import { sessionSnapshot, isSessionCurrent, subscribe } from '@/lib/auth-storage';
+ import { AppProvider, useApp } from '@/context/AppContext';
+ import { AppStep } from '@/lib/types';
+ import { AuthScreen } from '@/components/inga/AuthScreen';
+@@ -22,48 +23,65 @@
+   const subscription = useSubscription();
+   const [authReady, setAuthReady] = useState(false);
+   const [isAuthed, setIsAuthed] = useState(false);
+-  const hydratedRef = useState({ done: false })[0];
++  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>('loading');
++  const hydration = useRef(0);
++  const started = useRef(false);
++
++  const loadProfile = useCallback(async () => {
++    const request = ++hydration.current;
++    const session = sessionSnapshot();
++    setLoadStatus('loading');
++    try {
++      await hydrateFromDb();
++      if (request === hydration.current && isSessionCurrent(session)) setLoadStatus('ready');
++    } catch {
++      if (request === hydration.current && isSessionCurrent(session)) setLoadStatus('error');
++    }
++  }, [hydrateFromDb]);
+ 
+   useEffect(() => {
+     let active = true;
+-    const handleAuth = async (authed: boolean) => {
++    const handleAuth = (authed: boolean) => {
+       if (!active) return;
+       setIsAuthed(authed);
+       setAuthReady(true);
+       if (!authed) {
+-        hydratedRef.done = false;
++        started.current = false;
++        ++hydration.current;
+         return;
+       }
+-      if (!hydratedRef.done) {
+-        hydratedRef.done = true;
+-        setTimeout(async () => {
+-          if (!active) return;
+-          try {
+-            await hydrateFromDb();
+-          } catch {
+-            if (active && step === 'auth') setStep('survey-name' as AppStep);
+-          }
+-        }, 0);
++      if (!started.current) {
++        started.current = true;
++        void loadProfile();
+       }
+     };
+-
+     const { data: { subscription } } = auth.onAuthStateChange((_event, session) => {
+       handleAuth(!!session?.user);
+     });
+-
+-    auth.getSession().then(({ data: { session } }) => {
+-      handleAuth(!!session?.user);
+-    });
+-
+-    return () => { active = false; subscription.unsubscribe(); };
+-    // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, []);
++    auth.getSession().then(({ data: { session } }) => handleAuth(!!session?.user));
++    return () => {
++      active = false;
++      started.current = false;
++      ++hydration.current;
++      subscription.unsubscribe();
++    };
++  }, [loadProfile]);
+ 
+   if (!authReady) return null;
+ 
+-  if (!isAuthed || step === 'auth') {
++  if (!isAuthed) {
+     return <AuthScreen initialMode={initialAuthMode} />;
+   }
++
++  // Do not render stale local data or interpret a failed load as a new account.
++  if (loadStatus === 'loading') return null;
++  if (loadStatus === 'error') {
++    return <div className="min-h-screen flex flex-col items-center justify-center px-6">
++      <p role="alert" className="inga-bubble mb-4">{LOAD_ERROR}</p>
++      <button onClick={() => { void loadProfile(); }} className="inga-btn-primary">Повторить</button>
++    </div>;
++  }
++  if (step === 'auth') return <AuthScreen initialMode={initialAuthMode} />;
+ 
+   if ((step === 'daily' || step === 'chat')
+     && (subscription.error || !subscription.access?.active)) {
+--- a/src/test/profile-save-api.test.tsx
++++ b/src/test/profile-save-api.test.tsx
+@@ -0,0 +1,114 @@
++import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
++import { beforeEach, afterEach, expect, test, vi } from 'vitest';
++vi.hoisted(() => { vi.stubEnv('VITE_API_URL', 'http://b2.invalid/api/v1'); });
++vi.mock('@/lib/achievement-client', () => ({
++  useAchievements: () => ({ medals: [], streakDays: 0, uniqueRecipes: 0, reset: resetAchievements }),
++  deviceTimezone: () => 'Europe/Moscow', localDay: () => '2026-10-28',
++}));
++vi.mock('@/context/SubscriptionContext', () => ({ useSubscription: () => ({ access: { active: true }, refresh: async () => null }) }));
++vi.mock('@/components/inga/ProgressPhotosSection', () => ({ ProgressPhotosSection: () => null }));
++vi.mock('@/lib/app-settings', () => ({ getSetting: async () => null }));
++import { AppProvider, useApp } from '@/context/AppContext';
++import { setTokens } from '@/lib/auth-storage';
++import { MenuScreen } from '@/components/inga/MenuScreen';
++import { SurveyDataScreen } from '@/components/inga/SurveyDataScreen';
++import { loadUserProfile, loadUserPlan, loadBehaviorProfile, loadAssessmentAnswers, loadCheckins } from '@/lib/db';
++const resetAchievements = () => {};
++let app: ReturnType<typeof useApp>;
++function Probe() { app = useApp(); return null; }
++const profile = { name: 'Мария', age: 40, gender: 'female', height: 165, weight: 70, goalWeight: 65, stepsPerDay: 5000, waist: 80, hips: 95 };
++const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status });
++let failure: '503' | '400' | 'offline' | null;
++let saved: Record<string, unknown>;
++let writes: Record<string, unknown>[];
++let pending: (() => Promise<Response>) | null;
++beforeEach(() => {
++  localStorage.clear(); vi.clearAllMocks(); failure = null; pending = null; saved = { ...profile }; writes = [];
++  setTokens('A', 'RA', { id: 'A', user_id: 'A', email: 'a@example.invalid', email_verified: true });
++  localStorage.setItem('inga-app-state', JSON.stringify({ userId: 'A', step: 'menu', profile }));
++  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
++  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
++  vi.stubGlobal('fetch', vi.fn(async (url: string, opts: RequestInit) => {
++    if (url.endsWith('/profile') && opts.method === 'PUT') {
++      writes.push(JSON.parse(opts.body as string));
++      if (pending) return pending();
++      if (failure === 'offline') throw new TypeError('Failed to fetch');
++      if (failure) return json({ error: 'test_failure' }, Number(failure));
++      Object.assign(saved, writes.at(-1)); return json({ ok: true });
++    }
++    if (url.endsWith('/profile')) return json(saved);
++    if (url.endsWith('/checkins')) return json([]);
++    return json(null);
++  }));
++});
++afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
++async function openProfile() {
++  localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'profile' }));
++  render(<AppProvider><Probe /><MenuScreen /></AppProvider>);
++  await screen.findByText('Личные данные');
++}
++
++for (const kind of ['503', '400', 'offline'] as const) {
++  test(`B2/API: failed profile name save (${kind}) retains draft, retry and reload use confirmed value`, async () => {
++    failure = kind; await openProfile();
++    fireEvent.click(screen.getAllByRole('button', { name: 'Изменить' })[0]);
++    fireEvent.change(screen.getByPlaceholderText('Ваше имя'), { target: { value: 'Новое имя' } });
++    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
++    expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось сохранить изменения. Попробуйте ещё раз.');
++    expect(screen.getByPlaceholderText('Ваше имя')).toHaveValue('Новое имя');
++    expect(app.profile.name).toBe('Мария'); expect(saved.name).toBe('Мария');
++    failure = null; fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
++    await waitFor(() => expect(screen.queryByPlaceholderText('Ваше имя')).not.toBeInTheDocument());
++    expect(app.profile.name).toBe('Новое имя'); expect(saved.name).toBe('Новое имя');
++    await act(async () => { await app.hydrateFromDb(); });
++    expect(app.profile.name).toBe('Новое имя'); expect(writes).toHaveLength(2);
++  });
++}
++
++test('B2/API: numeric Enter + blur is one request, failure retains editor', async () => {
++  let resolve!: (response: Response) => void;
++  pending = () => new Promise<Response>(r => { resolve = r; });
++  await openProfile();
++  const row = screen.getByText('Возраст', { exact: true }).parentElement!;
++  fireEvent.click(within(row).getByRole('button', { name: 'Изменить' }));
++  const input = within(row).getByRole('spinbutton');
++  fireEvent.change(input, { target: { value: '41' } });
++  fireEvent.keyDown(input, { key: 'Enter' }); fireEvent.blur(input);
++  expect(writes).toHaveLength(1); expect(app.profile.age).toBe(40);
++  await act(async () => { resolve(json({ error: 'temporary' }, 503)); });
++  expect(await screen.findByRole('alert')).toBeVisible(); expect(input).toHaveValue(41);
++  pending = null; fireEvent.keyDown(input, { key: 'Enter' });
++  await waitFor(() => expect(app.profile.age).toBe(41));
++  expect(writes).toHaveLength(2); expect(saved.age).toBe(41);
++});
++
++test('B2/API: measurement date changes only after successful save', async () => {
++  failure = '503'; await openProfile();
++  const row = screen.getByText('Талия', { exact: true }).parentElement!;
++  fireEvent.click(within(row).getByRole('button', { name: 'Изменить' }));
++  const input = within(row).getByRole('spinbutton');
++  fireEvent.change(input, { target: { value: '79' } }); fireEvent.blur(input);
++  await screen.findByRole('alert');
++  expect(localStorage.getItem('inga-measurements-updated')).toBeNull();
++  failure = null; fireEvent.keyDown(input, { key: 'Enter' });
++  await waitFor(() => expect(app.profile.waist).toBe(79));
++  expect(localStorage.getItem('inga-measurements-updated')).not.toBeNull();
++});
++
++test('B2/API: survey data preserves all inputs after rejection and advances only on retry success', async () => {
++  failure = '503'; render(<AppProvider><Probe /><SurveyDataScreen /></AppProvider>);
++  fireEvent.change(screen.getByPlaceholderText('30'), { target: { value: '41' } });
++  fireEvent.click(screen.getByRole('button', { name: 'Дальше →' }));
++  await screen.findByRole('alert'); expect(app.step).toBe('menu');
++  expect(screen.getByPlaceholderText('30')).toHaveValue(41);
++  failure = null; fireEvent.click(screen.getByRole('button', { name: 'Дальше →' }));
++  await waitFor(() => expect(app.step).toBe('tracking-method'));
++  expect(saved.age).toBe(41);
++});
++
++for (const [name, loader] of Object.entries({ profile: loadUserProfile, plan: loadUserPlan, behavior: loadBehaviorProfile, assessment: loadAssessmentAnswers, checkins: loadCheckins })) {
++  test(`B2/API: strict ${name} load rejects a server error instead of returning empty data`, async () => {
++    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ error: 'unavailable' }, 503)));
++    await expect(loader({ strict: true })).rejects.toMatchObject({ status: 503 });
++  });
++}
+--- a/src/test/profile-save.test.tsx
++++ b/src/test/profile-save.test.tsx
+@@ -0,0 +1,141 @@
++import { act, cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
++import { beforeEach, afterEach, expect, test, vi } from 'vitest';
++import { AppProvider, useApp } from '@/context/AppContext';
++import { setTokens, clearTokens } from '@/lib/auth-storage';
++import * as db from '@/lib/db';
++import { SurveyNameScreen } from '@/components/inga/SurveyNameScreen';
++import { RouteReadyScreen } from '@/components/inga/RouteReadyScreen';
++import { AccessScreen } from '@/components/inga/AccessScreen';
++import { beginTrial } from '@/lib/subscription';
++
++vi.mock('@/lib/achievement-client', () => ({ useAchievements: () => ({ medals: [], streakDays: 0, uniqueRecipes: 0, reset: () => {} }) }));
++vi.mock('@/context/SubscriptionContext', () => ({ useSubscription: () => ({ access: { status: 'not_started' }, checking: false, error: null, refresh: vi.fn().mockResolvedValue(null) }) }));
++vi.mock('@/lib/subscription', () => ({ beginTrial: vi.fn() }));
++vi.mock('@/lib/db', () => ({
++  saveUserProfile: vi.fn(), saveUserPlan: vi.fn(), saveAssessmentAnswers: vi.fn(), saveBehaviorProfile: vi.fn(),
++  isAuthenticated: vi.fn().mockResolvedValue(true), startTrial: vi.fn(), logUserEvent: vi.fn(),
++  loadUserProfile: vi.fn(), loadUserPlan: vi.fn(), loadBehaviorProfile: vi.fn(), loadAssessmentAnswers: vi.fn(), loadCheckins: vi.fn(),
++  saveFixationAction: vi.fn(), saveDailyCheckin: vi.fn(), saveEveningReflection: vi.fn(), requestConsultation: vi.fn(),
++}));
++let app: ReturnType<typeof useApp>;
++function Probe() { app = useApp(); return <output data-testid="state">{JSON.stringify({ profile: app.profile, step: app.step })}</output>; }
++function deferred() {
++  let resolve!: () => void; let reject!: (error: Error) => void;
++  const promise = new Promise<void>((r, j) => { resolve = r; reject = j; });
++  return { promise, resolve, reject };
++}
++beforeEach(() => {
++  vi.resetAllMocks(); localStorage.clear();
++  setTokens('A', 'RA', { id: 'A', user_id: 'A', email: 'a@example.invalid' });
++  vi.mocked(db.isAuthenticated).mockResolvedValue(true);
++  vi.mocked(db.logUserEvent).mockResolvedValue(undefined);
++  vi.mocked(db.startTrial).mockResolvedValue(undefined);
++  vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
++});
++afterEach(() => { cleanup(); vi.restoreAllMocks(); });
++
++test('B2: profile changes only after server confirmation', async () => {
++  const pending = deferred(); vi.mocked(db.saveUserProfile).mockReturnValue(pending.promise);
++  render(<AppProvider><Probe /></AppProvider>);
++  let result: unknown;
++  act(() => { result = app.updateProfile({ name: 'Saved' }); });
++  expect(app.profile.name).toBeUndefined();
++  await act(async () => { pending.resolve(); await result; });
++  expect(app.profile.name).toBe('Saved');
++});
++
++test('B2: failed save is rejected and does not persist optimistic profile', async () => {
++  vi.mocked(db.saveUserProfile).mockRejectedValue(new Error('503'));
++  render(<AppProvider><Probe /></AppProvider>);
++  await act(async () => { await expect(app.updateProfile({ age: 41 })).rejects.toThrow('503'); });
++  expect(app.profile.age).toBeUndefined();
++  expect(JSON.parse(localStorage.getItem('inga-app-state')!).profile.age).toBeUndefined();
++});
++
++test('B2: stale save does not publish profile into another session', async () => {
++  const pending = deferred(); vi.mocked(db.saveUserProfile).mockReturnValue(pending.promise);
++  render(<AppProvider><Probe /></AppProvider>);
++  let result: Promise<unknown>;
++  act(() => { result = Promise.resolve(app.updateProfile({ name: 'A' })).catch(e => e); });
++  setTokens('B', 'RB', { id: 'B', user_id: 'B', email: 'b@example.invalid' });
++  await act(async () => { pending.resolve(); await result; });
++  expect(app.profile.name).toBeUndefined();
++});
++
++test('B2: name form waits, retains draft on failure and supports retry', async () => {
++  const pending = deferred(); vi.mocked(db.saveUserProfile).mockReturnValueOnce(pending.promise).mockResolvedValue(undefined);
++  render(<AppProvider><Probe /><SurveyNameScreen /></AppProvider>);
++  fireEvent.change(screen.getByPlaceholderText('Например, Мария'), { target: { value: 'Мария' } });
++  fireEvent.click(screen.getByRole('button', { name: 'Женщина' }));
++  const next = screen.getByRole('button', { name: /Приятно познакомиться/ });
++  fireEvent.click(next); fireEvent.click(next);
++  expect(app.step).toBe('auth'); expect(db.saveUserProfile).toHaveBeenCalledTimes(1);
++  await act(async () => { pending.reject(new Error('offline')); });
++  expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось сохранить изменения. Попробуйте ещё раз.');
++  expect(screen.getByPlaceholderText('Например, Мария')).toHaveValue('Мария');
++  fireEvent.click(next);
++  await waitFor(() => expect(app.step).toBe('goal'));
++  expect(app.profile.name).toBe('Мария');
++});
++
++test('B2: failed final synchronization never starts trial or opens diary', async () => {
++  vi.mocked(db.saveUserProfile).mockRejectedValue(new Error('503'));
++  render(<AppProvider><Probe /><RouteReadyScreen /></AppProvider>);
++  fireEvent.click(screen.getByRole('button', { name: 'Начнём →' }));
++  expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось сохранить изменения. Попробуйте ещё раз.');
++  expect(db.startTrial).not.toHaveBeenCalled(); expect(app.step).toBe('auth');
++  vi.mocked(db.saveUserProfile).mockResolvedValue(undefined);
++  fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
++  await waitFor(() => expect(app.step).toBe('daily'));
++  expect(db.startTrial).toHaveBeenCalledTimes(1);
++});
++
++test('B2: calculation is a local preview, explicit sync saves the plan', async () => {
++  localStorage.setItem('inga-app-state', JSON.stringify({ userId: 'A', profile: { age: 40, gender: 'female', height: 165, weight: 70, stepsPerDay: 5000 } }));
++  render(<AppProvider><Probe /></AppProvider>);
++  act(() => { app.runCalculations(); });
++  expect(db.saveUserPlan).not.toHaveBeenCalled();
++  await act(async () => { await app.syncToDb(); });
++  expect(db.saveUserPlan).toHaveBeenCalledTimes(1);
++});
++
++test('B2: sync without a session fails instead of succeeding silently', async () => {
++  render(<AppProvider><Probe /></AppProvider>); clearTokens();
++  vi.mocked(db.isAuthenticated).mockResolvedValue(false);
++  await expect(app.syncToDb()).rejects.toBeDefined();
++  expect(db.saveUserProfile).not.toHaveBeenCalled();
++});
++
++test('B2: plan write failure blocks trial even after profile write succeeds', async () => {
++  localStorage.setItem('inga-app-state', JSON.stringify({ userId: 'A', profile: { age: 40, gender: 'female', height: 165, weight: 70, stepsPerDay: 5000 } }));
++  vi.mocked(db.saveUserPlan).mockRejectedValueOnce(new Error('plan 503')).mockResolvedValue(undefined);
++  render(<AppProvider><Probe /><RouteReadyScreen /></AppProvider>);
++  fireEvent.click(screen.getByRole('button', { name: 'Начнём →' }));
++  expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось сохранить изменения. Попробуйте ещё раз.');
++  expect(db.startTrial).not.toHaveBeenCalled();
++  fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
++  await waitFor(() => expect(app.step).toBe('daily'));
++  expect(db.saveUserPlan).toHaveBeenCalledTimes(2);
++  expect(db.startTrial).toHaveBeenCalledTimes(1);
++});
++
++test('B2: successful final sync writes behavior and answers once', async () => {
++  localStorage.setItem('inga-app-state', JSON.stringify({ userId: 'A', profile: { foodTestAnswers: [1, 2], foodProfile: { pattern: 'example' } } }));
++  render(<AppProvider><Probe /><RouteReadyScreen /></AppProvider>);
++  fireEvent.click(screen.getByRole('button', { name: 'Начнём →' }));
++  await waitFor(() => expect(app.step).toBe('daily'));
++  expect(db.saveAssessmentAnswers).toHaveBeenCalledTimes(1);
++  expect(db.saveBehaviorProfile).toHaveBeenCalledTimes(1);
++});
++
++test('B2: access screen also blocks trial when final plan synchronization fails', async () => {
++  localStorage.setItem('inga-app-state', JSON.stringify({ userId: 'A', profile: { age: 40, gender: 'female', height: 165, weight: 70, stepsPerDay: 5000, trackingMethod: 'plate' } }));
++  vi.mocked(db.saveUserPlan).mockRejectedValueOnce(new Error('plan 503')).mockResolvedValue(undefined);
++  render(<AppProvider><Probe /><AccessScreen onProfile={() => {}} /></AppProvider>);
++  fireEvent.click(screen.getByRole('button', { name: 'Начать 7 бесплатных дней' }));
++  expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось сохранить изменения. Попробуйте ещё раз.');
++  expect(beginTrial).not.toHaveBeenCalled();
++  fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
++  await waitFor(() => expect(beginTrial).toHaveBeenCalledTimes(1));
++  expect(db.saveUserPlan).toHaveBeenCalledTimes(2);
++});

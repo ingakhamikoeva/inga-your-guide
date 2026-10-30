@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Slider } from '@/components/ui/slider';
@@ -6,6 +7,7 @@ import { roundTo50, checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
 
 export function SurveyDataScreen() {
   const { profile, updateProfile, setStep } = useApp();
+  const { save, saving, saveError } = useSaveAction();
   const sex = profile.gender === 'female' || profile.gender === 'male' ? profile.gender : null;
 
   const [age, setAge] = useState<string>(profile.age ? String(profile.age) : '');
@@ -38,12 +40,12 @@ export function SurveyDataScreen() {
     : Number(goalDraft);
   const goalIsUnsafe = canProceed && checkGoalBmi(requestedGoal, heightN).isUnsafe;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!canProceed || sex === null) return;
     if (goalIsUnsafe) { setShowGoalError(true); return; }
     const enteredWeight = weightN;
 
-    updateProfile({
+    if (!(await save(() => updateProfile({
       age: ageN,
       height: heightN,
       weight: enteredWeight,
@@ -54,7 +56,7 @@ export function SurveyDataScreen() {
       stepsPerDay: steps,
       gender: sex,
       ...({ calorie_target: deficit } as any),
-    });
+    })))) return;
     setStep('tracking-method');
   };
 
@@ -69,9 +71,10 @@ export function SurveyDataScreen() {
 
   return (
     <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       {/* Progress bar with back button */}
       <div className="flex items-center gap-3 mb-6">
-        <button
+        <button disabled={saving}
           onClick={() => setStep('why')}
           className="w-9 h-9 rounded-full flex items-center justify-center text-lg"
           style={{ background: '#F4EEE8', color: '#3B2A20' }}
@@ -114,17 +117,17 @@ export function SurveyDataScreen() {
       <div className="w-full space-y-3">
         <div>
           <label className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Возраст (лет)</label>
-          <input type="number" value={age} onChange={e => setAge(e.target.value)} className="inga-input" placeholder="30" />
+          <input disabled={saving} type="number" value={age} onChange={e => setAge(e.target.value)} className="inga-input" placeholder="30" />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Рост (см)</label>
-          <input type="number" value={height} onChange={e => setHeight(e.target.value)} className="inga-input" placeholder="165" />
+          <input disabled={saving} type="number" value={height} onChange={e => setHeight(e.target.value)} className="inga-input" placeholder="165" />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Текущий вес (кг)</label>
-          <input type="number" value={weight} onChange={e => setWeight(e.target.value)} className="inga-input" placeholder="70" />
+          <input disabled={saving} type="number" value={weight} onChange={e => setWeight(e.target.value)} className="inga-input" placeholder="70" />
         </div>
 
         <div className="pt-2">
@@ -132,7 +135,7 @@ export function SurveyDataScreen() {
             <span>Шагов в день</span>
             <span className="font-semibold">{fmt(steps)} (+{stepCalories} ккал)</span>
           </div>
-          <Slider
+          <Slider disabled={saving}
             value={[steps]}
             onValueChange={v => setSteps(v[0])}
             min={0}
@@ -166,7 +169,7 @@ export function SurveyDataScreen() {
           <div className="inga-bubble" role="alert">
             <p>{goalWeightWarning(heightN)}</p>
             {goalDraft === null && (
-              <button
+              <button disabled={saving}
                 type="button"
                 onClick={() => setGoalDraft(String(requestedGoal))}
                 className="inga-btn-secondary w-full mt-3"
@@ -180,12 +183,12 @@ export function SurveyDataScreen() {
           <div>
             <label htmlFor="survey-goal-weight" className="block text-sm font-medium mb-1" style={{ color: '#3B2A20' }}>Цель</label>
             <div className="flex items-center gap-2">
-              <input id="survey-goal-weight" type="number" step="0.1" autoFocus value={goalDraft} onChange={e => setGoalDraft(e.target.value)} className="inga-input" />
+              <input disabled={saving} id="survey-goal-weight" type="number" step="0.1" autoFocus value={goalDraft} onChange={e => setGoalDraft(e.target.value)} className="inga-input" />
               <span>кг</span>
             </div>
           </div>
         )}
-        <button
+        <button disabled={saving}
           onClick={handleNext}
           className="inga-btn-primary w-full mt-6"
         >

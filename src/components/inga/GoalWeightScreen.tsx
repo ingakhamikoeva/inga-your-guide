@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { AppStep } from '@/lib/types';
@@ -5,6 +6,7 @@ import { checkGoalBmi } from '@/lib/calculations';
 
 export function GoalWeightScreen() {
   const { profile, updateProfile, setStep } = useApp();
+  const { save, saving, saveError } = useSaveAction();
   const [goalWeight, setGoalWeight] = useState('');
   const [message, setMessage] = useState('');
   const [safeWeight, setSafeWeight] = useState<number | null>(null);
@@ -18,7 +20,7 @@ export function GoalWeightScreen() {
     setStatus(null);
   };
 
-  const handleCheck = () => {
+  const handleCheck = async () => {
     const gw = parseFloat(goalWeight);
     if (!gw || !profile.height) return;
 
@@ -33,47 +35,48 @@ export function GoalWeightScreen() {
       setMessage(`Это очень низкий вес для вашего роста. Он находится на нижней границе нормы, и удерживать его может быть сложно. Обычно комфортнее чувствуется диапазон немного выше. Если хотите, можно начать с более устойчивой цели — например, ${check.comfortableWeight} кг, а дальше двигаться постепенно.`);
       setStatus('borderline');
     } else if (check.isHealthy) {
+      if (!(await save(() => updateProfile({ goalWeight: gw })))) return;
       setMessage('Отличная цель. Всё получится, я рядом 💛');
-      updateProfile({ goalWeight: gw });
       setStatus('ready');
     } else {
+      if (!(await save(() => updateProfile({ goalWeight: gw })))) return;
       setMessage('Это хорошая промежуточная цель. Можно двигаться поэтапно — так спокойнее и устойчивее.');
-      updateProfile({ goalWeight: gw });
       setStatus('ready');
     }
   };
 
-  const chooseSafeGoal = () => {
+  const chooseSafeGoal = async () => {
     if (!safeWeight) return;
-    updateProfile({ goalWeight: safeWeight });
+    if (!(await save(() => updateProfile({ goalWeight: safeWeight })))) return;
     setGoalWeight(String(safeWeight));
     setStatus('ready');
     setMessage('Хорошо, берём эту цель как более устойчивую отправную точку.');
   };
 
-  const chooseComfortableGoal = () => {
+  const chooseComfortableGoal = async () => {
     if (!comfortableWeight) return;
-    updateProfile({ goalWeight: comfortableWeight });
+    if (!(await save(() => updateProfile({ goalWeight: comfortableWeight })))) return;
     setGoalWeight(String(comfortableWeight));
     setStatus('ready');
     setMessage('Отлично, начнём с более комфортной цели и дальше будем двигаться постепенно.');
   };
 
-  const keepBorderlineGoal = () => {
+  const keepBorderlineGoal = async () => {
     const gw = parseFloat(goalWeight);
     if (!gw) return;
-    updateProfile({ goalWeight: gw });
+    if (!(await save(() => updateProfile({ goalWeight: gw })))) return;
     setStatus('ready');
     setMessage('Хорошо, оставляем эту цель и будем следить, чтобы путь к ней был устойчивым.');
   };
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       <h2 className="text-2xl font-bold mb-2">Какая у вас цель по весу?</h2>
       <p className="text-muted-foreground mb-6">Введи желаемый вес в кг</p>
 
       <div className="w-full max-w-sm space-y-4">
-        <input
+        <input disabled={saving}
           type="number"
           value={goalWeight}
           onChange={e => { setGoalWeight(e.target.value); resetCheck(); }}
@@ -82,9 +85,9 @@ export function GoalWeightScreen() {
         />
 
         {!message && (
-          <button
+          <button disabled={saving || (!goalWeight)}
             onClick={handleCheck}
-            disabled={!goalWeight}
+
             className="inga-btn-primary w-full disabled:opacity-40"
           >
             Проверить
@@ -99,10 +102,10 @@ export function GoalWeightScreen() {
 
         {status === 'unsafe' && (
           <div className="space-y-3">
-            <button onClick={chooseSafeGoal} className="inga-btn-primary w-full">
+            <button disabled={saving} onClick={chooseSafeGoal} className="inga-btn-primary w-full">
               Поставить безопасную цель
             </button>
-            <button onClick={resetCheck} className="inga-btn-secondary w-full">
+            <button disabled={saving} onClick={resetCheck} className="inga-btn-secondary w-full">
               Изменить цель
             </button>
           </div>
@@ -110,17 +113,17 @@ export function GoalWeightScreen() {
 
         {status === 'borderline' && (
           <div className="space-y-3">
-            <button onClick={keepBorderlineGoal} className="inga-btn-primary w-full">
+            <button disabled={saving} onClick={keepBorderlineGoal} className="inga-btn-primary w-full">
               Оставить эту цель
             </button>
-            <button onClick={chooseComfortableGoal} className="inga-btn-secondary w-full">
+            <button disabled={saving} onClick={chooseComfortableGoal} className="inga-btn-secondary w-full">
               Выбрать более комфортную
             </button>
           </div>
         )}
 
         {status === 'ready' && (
-          <button onClick={() => setStep('measurements' as AppStep)} className="inga-btn-primary w-full">
+          <button disabled={saving} onClick={() => setStep('measurements' as AppStep)} className="inga-btn-primary w-full">
             Далее →
           </button>
         )}

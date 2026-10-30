@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
@@ -179,9 +180,10 @@ export function DailyScreen() {
     setSelectedFoods(prev => prev.includes(label) ? prev.filter(x => x !== label) : [...prev, label]);
   };
 
-  const handleSubmitFoodSurvey = () => {
+  const { save, saving, saveError } = useSaveAction();
+  const handleSubmitFoodSurvey = async () => {
     if (selectedFoods.length === 0) return;
-    updateProfile({ food_preferences: selectedFoods });
+    if (!(await save(() => updateProfile({ food_preferences: selectedFoods })))) return;
     setFoodSurveyAnswered(true);
     setTimeout(() => setShowMorningCheckin(true), 600);
   };
@@ -612,6 +614,7 @@ export function DailyScreen() {
                     return (
                       <button
                         key={opt.label}
+                        disabled={saving}
                         onClick={() => toggleFood(opt.label)}
                         className="text-left p-3 rounded-2xl text-sm font-medium transition-colors flex items-start gap-2"
                         style={{
@@ -626,9 +629,10 @@ export function DailyScreen() {
                   })}
                 </div>
 
+                {saveError && <p role="alert" className="inga-bubble">{SAVE_ERROR}</p>}
                 <button
                   onClick={handleSubmitFoodSurvey}
-                  disabled={selectedFoods.length === 0}
+                  disabled={saving || selectedFoods.length === 0}
                   className="inga-btn-primary w-full disabled:opacity-50"
                 >
                   Показать лёгкие версии →

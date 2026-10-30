@@ -75,3 +75,36 @@ test('B1: logout removes the old screen and remounts contexts', async () => {
   expect(screen.queryByLabelText('draft')).not.toBeInTheDocument();
   expect(unmounted).toHaveBeenCalledTimes(1);
 });
+
+test('B2: profile load failure shows retry instead of the survey and succeeds on retry', async () => {
+  hydrate.mockRejectedValueOnce(new Error('503'));
+  render(<Index />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось загрузить ваши данные. Попробуйте ещё раз.');
+  expect(screen.queryByLabelText('draft')).not.toBeInTheDocument();
+  act(() => { setTokens('A-new', 'RA'); notifyAuthChange('TOKEN_REFRESHED'); });
+  expect(hydrate).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+  expect(await screen.findByLabelText('draft')).toBeVisible();
+  expect(hydrate).toHaveBeenCalledTimes(2);
+});
+
+test('B2: stored form is not rendered until hydration finishes', async () => {
+  let resolve!: () => void;
+  hydrate.mockImplementationOnce(() => new Promise<void>(r => { resolve = r; }));
+  render(<Index />);
+  await waitFor(() => expect(hydrate).toHaveBeenCalledTimes(1));
+  expect(screen.queryByLabelText('draft')).not.toBeInTheDocument();
+  await act(async () => { resolve(); });
+  expect(await screen.findByLabelText('draft')).toBeVisible();
+});
+
+test('B2/B1: late load failure of A does not hide the successfully loaded B screen', async () => {
+  let reject!: (error: Error) => void;
+  hydrate.mockImplementationOnce(() => new Promise<void>((_r, j) => { reject = j; }));
+  render(<Index />); await waitFor(() => expect(hydrate).toHaveBeenCalledTimes(1));
+  act(() => { setTokens('B', 'RB', person('B')); notifyAuthChange('SIGNED_IN'); });
+  expect(await screen.findByLabelText('draft')).toBeVisible();
+  await act(async () => { reject(new Error('late A')); });
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('draft')).toBeVisible();
+});

@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { cleanName } from '@/lib/user-name';
@@ -5,6 +6,7 @@ import ingaPhoto from '@/assets/inga-photo.jpg';
 
 export function SurveyNameScreen() {
   const { profile, updateProfile, setStep } = useApp();
+  const { save, saving, saveError } = useSaveAction();
   const [name, setName] = useState(profile.name ?? '');
   // Пол не предвыбран: от него зависит формула расчёта калорийности, поэтому
   // выбор должен быть осознанным, а не следствием того, что человек прошёл
@@ -21,14 +23,15 @@ export function SurveyNameScreen() {
   const trimmed = cleanName(name);
   const canProceed = trimmed.length > 0 && gender !== null;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!canProceed || gender === null) return;
-    updateProfile({ name: trimmed, gender });
+    if (!(await save(() => updateProfile({ name: trimmed, gender })))) return;
     setStep('goal');
   };
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up" style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       {/* Progress bar: 7 dashes */}
       <div className="w-full max-w-sm flex gap-1.5 mb-8">
         {Array.from({ length: 7 }).map((_, i) => (
@@ -64,14 +67,14 @@ export function SurveyNameScreen() {
         <div>
           <label className="block text-sm font-medium mb-2">Пол</label>
           <div className="flex gap-3">
-            <button
+            <button disabled={saving}
               type="button"
               onClick={() => setGender('female')}
               className={gender === 'female' ? 'inga-chip-active flex-1' : 'inga-chip-inactive flex-1'}
             >
               Женщина
             </button>
-            <button
+            <button disabled={saving}
               type="button"
               onClick={() => setGender('male')}
               className={gender === 'male' ? 'inga-chip-active flex-1' : 'inga-chip-inactive flex-1'}
@@ -83,7 +86,7 @@ export function SurveyNameScreen() {
 
         <div>
           <label className="block text-sm font-medium mb-2">Ваше имя</label>
-          <input
+          <input disabled={saving}
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -95,9 +98,9 @@ export function SurveyNameScreen() {
           />
         </div>
 
-        <button
+        <button disabled={saving || (!canProceed)}
           onClick={handleNext}
-          disabled={!canProceed}
+
           className="inga-btn-primary w-full disabled:opacity-40"
         >
           Приятно познакомиться →

@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
@@ -20,6 +21,7 @@ const OPTIONS_MALE = [
 
 export function WhyScreen() {
   const { profile, updateProfile, setStep } = useApp();
+  const { save, saving, saveError } = useSaveAction();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [customOpen, setCustomOpen] = useState(false);
   const [customText, setCustomText] = useState('');
@@ -44,14 +46,14 @@ export function WhyScreen() {
 
   const hasSelection = selected.size > 0 || customText.trim().length > 0;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const result: string[] = [];
     selected.forEach(idx => result.push(OPTIONS[idx].text));
     const trimmedCustom = customText.trim();
     if (trimmedCustom) {
       result.push(trimmedCustom);
     }
-    updateProfile({ motivation: result });
+    if (!(await save(() => updateProfile({ motivation: result })))) return;
     setStep('survey-data');
   };
 
@@ -60,9 +62,10 @@ export function WhyScreen() {
       className="flex flex-col items-center min-h-screen px-6 py-6 animate-fade-in-up"
       style={{ backgroundColor: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}
     >
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       {/* Progress + back button */}
       <div className="w-full max-w-sm flex items-center gap-3 mb-8">
-        <button
+        <button disabled={saving}
           type="button"
           onClick={() => setStep('goal')}
           className="flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0"
@@ -111,7 +114,7 @@ export function WhyScreen() {
         {OPTIONS.map((opt, i) => {
           const isSelected = selected.has(i);
           return (
-            <button
+            <button disabled={saving}
               key={i}
               type="button"
               onClick={() => toggleOption(i)}
@@ -137,7 +140,7 @@ export function WhyScreen() {
       {/* Custom reason */}
       <div className="w-full max-w-sm mb-4">
         {!customOpen ? (
-          <button
+          <button disabled={saving}
             type="button"
             onClick={() => setCustomOpen(true)}
             className="text-sm font-medium"
@@ -146,7 +149,7 @@ export function WhyScreen() {
             + Своя причина...
           </button>
         ) : (
-          <input
+          <input disabled={saving}
             type="text"
             value={customText}
             onChange={e => setCustomText(e.target.value)}
@@ -159,9 +162,9 @@ export function WhyScreen() {
 
       {/* CTA */}
       <div className="w-full max-w-sm mt-auto pt-6">
-        <button
+        <button disabled={saving || (!hasSelection)}
           onClick={handleNext}
-          disabled={!hasSelection}
+
           className="w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-200 active:scale-[0.97] disabled:opacity-40"
           style={{
             backgroundColor: hasSelection ? '#FF6200' : '#E8E2DC',

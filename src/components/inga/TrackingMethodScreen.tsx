@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
@@ -7,13 +8,14 @@ type Method = 'plate' | 'palm';
 
 export function TrackingMethodScreen() {
   const { profile, updateProfile, setStep } = useApp();
+  const { save, saving, saveError } = useSaveAction();
   const [selected, setSelected] = useState<Method | null>(
     (profile.trackingMethod as Method) || null
   );
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!selected) return;
-    updateProfile({ trackingMethod: selected });
+    if (!(await save(() => updateProfile({ trackingMethod: selected })))) return;
     setStep('how-it-works');
   };
 
@@ -27,9 +29,10 @@ export function TrackingMethodScreen() {
 
   return (
     <div className="flex flex-col min-h-screen px-6 py-6 animate-fade-in-up" style={{ background: '#FAF5F0', maxWidth: '480px', margin: '0 auto', width: '100%' }}>
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       {/* Progress bar */}
       <div className="flex items-center gap-3 mb-6">
-        <button
+        <button disabled={saving}
           onClick={() => setStep('survey-data')}
           className="w-9 h-9 rounded-full flex items-center justify-center text-lg"
           style={{ background: '#F4EEE8', color: '#3B2A20' }}
@@ -71,7 +74,7 @@ export function TrackingMethodScreen() {
 
       <div className="space-y-3">
         {/* Plate method */}
-        <button
+        <button disabled={saving}
           onClick={() => setSelected('plate')}
           className="w-full text-left p-4 transition-all"
           style={cardStyle(selected === 'plate')}
@@ -122,7 +125,7 @@ export function TrackingMethodScreen() {
         </button>
 
         {/* Palm method */}
-        <button
+        <button disabled={saving}
           onClick={() => setSelected('palm')}
           className="w-full text-left p-4 transition-all"
           style={cardStyle(selected === 'palm')}
@@ -148,9 +151,9 @@ export function TrackingMethodScreen() {
           </p>
         </button>
 
-        <button
+        <button disabled={saving || (!selected)}
           onClick={handleNext}
-          disabled={!selected}
+
           className="inga-btn-primary w-full mt-6 disabled:opacity-40"
         >
           Мой метод →

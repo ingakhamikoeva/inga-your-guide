@@ -1,18 +1,28 @@
 import { useState } from 'react';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { beginTrial } from '@/lib/subscription';
+import { useApp } from '@/context/AppContext';
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
+import { sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 
 export function AccessScreen({ onProfile }: { onProfile: (promo?: boolean) => void }) {
   const { access, checking, error, refresh } = useSubscription();
+  const { syncToDb } = useApp();
+  const { save, saving, saveError, isSaving } = useSaveAction();
   const [history, setHistory] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState(false);
   const start = async () => {
-    if (starting) return;
+    if (starting || isSaving()) return;
+    const session = sessionSnapshot();
     setStarting(true); setStartError(false);
-    try { await beginTrial(); await refresh(); }
-    catch { setStartError(true); }
+    try {
+      if (!(await save(syncToDb)) || !isSessionCurrent(session)) return;
+      await beginTrial();
+      if (isSessionCurrent(session)) await refresh();
+    }
+    catch { if (isSessionCurrent(session)) setStartError(true); }
     finally { setStarting(false); }
   };
   if (history) return <DiaryHistoryScreen onBack={() => setHistory(false)} />;
@@ -27,8 +37,9 @@ export function AccessScreen({ onProfile }: { onProfile: (promo?: boolean) => vo
         ) : access?.status === 'not_started' ? (
           <div className="inga-bubble">
             {startError && <p role="alert" className="mb-3">Не удалось запустить пробный период. Попробуйте ещё раз.</p>}
-            <button onClick={start} disabled={starting} className="inga-btn-primary w-full">
-              {starting ? 'Секунду…' : startError ? 'Повторить' : 'Начать 7 бесплатных дней'}
+            {saveError && <p role="alert" className="mb-3">{SAVE_ERROR}</p>}
+            <button onClick={start} disabled={starting || saving} className="inga-btn-primary w-full">
+              {starting ? 'Секунду…' : startError || saveError ? 'Повторить' : 'Начать 7 бесплатных дней'}
             </button>
           </div>
         ) : (

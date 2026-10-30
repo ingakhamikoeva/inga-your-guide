@@ -1,0 +1,7 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+/workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/Index.tsx
+  65:19  warning  The ref value 'hydration.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'hydration.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+✖ 1 problem (0 errors, 1 warning)
+

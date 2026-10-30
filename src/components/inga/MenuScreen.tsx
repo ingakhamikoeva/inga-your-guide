@@ -1,3 +1,4 @@
+import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { AccessScreen } from './AccessScreen';
 import { FixationLesson } from './FixationLesson';
@@ -2178,6 +2179,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
   const { profile, calculations, updateProfile, setStep, weeklyData, dailyReports, resetLocalState } = useApp();
 
   const subscription = useSubscription();
+  const { save, saving, saveError, isSaving } = useSaveAction();
 
   // ---------- name ----------
   const [editingName, setEditingName] = useState(false);
@@ -2365,20 +2367,21 @@ ${rows.map(({ date, weight, report }) => `
     // window.open already called above
   };
 
-  const handleSaveName = () => {
-    updateProfile({ name: cleanName(name) });
+  const handleSaveName = async () => {
+    if (!(await save(() => updateProfile({ name: cleanName(name) })))) return;
     setEditingName(false);
   };
 
   const startEdit = (field: Exclude<EditField, null>, current: number | undefined) => {
+    if (isSaving()) return;
     setGoalErrorHeight(null);
     setPendingHeight(null);
     setDraft(current ? String(current) : '');
     setEditField(field);
   };
 
-  const commitEdit = () => {
-    if (!editField) return;
+  const commitEdit = async () => {
+    if (!editField || isSaving()) return;
     const num = parseFloat(draft.replace(',', '.'));
     if (!Number.isFinite(num) || num <= 0) { setEditField(null); return; }
     const nextHeight = editField === 'height' ? Math.round(num) : (pendingHeight ?? profile.height);
@@ -2409,21 +2412,22 @@ ${rows.map(({ date, weight, report }) => `
         break;
       case 'waist':
         patch.waist = num;
-        try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
         break;
       case 'hips':
         patch.hips = num;
-        try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
         break;
     }
-    updateProfile(patch);
+    if (!(await save(() => updateProfile(patch)))) return;
+    if (editField === 'waist' || editField === 'hips') {
+      try { const now = new Date().toISOString(); localStorage.setItem(MEAS_KEY, now); setMeasUpdated(now); } catch {}
+    }
     setGoalErrorHeight(null);
     setPendingHeight(null);
     setEditField(null);
   };
 
-  const setGender = (g: 'female' | 'male') => {
-    if (profile.gender !== g) updateProfile({ gender: g });
+  const setGender = async (g: 'female' | 'male') => {
+    if (profile.gender !== g) await save(() => updateProfile({ gender: g }));
   };
 
   const doSignOut = async () => {
@@ -2474,7 +2478,7 @@ ${rows.map(({ date, weight, report }) => `
         <span className="text-sm text-muted-foreground">{label}</span>
         {isEditing ? (
           <div className="flex items-center gap-2">
-            <input
+            <input disabled={saving}
               type="number"
               inputMode="decimal"
               autoFocus
@@ -2489,7 +2493,7 @@ ${rows.map(({ date, weight, report }) => `
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{value ? `${value} ${suffix}` : 'не указано'}</span>
-            <button onClick={() => startEdit(field, value)} className="text-xs text-primary underline">Изменить</button>
+            <button disabled={saving} onClick={() => startEdit(field, value)} className="text-xs text-primary underline">Изменить</button>
           </div>
         )}
       </div>
@@ -2498,13 +2502,14 @@ ${rows.map(({ date, weight, report }) => `
 
   return (
     <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+      {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
       <div className="w-full max-w-md">
-        <button onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
+        <button disabled={saving} onClick={onBack} className="text-sm text-muted-foreground underline mb-6 self-start">← Назад в меню</button>
         <h2 className="text-2xl font-bold mb-5">Профиль</h2>
         {goalErrorHeight !== null && (
           <div className="inga-bubble mb-3" role="alert">
             <p>{goalWeightWarning(goalErrorHeight)}</p>
-            <button
+            <button disabled={saving}
               type="button"
               onClick={() => {
                 setPendingHeight(goalErrorHeight);
@@ -2524,13 +2529,13 @@ ${rows.map(({ date, weight, report }) => `
           {!editingName ? (
             <div className="flex items-center justify-between gap-3">
               <div className="text-xl font-semibold">{cleanName(profile.name) || 'Не указано'}</div>
-              <button onClick={() => { setName(profile.name ?? ''); setEditingName(true); }} className="inga-btn-secondary">
+              <button disabled={saving} onClick={() => { if (isSaving()) return; setName(profile.name ?? ''); setEditingName(true); }} className="inga-btn-secondary">
                 Изменить
               </button>
             </div>
           ) : (
             <div className="space-y-3">
-              <input
+              <input disabled={saving}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -2540,8 +2545,8 @@ ${rows.map(({ date, weight, report }) => `
                 placeholder="Ваше имя"
               />
               <div className="flex gap-2">
-                <button onClick={handleSaveName} className="inga-btn-primary flex-1">Сохранить</button>
-                <button onClick={() => setEditingName(false)} className="inga-btn-secondary flex-1">Отмена</button>
+                <button disabled={saving} onClick={handleSaveName} className="inga-btn-primary flex-1">Сохранить</button>
+                <button disabled={saving} onClick={() => setEditingName(false)} className="inga-btn-secondary flex-1">Отмена</button>
               </div>
             </div>
           )}
@@ -2554,11 +2559,11 @@ ${rows.map(({ date, weight, report }) => `
           <div className="flex items-center justify-between gap-3 py-2.5">
             <span className="text-sm text-muted-foreground">Пол</span>
             <div className="inline-flex rounded-full border border-border overflow-hidden">
-              <button
+              <button disabled={saving}
                 onClick={() => setGender('female')}
                 className={`px-3 py-1 text-xs ${profile.gender === 'female' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground'}`}
               >Женский</button>
-              <button
+              <button disabled={saving}
                 onClick={() => setGender('male')}
                 className={`px-3 py-1 text-xs ${profile.gender === 'male' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground'}`}
               >Мужской</button>
