@@ -75,7 +75,7 @@ export function SurveyDataScreen() {
       {/* Progress bar with back button */}
       <div className="flex items-center gap-3 mb-6">
         <button disabled={saving}
-          onClick={() => setStep('why')}
+          onClick={() => setStep('goal')}
           className="w-9 h-9 rounded-full flex items-center justify-center text-lg"
           style={{ background: '#F4EEE8', color: '#3B2A20' }}
           aria-label="Назад"
@@ -83,11 +83,11 @@ export function SurveyDataScreen() {
           ←
         </button>
         <div className="flex gap-1.5 flex-1">
-          {Array.from({ length: 7 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               className="h-1 flex-1 rounded-full"
-              style={{ background: i < 4 ? '#FF6200' : '#E8E2DC' }}
+              style={{ background: i < 3 ? '#FF6200' : '#E8E2DC' }}
             />
           ))}
         </div>

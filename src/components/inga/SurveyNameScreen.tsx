@@ -32,9 +32,9 @@ export function SurveyNameScreen() {
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up" style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
       {saveError && <p role="alert" className="inga-bubble w-full mb-3">{SAVE_ERROR}</p>}
-      {/* Progress bar: 7 dashes */}
+      {/* Progress bar: 6 dashes */}
       <div className="w-full max-w-sm flex gap-1.5 mb-8">
-        {Array.from({ length: 7 }).map((_, i) => (
+        {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
             className="flex-1 h-1 rounded-full"

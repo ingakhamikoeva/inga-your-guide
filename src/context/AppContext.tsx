@@ -301,9 +301,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
 
     // Determine resume step based on data completeness.
-    // NB: motivation/kgToLose are not persisted in DB, so we must NOT gate
-    // resume on them — otherwise every returning user on a fresh device
-    // gets bounced back to the "why" screen.
     const resume = (() => {
       if (!merged.name) return 'survey-name';
       if (merged.trackingMethod) return 'daily';
@@ -312,8 +309,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // If the user already has goal + full survey data saved in DB,
       // onboarding is effectively done — only the tracking method is missing.
       if (hasGoal && hasSurveyData) return 'tracking-method';
-      if (!hasGoal) return 'goal';
-      if (!merged.motivation?.length) return 'why';
+      // The kilogram goal is saved before the body measurements and target weight.
+      const hasKilogramGoal = typeof merged.kgToLose === 'number'
+        && Number.isFinite(merged.kgToLose) && merged.kgToLose > 0;
+      if (!hasGoal && !hasKilogramGoal) return 'goal';
       if (!hasSurveyData) return 'survey-data';
       return 'tracking-method';
     })() as AppStep;

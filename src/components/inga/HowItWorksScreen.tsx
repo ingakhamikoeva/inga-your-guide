@@ -39,12 +39,12 @@ const ROUTINES: RoutineBlock[] = [
     ],
   },
   {
-    title: 'ВЕЧЕРОМ — 2 МИНУТЫ',
-    emoji: '🌙',
+    title: 'РАЗБОР — ВАШ НАВИГАТОР ПО ДНЮ',
+    emoji: '🔎',
     bg: '#F4F0F9',
     border: '#C9B8E8',
     items: [
-      { emoji: '💬', title: 'Расскажите, как прошёл день', hint: 'Как себя чувствовали — я рядом' },
+      { emoji: '💬', title: 'Заглядывайте после записи еды', hint: 'Я посмотрю, что уже есть в вашем рационе, на что обратить внимание и чем дополнить следующий приём пищи. Так будет проще решить, что съесть дальше.' },
     ],
   },
 ];
@@ -71,11 +71,11 @@ export function HowItWorksScreen() {
           ←
         </button>
         <div className="flex-1 flex gap-1.5">
-          {Array.from({ length: 7 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               className="flex-1 h-1 rounded-full"
-              style={{ backgroundColor: '#FF6200' }}
+              style={{ backgroundColor: i < 5 ? '#FF6200' : '#E8E2DC' }}
             />
           ))}
         </div>

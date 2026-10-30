@@ -41,11 +41,11 @@ export function TrackingMethodScreen() {
           ←
         </button>
         <div className="flex gap-1.5 flex-1">
-          {Array.from({ length: 7 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               className="h-1 flex-1 rounded-full"
-              style={{ background: i < 5 ? '#FF6200' : '#E8E2DC' }}
+              style={{ background: i < 4 ? '#FF6200' : '#E8E2DC' }}
             />
           ))}
         </div>

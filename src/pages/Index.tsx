@@ -14,7 +14,6 @@ import { DailyScreen } from '@/components/inga/DailyScreen';
 import { MenuScreen } from '@/components/inga/MenuScreen';
 import { ChatScreen } from '@/components/inga/ChatScreen';
 import { GoalScreen } from '@/components/inga/GoalScreen';
-import { WhyScreen } from '@/components/inga/WhyScreen';
 import { HowItWorksScreen } from '@/components/inga/HowItWorksScreen';
 import { RouteReadyScreen } from '@/components/inga/RouteReadyScreen';
 
@@ -94,7 +93,7 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
   switch (step) {
     case 'survey-name': return <SurveyNameScreen />;
     case 'goal': return <GoalScreen />;
-    case 'why': return <WhyScreen />;
+    case 'why': // Compatibility with a saved step from the previous onboarding.
     case 'survey-data': return <SurveyDataScreen />;
     case 'tracking-method': return <TrackingMethodScreen />;
     case 'how-it-works': return <HowItWorksScreen />;
