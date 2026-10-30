@@ -1,0 +1,27 @@
+[boot] DATABASE_URL is not set
+✔ B3: one user quota covers all four actual AI routes, while another account has its own quota (2636.709836ms)
+✔ B3: changing meals or dates cannot bypass the quota; cached results and saving stay available (99.831105ms)
+✔ B3: unauthenticated and foreign-meal requests cannot spend someone else's quota (20.169177ms)
+✔ B3: concurrent copies of one meal share one provider call (59.894035ms)
+✔ B3: global and per-user concurrent leases are shared across limiter instances (34.182274ms)
+✔ B3: concurrent admissions never exceed one shared slot (22.651254ms)
+✔ B3: daily volume and call caps survive limiter recreation and reject before executing work (25.595647ms)
+✔ B3: failed provider releases its slot but keeps the budget reservation (30.699631ms)
+✔ B3: expired crashed-worker leases and elapsed windows recover without a restart (24.994131ms)
+✔ B3: oversized and ownerless provider requests fail before fetch; abort releases slot (18.07267ms)
+✔ B3: quota database failure prevents provider calls (8.268829ms)
+✔ B3: four simultaneous reset requests create exactly one token and one SMTP call (54.326934ms)
+✔ B3: unknown email gets the same success/cooldown responses without SMTP or account disclosure (23.91046ms)
+✔ B3: cooldown expiry allows resend; account hourly cap remains across IP changes (26.102519ms)
+✔ B3: reset IP and global caps cover multiple different email addresses (26.621211ms)
+✔ B3: spoofed forwarding headers are ignored; trusted proxy uses the nearest untrusted hop (18.828017ms)
+✔ B3: migration can run again without removing quota or subscription data (16.530378ms)
+✔ B3: a blocked resend leaves the original recovery link usable once (111.056184ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3576.597603

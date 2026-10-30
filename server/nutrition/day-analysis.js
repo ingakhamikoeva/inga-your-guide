@@ -68,7 +68,7 @@ export function analyzeDay(userId,date,timezone,db=pool,chat=deepseekChat) {
     if (JSON.stringify(data).length>80000) throw new Error('diary_too_large');
     const analysis = validate(JSON.parse(await chat([
       {role:'system',content:DAY_PROMPT}, {role:'user',content:JSON.stringify(data)},
-    ],{temperature:0.2,maxTokens:1800,jsonMode:true,signal:AbortSignal.timeout(60000)})));
+    ],{userId,temperature:0.2,maxTokens:1800,jsonMode:true,signal:AbortSignal.timeout(60000)})));
     // A response for an older diary must never be presented or cached as current.
     if (fingerprint(await readSource(userId,date,timezone,db)) !== hash) throw new Error('diary_changed');
     await db.query(`INSERT INTO public.daily_diet_analysis (user_id,date,timezone,fingerprint,analysis)

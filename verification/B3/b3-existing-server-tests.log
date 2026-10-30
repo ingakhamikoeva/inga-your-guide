@@ -1,0 +1,12 @@
+✔ fixed live form with signed return addresses and no recurrence or test flags (4.026402ms)
+✔ callback accepts live evidence and six decimals, including uppercase digest (1.553629ms)
+✔ callback rejects wrong amount, signature, order binding, test evidence and duplicate fields (1.119105ms)
+✔ live/test boundaries, allowlist and explicit switches fail closed (2.987007ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.859772

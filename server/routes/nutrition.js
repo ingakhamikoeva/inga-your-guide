@@ -1,3 +1,4 @@
+import { sendResourceLimit, DIARY_AI_LIMIT_MESSAGE } from '../resource-limits.js';
 import { analyzeDay } from "../nutrition/day-analysis.js";
 import { requireAccessForWrite, requireAccess } from '../access.js';
 import { Router } from "express";
@@ -20,7 +21,9 @@ r.post('/analysis/:date', async (req,res) => {
   } catch { return res.status(400).json({error:'invalid_timezone'}); }
   if (date !== currentDay) return res.status(400).json({error:'current_day_required'});
   try { res.json(await analyzeDay(req.userId,date,timezone)); }
-  catch (e) { res.status(e.message==='diary_changed'?409:503).json({error:e.message==='diary_changed'?'diary_changed':'analysis_unavailable'}); }
+  catch (e) {
+    if (sendResourceLimit(res, e, DIARY_AI_LIMIT_MESSAGE)) return;
+    res.status(e.message==='diary_changed'?409:503).json({error:e.message==='diary_changed'?'diary_changed':'analysis_unavailable'}); }
 });
 
 // Daily nutrition summary

@@ -1,3 +1,4 @@
+import { configureTrustedProxy, clientIp } from './resource-limits.js';
 import { startPaymentStatusScheduler } from './payments/reconciliation.js';
 import { startRenewalScheduler } from './payments/renewals.js';
 // Self-hosted API server. JWT (HS256) + direct Postgres. No Supabase.
@@ -21,6 +22,7 @@ if (!JWT_SECRET) console.warn("[boot] JWT_SECRET is not set — auth will fail")
 export { pool, requireAuth };
 
 const app = express();
+configureTrustedProxy(app);
 app.use(cors({ origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(",") }));
 app.use(express.json({ limit: "2mb" }));
 
@@ -33,7 +35,7 @@ function makeLimiter({ windowMs, max }) {
     for (const [k, v] of hits) if (now - v.start > windowMs) hits.delete(k);
   }, windowMs).unref();
   return (req, res, next) => {
-    const key = req.headers["x-real-ip"] || req.ip || "unknown";
+    const key = clientIp(req);
     const now = Date.now();
     let rec = hits.get(key);
     if (!rec || now - rec.start > windowMs) { rec = { start: now, count: 0 }; hits.set(key, rec); }
@@ -43,11 +45,8 @@ function makeLimiter({ windowMs, max }) {
   };
 }
 const authLimiter = makeLimiter({ windowMs: 15 * 60 * 1000, max: 20 });   // 20 попыток / 15 мин с IP
-const aiLimiter = makeLimiter({ windowMs: 60 * 60 * 1000, max: 60 });     // 60 AI-запросов / час с IP
 app.use("/api/v1/auth/login", authLimiter);
 app.use("/api/v1/auth/signup", authLimiter);
-app.use("/api/v1/ask-inga", aiLimiter);
-app.use("/api/v1/estimate-nutrition", aiLimiter);
 
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 

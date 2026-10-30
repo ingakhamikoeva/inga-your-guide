@@ -9,7 +9,7 @@ export function analyzeSavedMeal(userId, id, db = pool, estimate = estimateMeal)
     if (!meal) return null;
     if (meal.meta?.nutritionVersion === ESTIMATE_VERSION) return meal;
     if (!meal.raw_text?.trim() || meal.raw_text.length > 1000) throw new Error('unknown_composition');
-    const result = await estimate(meal.raw_text, Array.isArray(meal.meta?.lightSwap?.recipeIds) ? meal.meta.lightSwap.recipeIds : []);
+    const result = await estimate(meal.raw_text, Array.isArray(meal.meta?.lightSwap?.recipeIds) ? meal.meta.lightSwap.recipeIds : [], undefined, userId);
     const client = await db.connect();
     try {
       await client.query('BEGIN');

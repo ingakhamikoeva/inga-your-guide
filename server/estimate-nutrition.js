@@ -1,5 +1,6 @@
+import { sendResourceLimit, DIARY_AI_LIMIT_MESSAGE } from './resource-limits.js';
 import { checkAccess } from "./access.js";
-import { requireAuth } from "./index.js";
+import { requireAuthInline as requireAuth } from "./middleware/auth.js";
 import { deepseekChat } from "./deepseek.js";
 
 const FALLBACK = {
@@ -33,7 +34,7 @@ export async function handleEstimateNutrition(req, res) {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: text },
       ],
-      { temperature: 0.2, maxTokens: 300, jsonMode: true }
+      { temperature: 0.2, maxTokens: 300, jsonMode: true, userId: auth.authId }
     );
     const parsed = JSON.parse(content);
     const estimate = {
@@ -50,6 +51,7 @@ export async function handleEstimateNutrition(req, res) {
     };
     res.json({ estimate, source: "ai_estimate" });
   } catch (e) {
+    if (sendResourceLimit(res, e, DIARY_AI_LIMIT_MESSAGE)) return;
     console.error("estimate-nutrition failed:", e);
     res.json({ estimate: FALLBACK, source: "error" });
   }

@@ -1,3 +1,4 @@
+import { sendResourceLimit, DIARY_AI_LIMIT_MESSAGE } from '../resource-limits.js';
 import { analyzeSavedMeal } from "../nutrition/meal-estimation.js";
 import { requireAccessForWrite } from '../access.js';
 import { Router } from "express";
@@ -106,7 +107,10 @@ r.post('/:id/analyze', async (req, res) => {
     const meal = await analyzeSavedMeal(req.userId, req.params.id);
     if (!meal) return res.status(404).json({error:'not_found'});
     res.json(meal);
-  } catch { res.status(503).json({error:'nutrition_unavailable'}); }
+  } catch (error) {
+    if (sendResourceLimit(res, error, DIARY_AI_LIMIT_MESSAGE)) return;
+    res.status(503).json({error:'nutrition_unavailable'});
+  }
 });
 
 r.patch("/:id", async (req, res) => {

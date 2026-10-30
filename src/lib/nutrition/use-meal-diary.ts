@@ -1,3 +1,4 @@
+import { isAiLimitError } from '@/lib/request-limits';
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api-client';
 import { currentSession } from '@/lib/auth-storage';
@@ -34,21 +35,29 @@ export function useMealDiary(date:string) {
   const [estimating,setEstimating]=useState<string[]>([]);
   const [error,setError]=useState(false);
   const [reload,setReload]=useState(0);
+  const [analysisLimit,setAnalysisLimit]=useState(false);
+  const analysisLimited=useRef(false);
   const generation=useRef(0);
   const adding=useRef(false);
   const queues=useRef(new Map<string,Promise<unknown>>());
   const live=(g:number) => g===generation.current && currentSession()?.user.id===owner;
   const apply=(row:FoodLogRow,g:number) => {if(live(g))setRows(prev=>prev.map(r=>r.log_id===row.log_id?row:r));};
   const analyze=async(row:FoodLogRow,g:number) => {
-    if(row.meta?.nutritionVersion===3 || !live(g))return;
+    if(row.meta?.nutritionVersion===3 || !live(g) || analysisLimited.current)return;
     setPending(n=>n+1);setEstimating(ids=>[...ids,row.log_id]);
     const task=apiFetch<FoodLogRow>(`/food-logs/${row.log_id}/analyze`,{method:'POST'});
     queues.current.set(row.log_id,task);
-    try {apply(await task,g);} catch { /* Unknown composition remains unknown; retry is explicit. */ }
+    try {apply(await task,g);} catch (error) {
+      if(live(g) && isAiLimitError(error)) {
+        analysisLimited.current=true;setAnalysisLimit(true);
+      }
+      // Other unknown composition remains unknown; retry is explicit.
+    }
     finally {if(live(g)){setPending(n=>n-1);setEstimating(ids=>ids.filter(id=>id!==row.log_id));}}
   };
   useEffect(()=>{
     const g=++generation.current;
+    analysisLimited.current=false;setAnalysisLimit(false);
     setRows([]);setLoading(true);setPending(0);setEstimating([]);setError(false);adding.current=false;queues.current.clear();
     const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone;
     apiFetch<FoodLogRow[]>(`/food-logs?date=${date}&timezone=${encodeURIComponent(timezone)}`).then(async data=>{
@@ -82,6 +91,6 @@ export function useMealDiary(date:string) {
     finally {if(live(g))setPending(n=>n-1);}
   };
   return {meals:rows.map(r=>r.raw_text||''),mealMeta:rows.map(r=>rowMeta(r,estimating.includes(r.log_id))),
-    loading,error,pending,add,patch:(id:string,body:unknown)=>mutate(id,'PATCH',body),remove:(id:string)=>mutate(id,'DELETE'),
+    loading,error,analysisLimit,pending,add,patch:(id:string,body:unknown)=>mutate(id,'PATCH',body),remove:(id:string)=>mutate(id,'DELETE'),
     retry:()=>setReload(n=>n+1)};
 }

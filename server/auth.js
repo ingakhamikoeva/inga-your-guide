@@ -1,3 +1,4 @@
+import { resourceLimiter, clientIp, sendResourceLimit, RESET_LIMIT_MESSAGE } from './resource-limits.js';
 // Stand-alone auth: signup/login/refresh/me/forgot-password/reset-password,
 // OAuth redirect stubs. JWT HS256, signed with JWT_SECRET.
 //
@@ -268,6 +269,8 @@ export async function forgotPasswordHandler(req, res) {
   if (!email) return res.status(400).json({ error: "email required" });
 
   try {
+    // Reserve before account lookup; unknown and known emails share the same policy.
+    await resourceLimiter.reservePasswordReset(email, clientIp(req));
     // Validate configuration even for an unknown email, without leaking account existence.
     passwordResetUrl("configuration-check");
     const r = await pool.query(
@@ -295,6 +298,7 @@ export async function forgotPasswordHandler(req, res) {
     }
     return res.json({ ok: true });
   } catch (e) {
+    if (sendResourceLimit(res, e, RESET_LIMIT_MESSAGE)) return;
     console.error("forgot-password failed:", e);
     return res.status(500).json({ error: "forgot_password_failed" });
   }

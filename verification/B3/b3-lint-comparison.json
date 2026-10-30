@@ -1,0 +1,38 @@
+[
+  {
+    "file": "src/components/inga/DailyScreen.tsx",
+    "before": 10,
+    "after": 10,
+    "added": []
+  },
+  {
+    "file": "src/components/inga/DietAnalysis.tsx",
+    "before": 0,
+    "after": 0,
+    "added": []
+  },
+  {
+    "file": "src/lib/auth.ts",
+    "before": 2,
+    "after": 2,
+    "added": []
+  },
+  {
+    "file": "src/lib/nutrition/use-meal-diary.ts",
+    "before": 2,
+    "after": 2,
+    "added": []
+  },
+  {
+    "file": "src/lib/request-limits.ts",
+    "before": 0,
+    "after": 0,
+    "added": []
+  },
+  {
+    "file": "src/test/resource-limits.test.tsx",
+    "before": 0,
+    "after": 0,
+    "added": []
+  }
+]

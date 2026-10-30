@@ -1,0 +1,70 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> vite_react_shadcn_ts@0.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 2580 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/lib/auth.ts is dynamically imported by /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/components/inga/MenuScreen.tsx but also statically imported by /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/components/inga/AuthScreen.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/components/inga/MenuScreen.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/Admin.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/Index.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/ResetPassword.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/VerifyEmail.tsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                               1.62 kB │ gzip:   0.64 kB
+dist/assets/logo_vk-BWEWSE2n.png                              7.52 kB
+dist/assets/logo_telegram-CpghqF6y.png                       11.43 kB
+dist/assets/logo_max-ul3uo0cS.png                            17.09 kB
+dist/assets/breakfast_oatmeal-Cw0LSZkr.jpg                   27.59 kB
+dist/assets/inga-photo-BLIr0ScW.jpg                          56.24 kB
+dist/assets/breakfast_pate-CtzFD5hR.jpg                      67.93 kB
+dist/assets/sweet_oblaka-BPxrap_M.jpg                        81.97 kB
+dist/assets/breakfast_shaurma-CTlZ8PQ-.jpg                   82.62 kB
+dist/assets/recipe_cappuccino-eJOKoiGx.jpg                   82.72 kB
+dist/assets/sweet_morozhenoe-CQqO2boG.jpg                    84.43 kB
+dist/assets/breakfast_varenie-34OITqxD.jpg                   88.28 kB
+dist/assets/sweet_grusha-CYwRgQWI.jpg                        91.38 kB
+dist/assets/breakfast_bliny-CZWI43y6.jpg                    106.64 kB
+dist/assets/breakfast_zucchini-DdXMy_vi.jpg                 108.90 kB
+dist/assets/sweet_milfey-C-VF80VF.jpg                       114.28 kB
+dist/assets/recipe_pizza-C5DG5G5y.jpg                       115.02 kB
+dist/assets/recipe_fried_potatoes_mushrooms-BqfGfJlE.jpg    115.51 kB
+dist/assets/recipe_turkey_cutlets-gjAy_S76.jpg              116.25 kB
+dist/assets/recipe_okroshka-B6UuxL7M.jpg                    117.26 kB
+dist/assets/sweet_maffiny-1g9xTy6Q.jpg                      137.18 kB
+dist/assets/legche-girl-BYJORatv.png                        138.22 kB
+dist/assets/breakfast_taco-DQfsdCkE.jpg                     138.54 kB
+dist/assets/recipe_apple_roll_wrapped-qW_iB0mi.jpg          145.69 kB
+dist/assets/sweet_nevesimost-ChEq9Ha_.jpg                   148.06 kB
+dist/assets/sweet_slivovoe-zTW_OGmb.jpg                     156.07 kB
+dist/assets/breakfast_oatmeal_plain-DONtYD9V.jpg            171.29 kB
+dist/assets/sweet_nezhnost-CRdNMYhp.jpg                     172.51 kB
+dist/assets/breakfast_pirozhki-L-qnFPae.jpg                 175.18 kB
+dist/assets/sweet_sharlotka-CJILgsLP.jpg                    189.34 kB
+dist/assets/recipe_apple_roll_flip-DeDjJikX.jpg             223.84 kB
+dist/assets/recipe_pumpkin_soup-D5mk1Bxe.jpg                294.94 kB
+dist/assets/recipe_apple_roll-oc4oJWuw.jpg                  336.59 kB
+dist/assets/recipe_galette-D1dc5PUN.jpg                     351.70 kB
+dist/assets/recipe_apple_roll_batter-DDxysroW.jpg           353.17 kB
+dist/assets/recipe_apple_roll_apples-C9G1SqfB.jpg           411.18 kB
+dist/assets/recipe_apple_roll_baked-BFY6Ocvq.jpg            432.66 kB
+dist/assets/palm-method-D2DJTUkL.png                      1,263.29 kB
+dist/assets/kefirMarinade-C5VMS8BZ.png                    1,988.88 kB
+dist/assets/cabbagePie-C_N-th1I.png                       2,275.18 kB
+dist/assets/cabbagePieBatter-Cl8r-ikp.png                 2,500.94 kB
+dist/assets/kefirBeforeBaking-9p7bRKkO.png                2,691.92 kB
+dist/assets/kefirChicken-WslwX8BX.png                     2,852.44 kB
+dist/assets/cabbagePieFilling-Dpnk95bt.png                2,861.20 kB
+dist/assets/index-CdOk5yj4.css                               72.13 kB │ gzip:  12.33 kB
+dist/assets/subscription-preview-BcM4uDhR.js                  1.24 kB │ gzip:   0.91 kB
+dist/assets/SubscriptionPreview-eOHLs_8H.js                   2.97 kB │ gzip:   1.40 kB
+dist/assets/PaymentCheck-DWupeQ10.js                          8.07 kB │ gzip:   3.73 kB
+dist/assets/SubscriptionScreens-BEVwq1rS.js                  10.16 kB │ gzip:   3.88 kB
+dist/assets/SubscriptionTest-BEQt0VN6.js                     11.81 kB │ gzip:   4.86 kB
+dist/assets/index-D6EKa3zJ.js                             1,113.36 kB │ gzip: 343.85 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.39s

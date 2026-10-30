@@ -1,3 +1,4 @@
+import { DIARY_AI_LIMIT_MESSAGE } from '@/lib/request-limits';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -555,6 +556,7 @@ export function DailyScreen() {
 
       {diary.loading && <p role="status" className="text-sm mb-3">Загружаем дневник…</p>}
       {diary.error && <div className="inga-card mb-3"><p>Не удалось загрузить дневник.</p><button onClick={diary.retry} className="inga-btn-secondary">Повторить</button></div>}
+      {diary.analysisLimit && <p role="alert" className="inga-bubble mb-3">{DIARY_AI_LIMIT_MESSAGE}</p>}
       {!diary.loading && diary.pending===0 && mealMeta.some(m=>m.nutritionVersion!==3) && <button onClick={diary.retry} className="text-sm underline mb-3">Повторить оценку состава</button>}
       {/* Tab navigation */}
       <div className="flex gap-2 mb-6 w-full max-w-sm">

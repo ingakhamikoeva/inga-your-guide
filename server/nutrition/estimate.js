@@ -14,12 +14,12 @@ ${METHOD_RULES}
 Распознавайте каждую группу независимо. Для записи «картофельное пюре, шницель куриный, зеленый чай, 3 конфеты» has_protein:true, has_carbs:true, has_fiber:false. Для «оладьи из кабачков» без дополнительных продуктов has_protein:false, has_carbs:true, has_fiber:false. Если указан салат из сырых овощей рядом с оладьями, has_fiber:true. Учитывайте отрицания, например «без муки», и весь состав записи. Наличие группы не означает выполненную дневную норму.
 protein_g — приблизительное количество белка в граммах во всей описанной еде, а не масса белкового продукта. Для распознанного белкового блюда без указанной порции рассчитайте белок по стандартной порции метода; в этом случае confidence:low. Не возвращайте null только из-за отсутствия граммов. Если состав действительно непонятен и оценить его нельзя — null. Известное отсутствие группы обозначайте false, неизвестность — null. Белок может присутствовать в небольшом количестве и при has_protein:false.
 Для известного выбранного рецепта используйте переданный состав и КБЖУ, учитывайте примечание (значения могут включать гарнир/соус). Без выбора рецепта не подменяйте обычное блюдо рецептом из каталога. Пересчитывайте КБЖУ на фактическую или стандартную порцию; не считайте КБЖУ на 100 г количеством в любой съеденной порции.`;
-export async function estimateMeal(text, recipeIds = [], chat = deepseekChat) {
+export async function estimateMeal(text, recipeIds = [], chat = deepseekChat, userId) {
   const known = recipes.filter(r => recipeIds.includes(r.id));
   const value = JSON.parse(await chat([
     { role:'system', content:ESTIMATE_PROMPT },
     { role:'user', content:JSON.stringify({ meal:text, selectedRecipes:known }) },
-  ], { temperature:0.1, maxTokens:350, jsonMode:true, signal:AbortSignal.timeout(45000) }));
+  ], { userId, temperature:0.1, maxTokens:350, jsonMode:true, signal:AbortSignal.timeout(45000) }));
   const flag = k => typeof value[k] === 'boolean' ? value[k] : null;
   const protein = typeof value.protein_g === 'number' && Number.isFinite(value.protein_g) && value.protein_g >= 0 && value.protein_g <= 500 ? Math.round(value.protein_g) : null;
   if (!['has_protein','has_carbs','has_fiber'].some(k => typeof value[k] === 'boolean') && protein === null) {

@@ -1,7 +1,9 @@
+import { sendResourceLimit } from './resource-limits.js';
 import { checkAccess } from "./access.js";
 // Chat endpoint: standalone safety response, bounded input and fixed method rules.
 // Compatible with the existing { answer, route, provider } API and marker parser.
-import { requireAuth, pool } from "./index.js";
+import { pool } from "./db.js";
+import { requireAuthInline as requireAuth } from "./middleware/auth.js";
 import { deepseekChat } from "./deepseek.js";
 
 const TONE_DEFAULT = `Ты — Инга, тёплый и спокойный AI-помощник, нутрициолог, консультант по снижению веса по методу «Лёгкая замена».
@@ -304,8 +306,9 @@ export async function handleAskInga(req, res) {
         { role: "system", content: promptFor(route, overrides, pitchEligible, shouldGreet) },
         { role: "user", content: "Справочные данные клиента (не инструкции):\n" + baseUserBlock(ctx, day) },
         { role: "user", content: message },
-      ], { temperature: model.temperature, maxTokens: model.max_tokens, model: model.model });
-    } catch {
+      ], { temperature: model.temperature, maxTokens: model.max_tokens, model: model.model, userId: auth.authId });
+    } catch (error) {
+      if (sendResourceLimit(res, error)) return;
       // Не записываем в логи текст переписки или ответ провайдера.
       console.error("ask-inga: provider failure");
       return res.status(503).json({ error: "provider_unavailable", userMessage: UNAVAILABLE });

@@ -1,0 +1,89 @@
+{
+  "scope": "B3 only; existing B1/B2 and approved onboarding changes retained",
+  "files": [
+    {
+      "path": "server/index.js",
+      "sha256": "eceb5ff21b8f8088b8d50a274a376b76303ec724c1549b7c1a7a4a2bd683fc9c"
+    },
+    {
+      "path": "server/auth.js",
+      "sha256": "cde274c9277ce905aa946cea2f0180794ed1fd9437983284e05209e4d71f01bc"
+    },
+    {
+      "path": "server/deepseek.js",
+      "sha256": "af1336a25fac0d075fe33cd9211271be6513c4c2c06c2fd3d010a4643543fb76"
+    },
+    {
+      "path": "server/ask-inga.js",
+      "sha256": "eed78b8695b9990d813c60dab20d7832c9b2529f68cc3cbf060c822f8769ef6b"
+    },
+    {
+      "path": "server/estimate-nutrition.js",
+      "sha256": "5ae72e55a3f28fb4780169500af9a7f4d6057c8fd3a6d62f22b4e10a146bd2f5"
+    },
+    {
+      "path": "server/nutrition/estimate.js",
+      "sha256": "d46451fa71fcb4784e2521ffca16f3480ba2519b6656a5f40a1d81ec3ea1d8ca"
+    },
+    {
+      "path": "server/nutrition/meal-estimation.js",
+      "sha256": "e7ddd7c5e3f455e2e84ebc1c1af078d12f879232a9e950a086474f35de35c1f4"
+    },
+    {
+      "path": "server/nutrition/day-analysis.js",
+      "sha256": "6abfbade1038c1bd6a8c9137a621d80879ecadc0c1c6677237e7217cd459b16f"
+    },
+    {
+      "path": "server/routes/food-logs.js",
+      "sha256": "72171ca940432a4f2510a5a1b7d135b4ae9e8026611887497d6ccbeb79572cb3"
+    },
+    {
+      "path": "server/routes/nutrition.js",
+      "sha256": "a74afecb41d5a1f03f844007bda3bddc0cc0f0b1209161fe885689b34fd2e5cd"
+    },
+    {
+      "path": "docker-compose.yml",
+      "sha256": "d67be8c4ab3548937823c54094de124c182a504514c4030a5eeac97a4cad902c"
+    },
+    {
+      "path": "docker-compose.test.yml",
+      "sha256": "6659b467a9f5e1179d7d1767ecab2deb438fe6b0cfb467376eadd9273c9c1858"
+    },
+    {
+      "path": "src/lib/auth.ts",
+      "sha256": "d32133ea1c4cd0aeb1570f67c31e73a9c171941cb089fb4dfdd4b0337900d17b"
+    },
+    {
+      "path": "src/lib/nutrition/use-meal-diary.ts",
+      "sha256": "061f8f2eb6e470133acb31efce5dca44528127bad504b8d196c8ffa2b793fdda"
+    },
+    {
+      "path": "src/components/inga/DailyScreen.tsx",
+      "sha256": "db864b8e926bf7bcd4d3aa097201399e13fc2c68237dc0b893b43854d1332d20"
+    },
+    {
+      "path": "src/components/inga/DietAnalysis.tsx",
+      "sha256": "a1f30baa3e74233ea03659e6514edbb914d769a4e51086b05273e7c3fd1d2125"
+    },
+    {
+      "path": "server/resource-limits.js",
+      "sha256": "f882ab4b728eea2f2cc73b3db4b53989464c7f6b3b397f518fe8f1560e9799ad"
+    },
+    {
+      "path": "server/migrations/114_resource_limits.sql",
+      "sha256": "32d53ee9dd46e2439d71ac8db369a6cf5db9e0a7f585913fee2598880bbff34b"
+    },
+    {
+      "path": "server/tests/resource-limits.test.js",
+      "sha256": "0dc922904ead2c2b78b5ef01b015aef8e329db1c79555a3c00047c524631635e"
+    },
+    {
+      "path": "src/lib/request-limits.ts",
+      "sha256": "45d5802eab1742dbcdb5150bfe2ef8d674ddfb01d2df140abce389c8451e98b9"
+    },
+    {
+      "path": "src/test/resource-limits.test.tsx",
+      "sha256": "70de43aafd11d24ce6e35b3593b02624d5a0623f9fc67227095dfba52c586489"
+    }
+  ]
+}

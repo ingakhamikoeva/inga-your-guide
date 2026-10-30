@@ -1,3 +1,4 @@
+import { RESET_LIMIT_MESSAGE } from './request-limits';
 // Auth client. Talks to the standalone Node API (/api/v1/auth/*).
 // Mirrors the subset of supabase.auth used by the app so call sites
 // don't need to change.
@@ -184,7 +185,7 @@ export const auth = {
       });
       return { error: null };
     } catch (e) {
-      return { error: toError(e) };
+      return { error: e instanceof ApiError && e.status === 429 ? new Error(RESET_LIMIT_MESSAGE) : toError(e) };
     }
   },
 
