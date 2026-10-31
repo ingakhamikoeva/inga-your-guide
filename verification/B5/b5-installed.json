@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0",
+  "name": "legche-api",
+  "dependencies": {
+    "express": {
+      "version": "4.22.3",
+      "resolved": "https://registry.npmjs.org/express/-/express-4.22.3.tgz",
+      "overridden": false,
+      "dependencies": {
+        "body-parser": {
+          "version": "1.20.9",
+          "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-1.20.9.tgz",
+          "overridden": false,
+          "dependencies": {
+            "qs": {
+              "version": "6.16.2"
+            }
+          }
+        },
+        "proxy-addr": {
+          "version": "2.0.8",
+          "resolved": "https://registry.npmjs.org/proxy-addr/-/proxy-addr-2.0.8.tgz",
+          "overridden": false
+        },
+        "qs": {
+          "version": "6.16.2",
+          "resolved": "https://registry.npmjs.org/qs/-/qs-6.16.2.tgz",
+          "overridden": false
+        }
+      }
+    },
+    "nodemailer": {
+      "version": "10.3.1",
+      "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-10.3.1.tgz",
+      "overridden": false
+    }
+  }
+}

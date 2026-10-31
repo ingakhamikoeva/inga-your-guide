@@ -1,0 +1,180 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+npm warn exec The following package was not found and will be installed: node@20.20.2
+TAP version 13
+# Subtest: fixed live form with signed return addresses and no recurrence or test flags
+ok 1 - fixed live form with signed return addresses and no recurrence or test flags
+  ---
+  duration_ms: 5.318248
+  ...
+# Subtest: callback accepts live evidence and six decimals, including uppercase digest
+ok 2 - callback accepts live evidence and six decimals, including uppercase digest
+  ---
+  duration_ms: 1.211695
+  ...
+# Subtest: callback rejects wrong amount, signature, order binding, test evidence and duplicate fields
+ok 3 - callback rejects wrong amount, signature, order binding, test evidence and duplicate fields
+  ---
+  duration_ms: 1.908509
+  ...
+# Subtest: live/test boundaries, allowlist and explicit switches fail closed
+ok 4 - live/test boundaries, allowlist and explicit switches fail closed
+  ---
+  duration_ms: 5.745642
+  ...
+# [boot] DATABASE_URL is not set
+# Subtest: B5: registration, SMTP verification and welcome mail keep the intended recipient
+ok 5 - B5: registration, SMTP verification and welcome mail keep the intended recipient
+  ---
+  duration_ms: 4445.48741
+  ...
+# Subtest: B5: login, authenticated profile, refresh and wrong-password rejection
+ok 6 - B5: login, authenticated profile, refresh and wrong-password rejection
+  ---
+  duration_ms: 247.096503
+  ...
+# Subtest: B5: password-reset email, single-use link, old-session revocation and new login
+ok 7 - B5: password-reset email, single-use link, old-session revocation and new login
+  ---
+  duration_ms: 433.557213
+  ...
+# Subtest: B5: URL-encoded payment callback rejects tampering and duplicate fields, settles once
+ok 8 - B5: URL-encoded payment callback rejects tampering and duplicate fields, settles once
+  ---
+  duration_ms: 73.121844
+  ...
+# [boot] DATABASE_URL is not set
+# Subtest: B5: installed dependency versions match the checked lockfile
+ok 9 - B5: installed dependency versions match the checked lockfile
+  ---
+  duration_ms: 9.611648
+  ...
+# Subtest: B5: ordinary JSON is accepted; malformed JSON and oversized payloads are rejected
+ok 10 - B5: ordinary JSON is accepted; malformed JSON and oversized payloads are rejected
+  ---
+  duration_ms: 148.086557
+  ...
+# Subtest: B5: valid gzip remains supported; trailing compressed-body bytes do not crash the process
+ok 11 - B5: valid gzip remains supported; trailing compressed-body bytes do not crash the process
+  ---
+  duration_ms: 51.488024
+  ...
+# Subtest: B5: nested query parsing does not pollute object prototypes
+ok 12 - B5: nested query parsing does not pollute object prototypes
+  ---
+  duration_ms: 5.643347
+  ...
+# Subtest: B5: forwarded IP is ignored without trust and accepted only through the configured proxy
+ok 13 - B5: forwarded IP is ignored without trust and accepted only through the configured proxy
+  ---
+  duration_ms: 12.355155
+  ...
+# Subtest: B5: quoted recipient comments cannot redirect the mail envelope
+ok 14 - B5: quoted recipient comments cannot redirect the mail envelope
+  ---
+  duration_ms: 52.386771
+  ...
+# Subtest: B5: actual API entrypoint boots on the selected Node runtime and answers health/auth
+ok 15 - B5: actual API entrypoint boots on the selected Node runtime and answers health/auth
+  ---
+  duration_ms: 399.969838
+  ...
+# [boot] DATABASE_URL is not set
+# Subtest: B3: one user quota covers all four actual AI routes, while another account has its own quota
+ok 16 - B3: one user quota covers all four actual AI routes, while another account has its own quota
+  ---
+  duration_ms: 4325.9852
+  ...
+# Subtest: B3: changing meals or dates cannot bypass the quota; cached results and saving stay available
+ok 17 - B3: changing meals or dates cannot bypass the quota; cached results and saving stay available
+  ---
+  duration_ms: 156.290824
+  ...
+# Subtest: B3: unauthenticated and foreign-meal requests cannot spend someone else's quota
+ok 18 - B3: unauthenticated and foreign-meal requests cannot spend someone else's quota
+  ---
+  duration_ms: 26.816047
+  ...
+# Subtest: B3: concurrent copies of one meal share one provider call
+ok 19 - B3: concurrent copies of one meal share one provider call
+  ---
+  duration_ms: 75.133902
+  ...
+# Subtest: B3: global and per-user concurrent leases are shared across limiter instances
+ok 20 - B3: global and per-user concurrent leases are shared across limiter instances
+  ---
+  duration_ms: 34.603749
+  ...
+# Subtest: B3: concurrent admissions never exceed one shared slot
+ok 21 - B3: concurrent admissions never exceed one shared slot
+  ---
+  duration_ms: 23.776355
+  ...
+# Subtest: B3: daily volume and call caps survive limiter recreation and reject before executing work
+ok 22 - B3: daily volume and call caps survive limiter recreation and reject before executing work
+  ---
+  duration_ms: 29.830753
+  ...
+# Subtest: B3: failed provider releases its slot but keeps the budget reservation
+ok 23 - B3: failed provider releases its slot but keeps the budget reservation
+  ---
+  duration_ms: 30.220146
+  ...
+# Subtest: B3: expired crashed-worker leases and elapsed windows recover without a restart
+ok 24 - B3: expired crashed-worker leases and elapsed windows recover without a restart
+  ---
+  duration_ms: 35.344421
+  ...
+# Subtest: B3: oversized and ownerless provider requests fail before fetch; abort releases slot
+ok 25 - B3: oversized and ownerless provider requests fail before fetch; abort releases slot
+  ---
+  duration_ms: 20.815254
+  ...
+# Subtest: B3: quota database failure prevents provider calls
+ok 26 - B3: quota database failure prevents provider calls
+  ---
+  duration_ms: 12.382857
+  ...
+# Subtest: B3: four simultaneous reset requests create exactly one token and one SMTP call
+ok 27 - B3: four simultaneous reset requests create exactly one token and one SMTP call
+  ---
+  duration_ms: 54.672512
+  ...
+# Subtest: B3: unknown email gets the same success/cooldown responses without SMTP or account disclosure
+ok 28 - B3: unknown email gets the same success/cooldown responses without SMTP or account disclosure
+  ---
+  duration_ms: 25.529443
+  ...
+# Subtest: B3: cooldown expiry allows resend; account hourly cap remains across IP changes
+ok 29 - B3: cooldown expiry allows resend; account hourly cap remains across IP changes
+  ---
+  duration_ms: 35.383045
+  ...
+# Subtest: B3: reset IP and global caps cover multiple different email addresses
+ok 30 - B3: reset IP and global caps cover multiple different email addresses
+  ---
+  duration_ms: 32.286625
+  ...
+# Subtest: B3: spoofed forwarding headers are ignored; trusted proxy uses the nearest untrusted hop
+ok 31 - B3: spoofed forwarding headers are ignored; trusted proxy uses the nearest untrusted hop
+  ---
+  duration_ms: 20.380294
+  ...
+# Subtest: B3: migration can run again without removing quota or subscription data
+ok 32 - B3: migration can run again without removing quota or subscription data
+  ---
+  duration_ms: 24.472638
+  ...
+# Subtest: B3: a blocked resend leaves the original recovery link usable once
+ok 33 - B3: a blocked resend leaves the original recovery link usable once
+  ---
+  duration_ms: 158.316318
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5935.68302

@@ -1,0 +1,25 @@
+{
+  "scope": "B5 only",
+  "files": [
+    {
+      "path": "server/package.json",
+      "sha256": "cda2542130f7abcad30987abe179b5eb7be46e5e7cbfed4e284889a58105517f"
+    },
+    {
+      "path": "server/package-lock.json",
+      "sha256": "91208fd47a27dcee4300409d263101b2b6267a22cd972d6768f8d9637a6a705a"
+    },
+    {
+      "path": "server/Dockerfile",
+      "sha256": "f9c35de5423c6b25f657d6c30ad3897d514a562a106a8cc55706bb69841927eb"
+    },
+    {
+      "path": "server/tests/dependency-security.test.js",
+      "sha256": "fb939aedce7a5dc3146620f7121ce2902b7fed817ba4d9430a2a093032b38bf2"
+    },
+    {
+      "path": "server/tests/dependency-flows.test.js",
+      "sha256": "fa6a3a27191a5dfa8b01a51606b4b5d31d9ace12e9913748781a5cc41f59f3a5"
+    }
+  ]
+}

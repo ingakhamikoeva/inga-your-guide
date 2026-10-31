@@ -1,0 +1,13 @@
+{
+  "tests": 33,
+  "passed": 33,
+  "failed": 0,
+  "new_b5_tests": 11,
+  "node": "20.20.2",
+  "npm_ci": "passed",
+  "production_audit_vulnerabilities": 0,
+  "docker_build": "not run: Docker unavailable; VPS test build pending",
+  "database": "isolated PGlite 0.5.13 with pgcrypto",
+  "smtp": "real Nodemailer with loopback SMTP receiver; Zoho delivery pending",
+  "production_deployed": false
+}
