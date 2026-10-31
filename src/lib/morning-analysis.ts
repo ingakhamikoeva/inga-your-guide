@@ -1,10 +1,12 @@
-import { UserSex, getText } from './gender-text';
-import { DailyReport } from './types';
+import { UserSex } from './gender-text';
+import { DailyReport, UserProfile } from './types';
 
 export interface MorningWeightAnalysis {
   dayDelta: number | null;          // today - yesterday
   weekDelta: number | null;         // today - 7 days ago (or earliest available within last 7d window)
   weekDataAvailable: boolean;       // do we have a baseline ~7 days back
+  dayInterval: number | null;
+  weekInterval: number | null;
   meaning: string;                  // short interpretation paragraph
   weeklyComment: string;            // weekly trend comment
   focus: string;                    // single concrete focus for today
@@ -48,13 +50,19 @@ export function analyzeMorningWeight(
   sleepHours: number | undefined,
   stepsYesterday: number | undefined,
   sex: UserSex,
+  stage: UserProfile['currentStage'] = 'loss',
 ): MorningWeightAnalysis {
-  const past = history.filter(h => h.date < todayDate).sort((a, b) => a.date.localeCompare(b.date));
-  const yesterday = findClosestEntry(past, todayDate, 1, 1);
+  const validWeight = (weight: number) => Number.isFinite(weight) && weight > 0 && weight <= 999.9;
+  const past = history.filter(h => h.date < todayDate && Number.isFinite(Date.parse(h.date)) && validWeight(h.weight))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const yesterday = past.at(-1);
   const weekAgo = findClosestEntry(past, todayDate, 7, 2);
 
-  const dayDelta = yesterday ? +(todayWeight - yesterday.weight).toFixed(1) : null;
-  const weekDelta = weekAgo ? +(todayWeight - weekAgo.weight).toFixed(1) : null;
+  const dayDelta = yesterday && validWeight(todayWeight) ? +(todayWeight - yesterday.weight).toFixed(1) : null;
+  const weekDelta = weekAgo && validWeight(todayWeight) ? +(todayWeight - weekAgo.weight).toFixed(1) : null;
+  const dayInterval = dayDelta !== null ? diffDays(todayDate, yesterday!.date) : null;
+  const weekInterval = weekDelta !== null ? diffDays(todayDate, weekAgo!.date) : null;
+  const maintaining = stage === 'fixation' || stage === 'maintenance';
 
   // Day-level meaning
   let meaning = '';
@@ -65,8 +73,8 @@ export function analyzeMorningWeight(
     focus = 'сегодня просто держим базу: вода, белок и овощи в каждом приёме пищи';
   } else if (dayDelta < 0) {
     const x = Math.abs(dayDelta);
-    meaning = `Сегодня минус ${x} кг со вчерашнего дня. Отлично, движение есть 💛 Смотрим не на один день, а на тенденцию — и сейчас она в вашу сторону.`;
-    focus = 'продолжаем в том же ритме: белок в каждом приёме пищи и движение в течение дня';
+    meaning = `С предыдущего измерения вес снизился на ${x} кг.`;
+    focus = 'белок в каждом приёме пищи и движение в течение дня';
   } else if (dayDelta === 0) {
     meaning = 'Вес сегодня без изменений. Это нормально — смотрим не на один день, а на тенденцию.';
     focus = 'сохраните привычный ритм питания и добавьте активность днём';
@@ -92,7 +100,8 @@ export function analyzeMorningWeight(
     if (sex === 'female') causes.push('возможно, цикл или задержка жидкости');
 
     const x = dayDelta;
-    const baseLine = `Сегодня плюс ${x} кг со вчерашнего дня. Это не значит, что прибавился жир — вес может расти из-за соли, позднего ужина, углеводов, цикла, сна или задержки воды.`;
+    const comparison = dayInterval === 1 ? 'со вчерашнего дня' : 'с предыдущего измерения';
+    const baseLine = `Сегодня плюс ${x} кг ${comparison}. Это не значит, что прибавился жир — вес может расти из-за соли, позднего ужина, углеводов, цикла, сна или задержки воды.`;
     const causesText = causes.length
       ? ` По вчерашнему дню вижу возможные причины: ${causes.slice(0, 3).join(', ')}.`
       : '';
@@ -103,20 +112,28 @@ export function analyzeMorningWeight(
 
   // Weekly comment
   let weeklyComment = '';
-  if (!weekAgo) {
+  if (weekDelta === null) {
     weeklyComment = 'Пока мало данных для недельной динамики. Через несколько дней я начну видеть тренд точнее.';
   } else if (weekDelta !== null && weekDelta < -0.1) {
-    weeklyComment = `За неделю есть снижение: минус ${Math.abs(weekDelta)} кг. Это хороший темп, продолжаем.`;
+    weeklyComment = `Между измерениями за ${weekInterval} дней вес снизился на ${Math.abs(weekDelta)} кг. Если изменение неожиданное, проверьте правильность записи и повторите взвешивание в привычных условиях.`;
   } else if (weekDelta !== null && weekDelta > 0.1) {
     weeklyComment = `За неделю вес немного вырос: плюс ${weekDelta} кг. Давайте посмотрим, что могло повлиять: питание, сон, активность и вечерние перекусы. Сегодня выберем один фокус для коррекции.`;
   } else {
     weeklyComment = 'За неделю вес стабильный. Это тоже информация — продолжаем наблюдать тенденцию.';
   }
 
+  if (maintaining) {
+    focus = 'Сейчас наша задача — сохранять достигнутый вес. Дальнейшее снижение не является целью.';
+    // A gain during maintenance must not trigger a weight-loss correction prompt.
+    if (weekDelta !== null && weekDelta > 0.1) weeklyComment = '';
+  }
+
   return {
     dayDelta,
     weekDelta,
-    weekDataAvailable: !!weekAgo,
+    weekDataAvailable: weekDelta !== null,
+    dayInterval,
+    weekInterval,
     meaning,
     weeklyComment,
     focus,

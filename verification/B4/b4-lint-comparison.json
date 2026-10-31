@@ -1,0 +1,68 @@
+[
+  {
+    "file": "src/components/inga/ChatScreen.tsx",
+    "before": 2,
+    "after": 2,
+    "added": []
+  },
+  {
+    "file": "src/components/inga/DailyScreen.tsx",
+    "before": 10,
+    "after": 10,
+    "added": []
+  },
+  {
+    "file": "src/components/inga/MenuScreen.tsx",
+    "before": 35,
+    "after": 35,
+    "added": []
+  },
+  {
+    "file": "src/components/inga/RouteReadyScreen.tsx",
+    "before": 3,
+    "after": 3,
+    "added": []
+  },
+  {
+    "file": "src/components/inga/SurveyDataScreen.tsx",
+    "before": 1,
+    "after": 1,
+    "added": []
+  },
+  {
+    "file": "src/components/inga/SurveyNameScreen.tsx",
+    "before": 0,
+    "after": 0,
+    "added": []
+  },
+  {
+    "file": "src/context/AppContext.tsx",
+    "before": 6,
+    "after": 6,
+    "added": []
+  },
+  {
+    "file": "src/lib/calculations.ts",
+    "before": 0,
+    "after": 0,
+    "added": []
+  },
+  {
+    "file": "src/lib/morning-analysis.ts",
+    "before": 0,
+    "after": 0,
+    "added": []
+  },
+  {
+    "file": "src/test/b4-flow.test.tsx",
+    "before": 0,
+    "after": 0,
+    "added": []
+  },
+  {
+    "file": "src/test/b4-rules.test.ts",
+    "before": 0,
+    "after": 0,
+    "added": []
+  }
+]

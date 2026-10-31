@@ -1,3 +1,4 @@
+import { usesMinimumCalorieCorridor } from '@/lib/calculations';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { AccessScreen } from './AccessScreen';
@@ -2460,6 +2461,7 @@ ${rows.map(({ date, weight, report }) => `
     profile.trackingMethod === 'palm' ? 'Ладонь' : 'Тарелка';
   const calorieTarget =
     (profile as any).calorie_target ?? calculations?.totalCalories ?? null;
+  const minimumCorridor = usesMinimumCalorieCorridor(calculations) && (!profile.currentStage || profile.currentStage === 'loss');
 
   const fmtDate = (iso: string | null) => {
     if (!iso) return null;
@@ -2625,7 +2627,7 @@ ${rows.map(({ date, weight, report }) => `
           <div className="border-t border-border" />
           <div className="flex items-center justify-between gap-3 py-2.5">
             <span className="text-sm text-muted-foreground">Норма</span>
-            <span className="text-sm font-medium">{calorieTarget ? `${calorieTarget} ккал/день` : '—'}</span>
+            <span className="text-sm font-medium">{minimumCorridor ? '1000–1200 ккал/день' : calorieTarget ? `${calorieTarget} ккал/день` : '—'}</span>
           </div>
         </div>
 

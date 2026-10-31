@@ -3,6 +3,7 @@ import { sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/context/AppContext';
+import { usesMinimumCalorieCorridor } from '@/lib/calculations';
 import { logUserEvent, startTrial } from '@/lib/db';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
@@ -73,6 +74,7 @@ export function RouteReadyScreen() {
     : `~${fmt(X)}–${fmt(Y)} ${monthWord}`;
 
   const calorieTarget = (profile as any).calorie_target as number | undefined;
+  const minimumCorridor = usesMinimumCalorieCorridor(calculations) && (!profile.currentStage || profile.currentStage === 'loss');
 
   const methodLabel =
     profile.trackingMethod === 'plate'
@@ -159,7 +161,7 @@ export function RouteReadyScreen() {
             </div>
             <div className="text-sm font-semibold" style={{ color: '#5C4A3D' }}>
               {methodLabel}
-              {calorieTarget ? ` · норма ${calorieTarget.toLocaleString('ru-RU').replace(/,/g, ' ')} ккал` : ''}
+              {minimumCorridor ? ' · норма 1000–1200 ккал' : calorieTarget ? ` · норма ${calorieTarget.toLocaleString('ru-RU').replace(/,/g, ' ')} ккал` : ''}
             </div>
           </div>
         </div>

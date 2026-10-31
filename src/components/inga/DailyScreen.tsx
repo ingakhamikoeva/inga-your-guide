@@ -319,6 +319,7 @@ export function DailyScreen() {
         sleep ? parseFloat(sleep) : undefined,
         steps ? parseInt(steps) : undefined,
         profile.gender,
+        profile.currentStage ?? 'loss',
       );
       setMorningAnalysis(result);
       // Stage transition checks
@@ -765,8 +766,8 @@ export function DailyScreen() {
               <div className="inga-bubble space-y-3 animate-fade-in-up">
                 <p className="font-semibold">Динамика веса</p>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• за 1 день: {formatDelta(morningAnalysis.dayDelta)}</li>
-                  <li>• за 7 дней: {morningAnalysis.weekDataAvailable ? formatDelta(morningAnalysis.weekDelta) : 'пока мало данных'}</li>
+                  <li>• с предыдущего измерения: {formatDelta(morningAnalysis.dayDelta)}</li>
+                  <li>• за {morningAnalysis.weekInterval ?? 7} дней: {morningAnalysis.weekDataAvailable ? formatDelta(morningAnalysis.weekDelta) : 'пока мало данных'}</li>
                 </ul>
 
                 <div>

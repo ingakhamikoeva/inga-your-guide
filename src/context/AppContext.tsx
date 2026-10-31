@@ -2,7 +2,7 @@ import { currentSession, subscribe, sessionSnapshot, isSessionCurrent } from '@/
 import { useAchievements } from '@/lib/achievement-client';
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport, Medal, FixationAction } from '@/lib/types';
-import { calculateAll, roundTo50 } from '@/lib/calculations';
+import { calculateAll, calculateCalorieCorridor, roundTo50 } from '@/lib/calculations';
 import {
   saveFixationAction,
   saveUserProfile,
@@ -80,7 +80,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const hydrationGeneration = useRef(0);
   const [step, setStep] = useState<AppStep>(saved.step || 'auth');
   const [profile, setProfile] = useState<Partial<UserProfile>>(saved.profile || {});
-  const [calculations, setCalculations] = useState<Calculations | null>(saved.calculations || null);
+  const [calculations, setCalculations] = useState<Calculations | null>(() => {
+    const calc = saved.calculations;
+    if (!calc) return null;
+    // Do not display a legacy low corridor before server hydration finishes.
+    return Number.isFinite(calc.deficit25) && calc.deficit25 - 100 < 1000
+      ? { ...calc, corridorMin: 1000, corridorMax: 1200 } : calc;
+  });
   const [dailyReports, setDailyReports] = useState<DailyReport[]>(saved.dailyReports || []);
   const [weeklyData, setWeeklyData] = useState<{ date: string; weight: number }[]>(saved.weeklyData || []);
   const { medals, streakDays: achievementStreak, uniqueRecipes, reset: resetAchievements } = useAchievements();
@@ -282,13 +288,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     if (merged.height && merged.weight && merged.age) {
       const calc = calculateAll(merged);
-      // Если калорийность удержания задана вручную в плане — пересчитываем
-      // от неё, чтобы коридор остался дефицитом 25% ±100, а не разъехался.
+      // Apply the same corridor rule to a saved maintenance-calorie plan.
       if (dbPlan?.calorieTarget) {
         calc.totalCalories = roundTo50(dbPlan.calorieTarget);
-        calc.deficit25 = roundTo50(dbPlan.calorieTarget * 0.75);
-        calc.corridorMin = calc.deficit25 - 100;
-        calc.corridorMax = calc.deficit25 + 100;
+        Object.assign(calc, calculateCalorieCorridor(dbPlan.calorieTarget));
       }
       setCalculations(calc);
     }

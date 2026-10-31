@@ -1,0 +1,49 @@
+{
+  "scope": "B4: agreed calorie floor, morning feedback, AI identification; other audit items excluded",
+  "files": [
+    {
+      "path": "src/lib/calculations.ts",
+      "sha256": "f9e16618d29eabeb3b6e99032ffe36f1406b03f686c9e3819dfaa6dd70ff82e7"
+    },
+    {
+      "path": "src/lib/morning-analysis.ts",
+      "sha256": "2622dd70867730f2dc79cf14ac165ceb12a0b5e3200a33415392490e7e0b62da"
+    },
+    {
+      "path": "src/context/AppContext.tsx",
+      "sha256": "66f65eaf2365a3961d9d4c612e81b783a18430e759752c8461b15cd5c16de25c"
+    },
+    {
+      "path": "src/components/inga/SurveyDataScreen.tsx",
+      "sha256": "5dcec7e42bb298077d3e1d3aaede4a8af0405afd1de0536b62941f79925acb26"
+    },
+    {
+      "path": "src/components/inga/SurveyNameScreen.tsx",
+      "sha256": "17e99a2798bb489e00bcedc569b0be25c2d57fe5e586d0d6d11211a08a069f2c"
+    },
+    {
+      "path": "src/components/inga/ChatScreen.tsx",
+      "sha256": "fa3c8fec67bb4d94f1b87e87e91fdbc2f40272cf2ff6b132350b6659b0c010c0"
+    },
+    {
+      "path": "src/components/inga/DailyScreen.tsx",
+      "sha256": "374d6f7ba7314a62817e4896277b724d3a1a92f3ac2b8ea858c6941c929a312b"
+    },
+    {
+      "path": "src/components/inga/RouteReadyScreen.tsx",
+      "sha256": "d9f097b52bbd975801f7daa051dbbae71e38b0258741150e213e9e38b5626e90"
+    },
+    {
+      "path": "src/components/inga/MenuScreen.tsx",
+      "sha256": "c074fe0cc89f4b20f9e2eb32f1319ece4816f0518c7889cf33a625452b99d882"
+    },
+    {
+      "path": "src/test/b4-rules.test.ts",
+      "sha256": "cc9a4283283e1c87b06ea31b3aa8971f490dd1c83a5c1464bac8b372ac219856"
+    },
+    {
+      "path": "src/test/b4-flow.test.tsx",
+      "sha256": "870e56ff5027ba4e5a4e3d92f9b3a5d982588bedc408b2312b9a7ecb311d3ec1"
+    }
+  ]
+}

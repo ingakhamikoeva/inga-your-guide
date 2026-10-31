@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Slider } from '@/components/ui/slider';
 import ingaPhoto from '@/assets/inga-photo.jpg';
-import { roundTo50, checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
+import { calculateAll, usesMinimumCalorieCorridor, checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
 
 export function SurveyDataScreen() {
   const { profile, updateProfile, setStep } = useApp();
@@ -25,14 +25,14 @@ export function SurveyDataScreen() {
     return Math.round(steps * (sex === 'male' ? 0.04 : 0.02));
   }, [steps, sex]);
 
-  const { tdee, deficit } = useMemo(() => {
-    if (!sex || !ageN || !heightN || !weightN) return { tdee: 0, deficit: 0 };
-    const bmr = sex === 'female'
-      ? 655.1 + 9.563 * weightN + 1.85 * heightN - 4.676 * ageN
-      : 66.5 + 13.75 * weightN + 5.003 * heightN - 6.775 * ageN;
-    const t = Math.round(bmr + stepCalories);
-    return { tdee: roundTo50(t), deficit: roundTo50(t * 0.75) };
-  }, [ageN, heightN, weightN, stepCalories, sex]);
+  const calculation = useMemo(() => {
+    if (!sex || ![ageN, heightN, weightN].every(n => Number.isFinite(n) && n > 0)) return null;
+    return calculateAll({ gender: sex, age: ageN, height: heightN, weight: weightN, stepsPerDay: steps });
+  }, [ageN, heightN, weightN, steps, sex]);
+  const minimumCorridor = usesMinimumCalorieCorridor(calculation);
+  const tdee = calculation?.totalCalories ?? 0;
+  // The legacy single-number field uses the midpoint of the displayed corridor.
+  const deficit = calculation ? (calculation.corridorMin + calculation.corridorMax) / 2 : 0;
 
   const canProceed = sex !== null && [ageN, heightN, weightN].every(n => Number.isFinite(n) && n > 0);
   const requestedGoal = goalDraft === null
@@ -155,15 +155,17 @@ export function SurveyDataScreen() {
           >
             ВАШ РАСЧЁТ
           </div>
-          <div className="px-4 py-3 flex justify-between items-center text-sm" style={{ color: '#3B2A20' }}>
-            <span>Суточная норма</span>
-            <span className="font-bold">{tdee ? `${fmt(tdee)} ккал` : '—'}</span>
+          <div className="px-4 py-3 flex justify-between items-center gap-3 text-sm" style={{ color: '#3B2A20' }}>
+            <span>Расчётная калорийность для удержания веса</span>
+            <span className="font-bold whitespace-nowrap shrink-0">{tdee ? `${fmt(tdee)} ккал` : '—'}</span>
           </div>
           <div className="px-4 py-3 flex justify-between items-center text-sm border-t" style={{ color: '#3B2A20', borderColor: '#F0E6DC' }}>
             <span>Для снижения веса</span>
-            <span className="font-bold" style={{ color: '#FF6200' }}>{deficit ? `${fmt(deficit)} ккал` : '—'}</span>
+            <span className="font-bold whitespace-nowrap" style={{ color: '#FF6200' }}>{minimumCorridor ? '1000–1200 ккал' : deficit ? `${fmt(deficit)} ккал` : '—'}</span>
           </div>
         </div>
+
+        {minimumCorridor && <p className="text-sm" style={{ color: '#5C4A3D' }}>По расчёту получается низкое значение. Приложение рекомендует 1000–1200 ккал. Такой режим не предназначен для длительного применения. Перед началом проконсультируйтесь со специалистом, чтобы согласовать калорийность, состав рациона и продолжительность.</p>}
 
         {showGoalError && goalIsUnsafe && (
           <div className="inga-bubble" role="alert">

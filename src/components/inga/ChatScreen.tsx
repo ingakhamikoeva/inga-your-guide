@@ -209,6 +209,7 @@ export function ChatScreen() {
               ↑
             </button>
           </form>
+          <p className="mt-2 text-xs text-muted-foreground">Отвечает ИИ-помощник. Он может ошибаться и не заменяет консультацию специалиста.</p>
         </div>
       </div>
     </div>

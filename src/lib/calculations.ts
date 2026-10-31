@@ -6,6 +6,22 @@ export function roundTo50(value: number): number {
   return Math.round(value / 50) * 50;
 }
 
+// Keep the formula result separate from the product's minimum corridor.
+// This same rule is used by onboarding and when restoring a saved plan.
+export function calculateCalorieCorridor(totalCalories: number) {
+  const deficit25 = roundTo50(totalCalories * 0.75);
+  const useMinimum = deficit25 - 100 < 1000;
+  return {
+    deficit25,
+    corridorMin: useMinimum ? 1000 : deficit25 - 100,
+    corridorMax: useMinimum ? 1200 : deficit25 + 100,
+  };
+}
+
+export function usesMinimumCalorieCorridor(calculations: Calculations | null | undefined): boolean {
+  return !!calculations && Number.isFinite(calculations.deficit25) && calculations.deficit25 - 100 < 1000;
+}
+
 export function calculateAll(profile: Partial<UserProfile>): Calculations {
   const { gender = 'female', age = 30, weight = 70, height = 165, stepsPerDay = 5000 } = profile;
 
@@ -26,9 +42,8 @@ export function calculateAll(profile: Partial<UserProfile>): Calculations {
   const minHealthyWeight = Math.round(18.5 * heightM * heightM);
 
   // Дефицит 25% — единый для всех (выбор темпа убран из онбординга).
-  // Коридор: ±100 ккал от этой цифры. Ровно то же значение показывается
-  // пользователю на экране «ВАШ РАСЧЁТ» (SurveyDataScreen).
-  const deficit25 = roundTo50(totalCalories * 0.75);
+  // Коридор ±100; если нижняя граница меньше 1000, применяется 1000–1200.
+  const corridor = calculateCalorieCorridor(totalCalories);
 
   return {
     bmi,
@@ -37,9 +52,7 @@ export function calculateAll(profile: Partial<UserProfile>): Calculations {
     idealWeight,
     maxHealthyWeight,
     minHealthyWeight,
-    deficit25,
-    corridorMin: deficit25 - 100,
-    corridorMax: deficit25 + 100,
+    ...corridor,
   };
 }
 

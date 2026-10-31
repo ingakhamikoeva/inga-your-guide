@@ -59,7 +59,7 @@ export function SurveyNameScreen() {
             borderBottomLeftRadius: '3px',
           }}
         >
-          <span className="font-semibold">Привет! Я Инга</span> — ваш персональный нутрициолог. Пара вопросов — и мы начнём!
+          <span className="font-semibold">Привет! Я ИИ-помощник Инги</span> по методу «Лёгкая замена». Пара вопросов — и мы начнём!
         </div>
       </div>
 
