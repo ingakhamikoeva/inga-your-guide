@@ -20,7 +20,8 @@ import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/so
 import { hasName, cleanName } from '@/lib/user-name';
 import { checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
 import { getSetting } from '@/lib/app-settings';
-import { getStoredUser } from '@/lib/auth-storage';
+import { getStoredUser, sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
+import { loadDiaryHistory, diaryFortnight, diaryFortnightHtml } from '@/lib/diary-history';
 import palmMethodImage from '@/assets/palm-method.png';
 import logoTelegram from '@/assets/logo_telegram.png';
 import logoVk from '@/assets/logo_vk.png';
@@ -2177,7 +2178,7 @@ export function MenuScreen() {
 }
 
 function ProfileSection({ onBack }: { onBack: () => void }) {
-  const { profile, calculations, updateProfile, setStep, weeklyData, dailyReports, resetLocalState } = useApp();
+  const { profile, calculations, updateProfile, setStep, resetLocalState } = useApp();
 
   const subscription = useSubscription();
   const { save, saving, saveError, isSaving } = useSaveAction();
@@ -2278,94 +2279,47 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const [downloadingDiary, setDownloadingDiary] = useState(false);
+  const [diaryError, setDiaryError] = useState(false);
+  const diaryJob = useRef<{ popup: Window; cancelled: boolean } | null>(null);
+  useEffect(() => () => {
+    const job = diaryJob.current;
+    if (job) { job.cancelled = true; job.popup.close(); diaryJob.current = null; }
+  }, []);
+
   const handleDownloadDiary = async () => {
-    // Values inserted into the HTML report must remain plain text.
-    const escapeHtml = (value: unknown) => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
+    if (diaryJob.current) return;
+    setDiaryError(false);
+    // Open during the click, before awaiting the server (mobile popup policy).
+    const popup = window.open('', '_blank');
+    if (!popup) { setDiaryError(true); return; }
+    popup.opener = null;
+    const job = { popup, cancelled: false };
+    diaryJob.current = job;
+    const session = sessionSnapshot();
     const today = new Date();
-    const days14 = Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() - 13 + i);
-      return d.toISOString().slice(0, 10);
-    });
-
-    const rows = days14.map(date => {
-      const weight = weeklyData.find(w => w.date === date);
-      const report = dailyReports.find(r => r.date === date);
-      return { date, weight, report };
-    });
-
-    const hasAnyData = rows.some(r => r.weight || r.report);
-    if (!hasAnyData) {
-      alert('Пока нет данных для скачивания. Заполните дневник хотя бы за несколько дней.');
-      return;
+    setDownloadingDiary(true);
+    try {
+      const days = await loadDiaryHistory();
+      if (job.cancelled || !isSessionCurrent(session) || popup.closed) {
+        popup.close();
+        return;
+      }
+      const rows = diaryFortnight(days, today);
+      if (!rows.some(day => day.checkin || day.meals.length)) {
+        popup.close();
+        alert('Пока нет данных для скачивания. Заполните дневник хотя бы за несколько дней.');
+        return;
+      }
+      popup.document.write(diaryFortnightHtml(profile.name, days, today));
+      popup.document.close();
+    } catch {
+      popup.close();
+      if (!job.cancelled && isSessionCurrent(session)) setDiaryError(true);
+    } finally {
+      if (diaryJob.current === job) diaryJob.current = null;
+      if (!job.cancelled) setDownloadingDiary(false);
     }
-
-    // Generate HTML and open print dialog → user saves as PDF
-    const formatDate = (dateStr: string) => {
-      const d = new Date(dateStr + 'T12:00:00');
-      return d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
-    };
-
-    const weights = rows.filter(r => r.weight).map(r => r.weight!.weight);
-    const avgWeight = weights.length ? (weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(1) : '—';
-    const minWeight = weights.length ? Math.min(...weights).toFixed(1) : '—';
-    const maxWeight = weights.length ? Math.max(...weights).toFixed(1) : '—';
-    const daysWithData = rows.filter(r => r.weight || r.report?.meals?.length).length;
-
-    const html = `<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
-<title>Дневник питания</title>
-<style>
-@media print { body { margin: 0; } .no-print { display: none; } }
-body { font-family: Arial, sans-serif; font-size: 12px; color: #2C1A0E; max-width: 750px; margin: 0 auto; padding: 20px; }
-h1 { font-size: 18px; color: #FF6200; margin-bottom: 2px; }
-.sub { color: #888; font-size: 11px; margin-bottom: 16px; }
-.summary { background: #FAF5F0; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; gap: 20px; flex-wrap: wrap; }
-.summary span { font-size: 11px; }
-.day { border: 1px solid #EDE5DF; border-radius: 8px; padding: 12px; margin-bottom: 10px; page-break-inside: avoid; }
-.day-title { font-weight: bold; color: #FF6200; font-size: 13px; margin-bottom: 6px; }
-.meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
-.meta span { font-size: 11px; background: #F5F0EB; padding: 2px 7px; border-radius: 5px; }
-.meal { font-size: 11px; padding: 2px 0; border-bottom: 1px solid #F0EAE4; }
-.meal:last-child { border-bottom: none; }
-.empty { color: #bbb; font-style: italic; font-size: 11px; }
-.print-btn { display: block; margin: 16px auto; padding: 10px 30px; background: #FF6200; color: white; border: none; border-radius: 20px; font-size: 14px; cursor: pointer; }
-</style></head><body>
-<button class="print-btn no-print" onclick="window.print()">📥 Сохранить как PDF</button>
-<h1>Дневник питания — ${escapeHtml(profile.name ?? 'Пользователь')}</h1>
-<div class="sub">Отчёт за последние 14 дней · ${today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-<div class="summary">
-  <span>📅 Дней с данными: <b>${daysWithData} из 14</b></span>
-  <span>⚖️ Средний вес: <b>${avgWeight} кг</b></span>
-  <span>📉 Мин: <b>${minWeight} кг</b></span>
-  <span>📈 Макс: <b>${maxWeight} кг</b></span>
-</div>
-${rows.map(({ date, weight, report }) => `
-<div class="day">
-  <div class="day-title">${formatDate(date)}</div>
-  <div class="meta">
-    <span>⚖️ ${escapeHtml(weight ? weight.weight + ' кг' : '—')}</span>
-    <span>😴 ${escapeHtml(report?.sleepHours ? report.sleepHours + ' ч' : '—')}</span>
-    <span>👟 ${escapeHtml(report?.stepsYesterday ? report.stepsYesterday.toLocaleString('ru-RU') : '—')}</span>
-    <span>🚿 Стул: ${report?.stoolYesterday === true ? 'Да' : report?.stoolYesterday === false ? 'Нет' : '—'}</span>
-  </div>
-  ${report?.meals?.length
-    ? report.meals.map((m: any) => `<div class="meal">• ${escapeHtml(typeof m === 'string' ? m : (m?.description || ''))}</div>`).join('')
-    : '<div class="empty">Приёмы пищи не записаны</div>'
-  }
-</div>`).join('')}
-<button class="print-btn no-print" onclick="window.print()">📥 Сохранить как PDF</button>
-</body></html>`;
-
-    const w = window.open('', '_blank');
-    if (w) { w.opener = null; w.document.write(html); w.document.close(); }
-
-    // window.open already called above
   };
 
   const handleSaveName = async () => {
@@ -2637,6 +2591,8 @@ ${rows.map(({ date, weight, report }) => `
         {/* 7.5 Скачать дневник */}
         <button
           onClick={handleDownloadDiary}
+          disabled={downloadingDiary}
+          aria-busy={downloadingDiary}
           className="w-full rounded-2xl py-3 text-sm font-medium transition-colors"
           style={{ backgroundColor: 'transparent', border: '1px solid #FF6200', color: '#FF6200' }}
         >
@@ -2645,6 +2601,11 @@ ${rows.map(({ date, weight, report }) => `
         <p className="text-xs text-muted-foreground text-center mt-1">
           Отчёт за последние 14 дней — для подготовки к консультации
         </p>
+
+        {diaryError && <div role="alert" className="inga-bubble mt-3">
+          <p>Попробуйте ещё раз.</p>
+          <button onClick={handleDownloadDiary} disabled={downloadingDiary} className="inga-btn-secondary mt-3">Повторить</button>
+        </div>}
 
         {/* Подтверждение почты — мягкое напоминание, доступ не блокируется */}
         {!emailVerified && (

@@ -1,0 +1,36 @@
+TAP version 13
+# [boot] DATABASE_URL is not set
+# Subtest: I1: saved checkin returns exact calendar date in list, single read and diary
+ok 1 - I1: saved checkin returns exact calendar date in list, single read and diary
+  ---
+  duration_ms: 2655.736113
+  ...
+# Subtest: I1: partial weight update preserves sleep, steps and false; repeat read is stable
+ok 2 - I1: partial weight update preserves sleep, steps and false; repeat read is stable
+  ---
+  duration_ms: 20.429855
+  ...
+# Subtest: I1: diary food and checkins remain isolated by authenticated owner
+ok 3 - I1: diary food and checkins remain isolated by authenticated owner
+  ---
+  duration_ms: 27.760819
+  ...
+# Subtest: I1: expired subscription still reads and exports existing records; writes stay blocked
+ok 4 - I1: expired subscription still reads and exports existing records; writes stay blocked
+  ---
+  duration_ms: 22.651442
+  ...
+# Subtest: I1: database failure returns an error, never an apparently empty diary
+ok 5 - I1: database failure returns an error, never an apparently empty diary
+  ---
+  duration_ms: 4.854904
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2999.302851

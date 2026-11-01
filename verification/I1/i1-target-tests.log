@@ -1,0 +1,16 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> vite_react_shadcn_ts@0.0.0 test
+> vitest run --run src/test/diary-history.test.ts src/test/diary-export-flow.test.tsx
+
+
+ RUN  v3.2.7 /workspace/scratch/002f6dcc2e1b/i1-work
+
+ ✓ src/test/diary-history.test.ts (7 tests) 71ms
+ ✓ src/test/diary-export-flow.test.tsx (7 tests) 861ms
+
+ Test Files  2 passed (2)
+      Tests  14 passed (14)
+   Start at  09:14:52
+   Duration  2.27s (transform 458ms, setup 83ms, collect 877ms, tests 931ms, environment 489ms, prepare 119ms)
+

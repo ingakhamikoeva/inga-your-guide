@@ -1,0 +1,31 @@
+{
+  "scope": "I1 only",
+  "date": "2026-11-01",
+  "base": "inga-your-guide-main (19).zip + B5",
+  "files": [
+    {
+      "path": "src/components/inga/MenuScreen.tsx",
+      "sha256": "398d06464d25fe69eea067a777700fc363f4a574b4680e68e7da6c4080e4c4f5"
+    },
+    {
+      "path": "src/lib/diary-history.ts",
+      "sha256": "1fa27489b326018efdd2a517c0a7652aff91c340fc4610f4f2141b01bf0786bd"
+    },
+    {
+      "path": "server/routes/checkins.js",
+      "sha256": "ceba784a15204eb0a084d6b555ec1a99bee712c76d9b43a330eff01489326567"
+    },
+    {
+      "path": "src/test/diary-history.test.ts",
+      "sha256": "48073873f46b8d0994ad4b1ee72aac19e8336141e72b4b623a0dc64e0dd8ff8c"
+    },
+    {
+      "path": "src/test/diary-export-flow.test.tsx",
+      "sha256": "3905cdb48067f4a990de2dbbe4c79488c66707eebe5e327e01242dd2d53119b9"
+    },
+    {
+      "path": "server/tests/diary-dates.test.js",
+      "sha256": "6fa1c4cec7c0f0df4460d9125e3f8eb53e0c5d6acdc5a68e586236c2064f293b"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ r.use(requireAccessForWrite);
 r.get("/", async (req, res) => {
   try {
     const q = await pool.query(
-      `SELECT date, weight_kg FROM public.daily_checkins
+      `SELECT date::text AS date, weight_kg FROM public.daily_checkins
         WHERE user_id = $1 AND weight_kg IS NOT NULL ORDER BY date ASC`,
       [req.userId]
     );
@@ -25,7 +25,7 @@ r.get("/:date", async (req, res) => {
   const { date } = req.params;
   try {
     const q = await pool.query(
-      `SELECT date, weight_kg, sleep_hours, steps_yesterday, stool_yesterday
+      `SELECT date::text AS date, weight_kg, sleep_hours, steps_yesterday, stool_yesterday
          FROM public.daily_checkins
         WHERE user_id = $1 AND date = $2
         LIMIT 1`,
