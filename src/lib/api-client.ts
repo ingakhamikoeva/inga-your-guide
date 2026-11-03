@@ -1,3 +1,4 @@
+import { fetchText, requestDeadline } from './api-transport';
 // Lightweight fetch wrapper for the self-hosted Node API.
 // Adds Authorization: Bearer <access_token>, auto-refreshes on 401.
 //
@@ -39,7 +40,7 @@ interface ApiOptions extends Omit<RequestInit, 'body'> {
   retryOn401?: boolean;  // attempt refresh on 401 (default: true)
 }
 
-async function rawFetch(path: string, opts: ApiOptions, token?: string | null): Promise<Response> {
+async function rawFetch(path: string, opts: ApiOptions, token?: string | null) {
   const url = path.startsWith('http') ? path : `${API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
   const headers: Record<string, string> = {
     Accept: 'application/json',
@@ -49,7 +50,7 @@ async function rawFetch(path: string, opts: ApiOptions, token?: string | null): 
     headers['Content-Type'] = 'application/json';
   }
   if (token) headers.Authorization = `Bearer ${token}`;
-  return fetch(url, {
+  return fetchText(url, {
     ...opts,
     headers,
     body:
@@ -58,7 +59,7 @@ async function rawFetch(path: string, opts: ApiOptions, token?: string | null): 
         : opts.body instanceof FormData
           ? (opts.body as FormData)
           : JSON.stringify(opts.body),
-  });
+  }, requestDeadline(path, opts.method));
 }
 
 type RefreshFlight = { snapshot: SessionSnapshot; promise: Promise<string | null> };
@@ -82,12 +83,13 @@ async function attemptRefresh(snapshot: SessionSnapshot): Promise<string | null>
   const flight: RefreshFlight = { snapshot, promise: Promise.resolve(null) };
   flight.promise = (async () => {
     try {
-      const res = await rawFetch('/auth/refresh', { method: 'POST', body: { refresh_token }, signal: controller.signal });
+      const { response: res, text } = await rawFetch('/auth/refresh', { method: 'POST', body: { refresh_token }, signal: controller.signal });
       assertSession(snapshot);
       // Another tab may already have refreshed this same session.
       if (getAccessToken() !== access_token) return getAccessToken();
-      if (!res.ok) return null;
-      const json = await res.json();
+      if (res.status === 401 || res.status === 403) return null;
+      if (!res.ok) throw new ApiError(res.status, null);
+      const json = JSON.parse(text);
       assertSession(snapshot);
       if (getAccessToken() !== access_token) return getAccessToken();
       if (json?.access_token) {
@@ -100,10 +102,11 @@ async function attemptRefresh(snapshot: SessionSnapshot): Promise<string | null>
         return getAccessToken();
       }
       return null;
-    } catch {
+    } catch (error) {
       assertSession(snapshot);
       if (getAccessToken() !== access_token) return getAccessToken();
-      return null;
+      // A network failure/timeout is not evidence that the refresh token is invalid.
+      throw error;
     } finally {
       unsubscribe();
       if (refreshInFlight === flight) refreshInFlight = null;
@@ -134,17 +137,16 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiOptions = {})
   const requestOpts = { ...opts, signal: controller.signal };
   try {
     check();
-    let res = await rawFetch(path, requestOpts, token);
+    let { response: res, text } = await rawFetch(path, requestOpts, token);
     check();
 
     if (res.status === 401 && useAuth && opts.retryOn401 !== false) {
       const newToken = getAccessToken() !== token ? getAccessToken() : await attemptRefresh(snapshot);
       check();
       if (newToken) {
-        res = await rawFetch(path, requestOpts, newToken);
+        ({ response: res, text } = await rawFetch(path, requestOpts, newToken));
         check();
       } else {
-        const text = await res.text();
         check();
         let body: unknown = null;
         if (text) { try { body = JSON.parse(text); } catch { body = text; } }
@@ -157,7 +159,6 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiOptions = {})
       }
     }
 
-    const text = await res.text();
     check();
     let json: unknown = null;
     if (text) {

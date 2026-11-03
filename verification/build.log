@@ -5,13 +5,13 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 
 vite v5.4.21 building for production...
 transforming...
-✓ 2579 modules transformed.
+✓ 2582 modules transformed.
 rendering chunks...
 [plugin:vite:reporter] [plugin vite:reporter] 
-(!) /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/lib/auth.ts is dynamically imported by /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/components/inga/MenuScreen.tsx but also statically imported by /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/components/inga/AuthScreen.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/components/inga/MenuScreen.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/Admin.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/Index.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/ResetPassword.tsx, /workspace/scratch/002f6dcc2e1b/work/inga-your-guide-main/src/pages/VerifyEmail.tsx, dynamic import will not move module into another chunk.
+(!) /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/lib/auth.ts is dynamically imported by /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/components/inga/MenuScreen.tsx but also statically imported by /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/components/inga/AuthScreen.tsx, /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/components/inga/MenuScreen.tsx, /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/pages/Admin.tsx, /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/pages/Index.tsx, /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/pages/ResetPassword.tsx, /workspace/scratch/002f6dcc2e1b/mobile-diag-work/src/pages/VerifyEmail.tsx, dynamic import will not move module into another chunk.
 
 computing gzip size...
-dist/index.html                                               1.62 kB │ gzip:   0.63 kB
+dist/index.html                                               1.62 kB │ gzip:   0.64 kB
 dist/assets/logo_vk-BWEWSE2n.png                              7.52 kB
 dist/assets/logo_telegram-CpghqF6y.png                       11.43 kB
 dist/assets/logo_max-ul3uo0cS.png                            17.09 kB
@@ -55,16 +55,16 @@ dist/assets/cabbagePieBatter-Cl8r-ikp.png                 2,500.94 kB
 dist/assets/kefirBeforeBaking-9p7bRKkO.png                2,691.92 kB
 dist/assets/kefirChicken-WslwX8BX.png                     2,852.44 kB
 dist/assets/cabbagePieFilling-Dpnk95bt.png                2,861.20 kB
-dist/assets/index-Ca5tTHu1.css                               71.92 kB │ gzip:  12.30 kB
+dist/assets/index-CdOk5yj4.css                               72.13 kB │ gzip:  12.33 kB
 dist/assets/subscription-preview-BcM4uDhR.js                  1.24 kB │ gzip:   0.91 kB
-dist/assets/SubscriptionPreview-CFcczzr_.js                   2.97 kB │ gzip:   1.40 kB
-dist/assets/PaymentCheck-DWBQMqnL.js                          8.07 kB │ gzip:   3.73 kB
-dist/assets/SubscriptionScreens-DKhBMbPv.js                  10.16 kB │ gzip:   3.88 kB
-dist/assets/SubscriptionTest-jco6pI9G.js                     11.81 kB │ gzip:   4.86 kB
-dist/assets/index-BsE9U-sc.js                             1,113.14 kB │ gzip: 343.51 kB
+dist/assets/SubscriptionPreview-DOOBc5N4.js                   2.97 kB │ gzip:   1.40 kB
+dist/assets/PaymentCheck-NVMPts0-.js                          8.07 kB │ gzip:   3.73 kB
+dist/assets/SubscriptionScreens-B2f5Px5h.js                  10.16 kB │ gzip:   3.88 kB
+dist/assets/SubscriptionTest-B3Hk8qXy.js                     11.81 kB │ gzip:   4.86 kB
+dist/assets/index-BRodD4eU.js                             1,122.35 kB │ gzip: 346.81 kB
 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 4.79s
+✓ built in 10.94s

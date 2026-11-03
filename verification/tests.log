@@ -1,0 +1,58 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> vite_react_shadcn_ts@0.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /workspace/scratch/002f6dcc2e1b/mobile-diag-work
+
+stderr | src/test/subscription-preview.test.tsx > isolated preview > does not call a payment endpoint or change storage on pay or cancel
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/subscription-preview.test.tsx (11 tests) 942ms
+stderr | src/components/inga/subscription-preview.test.tsx > isolated preview > does not call a payment endpoint or change storage on pay or cancel
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/components/inga/subscription-preview.test.tsx (11 tests) 1056ms
+ ✓ src/test/onboarding-flow.test.tsx (8 tests) 1685ms
+   ✓ onboarding: forward/back navigation reaches diary without motivation, with B2 save gates intact  1402ms
+ ✓ src/lib/auth-session.test.ts (20 tests) 751ms
+ ✓ src/test/profile-save.test.tsx (10 tests) 680ms
+   ✓ B2: name form waits, retains draft on failure and supports retry  305ms
+stderr | src/test/mobile-loading.test.tsx > login spinner ends with the existing error text after a stalled request
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/b4-flow.test.tsx (10 tests) 1406ms
+   ✓ B4: survey keeps the greeting, shows the replacement range, and saves its midpoint  451ms
+   ✓ B4: actual morning screen passes the maintenance stage and renders the measured interval  522ms
+ ✓ src/test/profile-save-api.test.tsx (11 tests) 1675ms
+   ✓ B2/API: failed profile name save (503) retains draft, retry and reload use confirmed value  743ms
+ ✓ src/test/diary-export-flow.test.tsx (7 tests) 1792ms
+   ✓ I1: profile export reads server data on a fresh device, including expired access  616ms
+   ✓ I1: leaving profile cancels pending report; blocked popup gives a retry  329ms
+ ✓ src/test/mobile-loading.test.tsx (3 tests) 1135ms
+   ✓ login spinner ends with the existing error text after a stalled request  818ms
+stderr | src/pages/PaymentCheck.test.tsx > one-off payment page > starts with unchecked consent and does not submit without a user action
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/pages/Index.session.test.tsx (6 tests) 422ms
+ ✓ src/pages/PaymentCheck.test.tsx (3 tests) 340ms
+ ✓ src/lib/api-deadline-session.test.ts (4 tests) 73ms
+ ✓ src/test/resource-limits.test.tsx (5 tests) 581ms
+   ✓ B3: day analysis retains diary summary, shows limit and succeeds on explicit retry  366ms
+ ✓ src/lib/network-diagnostics.test.ts (3 tests) 100ms
+ ✓ src/lib/api-transport.test.ts (8 tests) 84ms
+ ✓ src/test/diary-history.test.ts (7 tests) 126ms
+ ✓ src/test/b4-rules.test.ts (17 tests) 18ms
+ ✓ src/lib/live-payment-pilot.test.ts (2 tests) 9ms
+ ✓ src/test/example.test.ts (1 test) 3ms
+
+ Test Files  19 passed (19)
+      Tests  147 passed (147)
+   Start at  20:59:13
+   Duration  8.20s (transform 4.63s, setup 1.86s, collect 18.96s, tests 12.88s, environment 11.56s, prepare 2.89s)
+

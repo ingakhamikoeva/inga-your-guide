@@ -113,7 +113,7 @@ test('B1: concurrent requests within one session share a refresh', async () => {
 test('B1: failed refresh of the current session still signs out', async () => {
   const { storage, apiFetch } = await setup(); const changed = vi.fn();
   disposers.push(storage.subscribe(changed));
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({}, 401)));
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => json({}, 401)));
   await expect(apiFetch('/profile')).rejects.toBeInstanceOf(Error);
   expect(storage.currentSession()).toBeNull(); expect(changed).toHaveBeenCalledWith('SIGNED_OUT', null);
 });
