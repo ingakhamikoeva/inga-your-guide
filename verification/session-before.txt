@@ -1,0 +1,135 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> vite_react_shadcn_ts@0.0.0 test
+> vitest run src/lib/startup-session.test.ts
+
+
+ RUN  v3.2.7 /workspace/scratch/b613cb49fb30/review/inga-your-guide-main
+
+ ❯ src/lib/startup-session.test.ts (9 tests | 8 failed) 16ms
+   × invalid stored session null cannot crash application startup 7ms
+     → expected [Function] to not throw an error but 'TypeError: Cannot read properties of …' was thrown
+   × invalid stored session [] cannot crash application startup 1ms
+     → expected undefined to be null
+   × invalid stored session {} cannot crash application startup 1ms
+     → expected undefined to be null
+   × invalid stored session {"generation":"x","session":{}} cannot crash application startup 1ms
+     → expected [Function] to not throw an error but 'TypeError: Cannot read properties of …' was thrown
+   × invalid stored session {"generation":"x","session":{"access_token":"a","refresh_token":"r","user":null}} cannot crash application startup 1ms
+     → expected [Function] to not throw an error but 'TypeError: Cannot read properties of …' was thrown
+   × invalid stored session {"generation":"x","session":{"access_token":"a","refresh_token":"r","user":{}}} cannot crash application startup 1ms
+     → expected { access_token: 'a', …(2) } to be null
+   × invalid authoritative record cannot resurrect old legacy credentials 1ms
+     → Cannot read properties of null (reading 'session')
+   × invalid legacy user cannot make an authenticated startup 1ms
+     → expected { access_token: 'old-access', …(2) } to be null
+   ✓ unavailable browser storage safely starts without a session 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/startup-session.test.ts > invalid stored session null cannot crash application startup
+ FAIL  src/lib/startup-session.test.ts > invalid stored session {"generation":"x","session":{}} cannot crash application startup
+ FAIL  src/lib/startup-session.test.ts > invalid stored session {"generation":"x","session":{"access_token":"a","refresh_token":"r","user":null}} cannot crash application startup
+AssertionError: expected [Function] to not throw an error but 'TypeError: Cannot read properties of …' was thrown
+
+- Expected: 
+undefined
+
++ Received: 
+"TypeError: Cannot read properties of null (reading 'generation')"
+
+ ❯ src/lib/startup-session.test.ts:12:39
+     10| ('invalid stored session %s cannot crash application startup', raw => {
+     11|   localStorage.setItem('inga_session_v1', raw);
+     12|   expect(() => sessionSnapshot()).not.toThrow();
+       |                                       ^
+     13|   expect(currentSession()).toBeNull();
+     14|   expect(sessionSnapshot().owner).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  src/lib/startup-session.test.ts > invalid stored session [] cannot crash application startup
+ FAIL  src/lib/startup-session.test.ts > invalid stored session {} cannot crash application startup
+AssertionError: expected undefined to be null
+
+- Expected: 
+null
+
++ Received: 
+undefined
+
+ ❯ src/lib/startup-session.test.ts:13:28
+     11|   localStorage.setItem('inga_session_v1', raw);
+     12|   expect(() => sessionSnapshot()).not.toThrow();
+     13|   expect(currentSession()).toBeNull();
+       |                            ^
+     14|   expect(sessionSnapshot().owner).toBeNull();
+     15|   // Reading invalid state must not rewrite credentials or diary data.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  src/lib/startup-session.test.ts > invalid stored session {"generation":"x","session":{"access_token":"a","refresh_token":"r","user":{}}} cannot crash application startup
+AssertionError: expected { access_token: 'a', …(2) } to be null
+
+- Expected: 
+null
+
++ Received: 
+{
+  "access_token": "a",
+  "refresh_token": "r",
+  "user": {},
+}
+
+ ❯ src/lib/startup-session.test.ts:13:28
+     11|   localStorage.setItem('inga_session_v1', raw);
+     12|   expect(() => sessionSnapshot()).not.toThrow();
+     13|   expect(currentSession()).toBeNull();
+       |                            ^
+     14|   expect(sessionSnapshot().owner).toBeNull();
+     15|   // Reading invalid state must not rewrite credentials or diary data.
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+ FAIL  src/lib/startup-session.test.ts > invalid authoritative record cannot resurrect old legacy credentials
+TypeError: Cannot read properties of null (reading 'session')
+ ❯ Module.currentSession src/lib/auth-storage.ts:122:10
+    120| 
+    121| export function currentSession(): AppSession | null {
+    122|   return readRecord().session;
+       |          ^
+    123| }
+    124| 
+ ❯ src/lib/startup-session.test.ts:24:10
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  src/lib/startup-session.test.ts > invalid legacy user cannot make an authenticated startup
+AssertionError: expected { access_token: 'old-access', …(2) } to be null
+
+- Expected: 
+null
+
++ Received: 
+{
+  "access_token": "old-access",
+  "refresh_token": "old-refresh",
+  "user": [],
+}
+
+ ❯ src/lib/startup-session.test.ts:31:28
+     29|   localStorage.setItem('inga_refresh_token', 'old-refresh');
+     30|   localStorage.setItem('inga_user', '[]');
+     31|   expect(currentSession()).toBeNull();
+       |                            ^
+     32| });
+     33| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  8 failed | 1 passed (9)
+   Start at  15:45:15
+   Duration  977ms (transform 92ms, setup 70ms, collect 45ms, tests 16ms, environment 301ms, prepare 223ms)
+

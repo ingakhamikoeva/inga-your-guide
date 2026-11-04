@@ -1,0 +1,209 @@
+[
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "test.legche.online.",
+        "type": 1
+      }
+    ],
+    "Answer": [
+      {
+        "name": "test.legche.online.",
+        "type": 1,
+        "TTL": 300,
+        "data": "95.181.212.250"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "test.legche.online.",
+        "type": 28
+      }
+    ],
+    "Authority": [
+      {
+        "name": "legche.online.",
+        "type": 6,
+        "TTL": 300,
+        "data": "ns1.beget.com. hostmaster.beget.com. 1784484176 300 600 86400 300"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "test.legche.online.",
+        "type": 65
+      }
+    ],
+    "Authority": [
+      {
+        "name": "legche.online.",
+        "type": 6,
+        "TTL": 300,
+        "data": "ns1.beget.com. hostmaster.beget.com. 1784484176 300 600 86400 300"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "app.legche.online.",
+        "type": 1
+      }
+    ],
+    "Answer": [
+      {
+        "name": "app.legche.online.",
+        "type": 1,
+        "TTL": 300,
+        "data": "95.181.212.250"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "app.legche.online.",
+        "type": 28
+      }
+    ],
+    "Authority": [
+      {
+        "name": "legche.online.",
+        "type": 6,
+        "TTL": 300,
+        "data": "ns1.beget.com. hostmaster.beget.com. 1784484176 300 600 86400 300"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "app.legche.online.",
+        "type": 65
+      }
+    ],
+    "Authority": [
+      {
+        "name": "legche.online.",
+        "type": 6,
+        "TTL": 300,
+        "data": "ns1.beget.com. hostmaster.beget.com. 1784484176 300 600 86400 300"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "api.legche.online.",
+        "type": 1
+      }
+    ],
+    "Answer": [
+      {
+        "name": "api.legche.online.",
+        "type": 1,
+        "TTL": 300,
+        "data": "95.181.212.250"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "api.legche.online.",
+        "type": 28
+      }
+    ],
+    "Authority": [
+      {
+        "name": "legche.online.",
+        "type": 6,
+        "TTL": 300,
+        "data": "ns1.beget.com. hostmaster.beget.com. 1784484176 300 600 86400 300"
+      }
+    ],
+    "Comment": "Response from 93.92.81.0."
+  },
+  {
+    "Status": 0,
+    "TC": false,
+    "RD": true,
+    "RA": true,
+    "AD": false,
+    "CD": false,
+    "Question": [
+      {
+        "name": "api.legche.online.",
+        "type": 65
+      }
+    ],
+    "Authority": [
+      {
+        "name": "legche.online.",
+        "type": 6,
+        "TTL": 300,
+        "data": "ns1.beget.com. hostmaster.beget.com. 1784484176 300 600 86400 300"
+      }
+    ],
+    "Comment": "Response from 185.50.27.12."
+  }
+]
