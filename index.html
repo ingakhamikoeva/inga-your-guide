@@ -4,6 +4,60 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Легче</title>
+    <script>
+      // Runs before the application bundle and its render-blocking stylesheet.
+      // Explicit opt-in only. No URLs, credentials, error text or page data recorded.
+      (function () {
+        if (!/(?:^|[?&])diagnostics=1(?:&|$)/.test(window.location.search)) return;
+        var state = { html: true, module: false, scriptErrors: 0, resourceErrors: 0 };
+        var panel, output, interval, expiry;
+        function refresh() {
+          if (output && document.activeElement !== output) output.value = JSON.stringify(state, null, 2);
+        }
+        function error(event) {
+          if (event.target && event.target.nodeType === 1) state.resourceErrors++;
+          else state.scriptErrors++;
+          refresh();
+        }
+        function rejection() { state.scriptErrors++; refresh(); }
+        function mount() {
+          if (panel || !document.body) return;
+          panel = document.createElement('aside');
+          panel.id = 'legche-boot-diagnostics';
+          panel.setAttribute('aria-label', 'Диагностика соединения');
+          panel.style.cssText = 'position:fixed;bottom:8px;right:8px;z-index:2147483647;max-width:calc(100vw - 16px);font:14px system-ui;background:white;color:#222;border:2px solid #ff6500;border-radius:12px;padding:8px';
+          var toggle = document.createElement('button');
+          toggle.textContent = 'Диагностика · отчёт';
+          toggle.style.cssText = 'padding:10px;min-height:44px;color:#222;background:#fff0e5;border:0;border-radius:8px';
+          output = document.createElement('textarea');
+          output.readOnly = true;
+          output.hidden = true;
+          output.setAttribute('aria-label', 'Технический отчёт');
+          output.style.cssText = 'width:320px;max-width:75vw;height:32vh;font:12px monospace;color:#222;background:#fff';
+          toggle.onclick = function () { output.hidden = !output.hidden; refresh(); };
+          panel.appendChild(toggle);
+          panel.appendChild(output);
+          document.body.appendChild(panel);
+          refresh();
+        }
+        function finish() {
+          clearInterval(interval);
+          clearTimeout(expiry);
+          document.removeEventListener('readystatechange', mount);
+          window.removeEventListener('error', error, true);
+          window.removeEventListener('unhandledrejection', rejection);
+          if (panel) panel.remove();
+          return state;
+        }
+        window.__legcheBootDiagnostics = { finish: finish };
+        window.addEventListener('error', error, true);
+        window.addEventListener('unhandledrejection', rejection);
+        // DOMContentLoaded waits for module scripts; readystatechange does not.
+        document.addEventListener('readystatechange', mount);
+        interval = setInterval(mount, 1000);
+        expiry = setTimeout(finish, 30 * 60 * 1000);
+      })();
+    </script>
     <meta name="description" content="Легче — путь к желаемому весу без жёстких ограничений и срывов." />
     <meta name="author" content="Легче" />
     <meta name="apple-mobile-web-app-title" content="Легче" />
@@ -24,6 +78,9 @@
     <meta name="twitter:title" content="Легче" />
     <meta name="twitter:description" content="Путь к желаемому весу без жёстких ограничений." />
     <meta name="twitter:image" content="/apple-touch-icon.png" />
+    <!-- Optional fonts must not block application CSS, JavaScript or first paint. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&amp;display=swap" media="print" onload="this.onload=null;this.media='all'" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&amp;display=swap" media="print" onload="this.onload=null;this.media='all'" />
   </head>
 
   <body>

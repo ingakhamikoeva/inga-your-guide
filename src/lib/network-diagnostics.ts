@@ -15,6 +15,13 @@ let report: Report | null = null;
 let nextId = 0;
 let refreshPanel = () => {};
 let installed = false;
+type BootReport = { html: boolean; module: boolean; scriptErrors: number; resourceErrors: number };
+declare global {
+  interface Window {
+    __legcheBootDiagnostics?: { finish: () => BootReport };
+  }
+}
+let bootstrap: BootReport | undefined;
 
 function write() {
   try { if (report) sessionStorage.setItem(KEY, JSON.stringify(report)); } catch { /* memory-only still works */ }
@@ -62,7 +69,8 @@ export function updateRequest(id: number | null, phase: Row['phase'], result: Ne
 export function diagnosticReport() {
   return JSON.stringify({ version: 'mobile-diag-1',
     online: navigator.onLine,
-    screen: document.getElementById('root')?.childElementCount ? 'rendered' : 'empty',
+    screen: document.getElementById('root')?.textContent?.trim() ? 'rendered' : 'empty',
+    bootstrap,
     started: report?.started, scriptErrors: report?.scriptErrors ?? 0,
     rows: report?.rows ?? [] }, null, 2);
 }
@@ -70,6 +78,9 @@ export function diagnosticReport() {
 export function installNetworkDiagnostics() {
   if (installed) return;
   installed = true;
+  const early = window.__legcheBootDiagnostics?.finish();
+  delete window.__legcheBootDiagnostics;
+  if (early) bootstrap = { ...early, module: true };
   const url = new URL(window.location.href);
   const mode = url.searchParams.get('diagnostics');
   if (mode === '1') startDiagnostics();
@@ -99,7 +110,8 @@ export function installNetworkDiagnostics() {
   }
   if (mode !== null) {
     url.searchParams.delete('diagnostics');
-    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    try { window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash); }
+    catch { /* Optional diagnostics must not prevent application startup. */ }
   }
   if (!active()) return;
 

@@ -42,18 +42,36 @@ interface SessionRecord {
   session: AppSession | null;
 }
 
+function isStoredSession(value: unknown): value is AppSession {
+  if (!value || typeof value !== 'object') return false;
+  const session = value as AppSession;
+  return typeof session.access_token === 'string' && session.access_token.length > 0
+    && typeof session.refresh_token === 'string' && session.refresh_token.length > 0
+    && !!session.user && typeof session.user.id === 'string' && session.user.id.length > 0;
+}
+
 function readRecord(): SessionRecord {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    if (raw !== null) return JSON.parse(raw) as SessionRecord;
+    if (raw !== null) {
+      const record = JSON.parse(raw) as SessionRecord;
+      // Valid JSON can still be an invalid session (null, {}, missing user).
+      // Do not revive legacy credentials or rewrite storage when this happens.
+      if (!record || typeof record.generation !== 'string' || !record.generation
+        || (record.session !== null && !isStoredSession(record.session))) {
+        return { generation: 'unavailable', session: null };
+      }
+      return record;
+    }
     // Existing installations keep their session until the first atomic write.
     const access_token = localStorage.getItem(ACCESS_KEY);
     const refresh_token = localStorage.getItem(REFRESH_KEY);
     const rawUser = localStorage.getItem(USER_KEY);
     const user = rawUser ? JSON.parse(rawUser) as StoredUser : null;
+    const session = { access_token, refresh_token, user };
     return {
       generation: `legacy:${refresh_token || ''}`,
-      session: access_token && refresh_token && user ? { access_token, refresh_token, user } : null,
+      session: isStoredSession(session) ? session : null,
     };
   } catch { return { generation: 'unavailable', session: null }; }
 }

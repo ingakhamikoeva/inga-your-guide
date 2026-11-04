@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
-/* Golos Text — фирменный шрифт лендинга, используется в заголовке-замке на экране входа */
-@import url('https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap');
+/* Optional font stylesheets load independently in index.html. */
 
 @tailwind base;
 @tailwind components;
