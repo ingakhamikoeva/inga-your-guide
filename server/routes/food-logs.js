@@ -1,4 +1,5 @@
 import { sendResourceLimit, DIARY_AI_LIMIT_MESSAGE } from '../resource-limits.js';
+import { createFoodLog, patchFoodLog } from '../nutrition/food-write.js';
 import { analyzeSavedMeal } from "../nutrition/meal-estimation.js";
 import { requireAccessForWrite } from '../access.js';
 import { Router } from "express";
@@ -84,18 +85,21 @@ r.get("/savings", async (req, res) => {
   }
 });
 
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const validMeta = value => value == null || (typeof value === 'object' && !Array.isArray(value));
+const validDescription = value => typeof value === 'string' && !!value.trim();
+
 r.post("/", async (req, res) => {
-  const { description = "", mealTag = "unknown", datetime, meta } = req.body || {};
+  const { description = "", mealTag = "unknown", datetime, meta, requestId } = req.body || {};
+  if (!validDescription(description) || !validMeta(meta) || (requestId != null && !uuid.test(requestId))) {
+    return res.status(400).json({ error: 'invalid_meal' });
+  }
   try {
     const userId = await resolveUserId(req);
-    const result = await pool.query(
-      `INSERT INTO public.food_logs (user_id, raw_text, meal_tag, datetime, meta)
-       VALUES ($1, $2, $3, COALESCE($4::timestamptz, now()), COALESCE($5::jsonb, '{}'::jsonb))
-       RETURNING log_id, raw_text, meal_tag, datetime, meta`,
-      [userId, description, mealTag, datetime ?? null, meta ? JSON.stringify(meta) : null]
-    );
-    res.json(result.rows[0]);
+    const saved = await createFoodLog(pool, userId, { description, mealTag, datetime: datetime ?? null, meta: meta ?? {} }, requestId);
+    res.json(saved);
   } catch (e) {
+    if (e.status) return res.status(e.status).json({ error: e.code });
     console.error("POST /food-logs:", e);
     res.status(500).json({ error: "save_failed" });
   }
@@ -115,29 +119,16 @@ r.post('/:id/analyze', async (req, res) => {
 
 r.patch("/:id", async (req, res) => {
   const { id } = req.params;
-  const { description, mealTag, datetime, meta } = req.body || {};
+  const patch = req.body || {};
+  if (!uuid.test(id) || !validMeta(patch.meta) || (patch.description != null && !validDescription(patch.description))) {
+    return res.status(400).json({ error: 'invalid_meal' });
+  }
   try {
-    const userId = await resolveUserId(req);
-    const result = await pool.query(
-      `UPDATE public.food_logs
-          SET raw_text = COALESCE($3, raw_text),
-              meal_tag = COALESCE($4, meal_tag),
-              datetime = COALESCE($5::timestamptz, datetime),
-              meta     = CASE WHEN $6::jsonb IS NULL THEN meta ELSE COALESCE(meta, '{}'::jsonb) || $6::jsonb END
-        WHERE log_id = $1 AND user_id = $2
-        RETURNING log_id, raw_text, meal_tag, datetime, meta`,
-      [
-        id,
-        userId,
-        description ?? null,
-        mealTag ?? null,
-        datetime ?? null,
-        meta ? JSON.stringify(meta) : null,
-      ]
-    );
-    if (result.rowCount === 0) return res.status(404).json({ error: "not_found" });
-    res.json(result.rows[0]);
+    const saved = await patchFoodLog(pool, req.userId, id, patch);
+    if (!saved) return res.status(404).json({ error: "not_found" });
+    res.json(saved);
   } catch (e) {
+    if (e.status) return res.status(e.status).json({ error: e.code });
     console.error("PATCH /food-logs:", e);
     res.status(500).json({ error: "update_failed" });
   }

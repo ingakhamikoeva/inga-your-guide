@@ -1,7 +1,7 @@
 import { DIARY_AI_LIMIT_MESSAGE } from '@/lib/request-limits';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
 import { mealFacts } from '../../../server/nutrition/facts.js';
@@ -140,8 +140,20 @@ export function DailyScreen() {
   };
   const [showEveningInput, setShowEveningInput] = useState(false);
   const [eveningText, setEveningText] = useState('');
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
+  const [editBusy, setEditBusy] = useState(false);
+  const editSaving = useRef(false);
   const [editingText, setEditingText] = useState('');
+  useEffect(() => { setEditingMealId(null); setEditingText(''); }, [today, owner]);
+  const saveEditedMeal = async () => {
+    const text = editingText.trim();
+    if (!editingMealId || !text || editSaving.current) return;
+    const id = editingMealId;
+    editSaving.current = true; setEditBusy(true);
+    try {
+      if (await diary.patch(id, { description:text, resetComposition:true })) setEditingMealId(null);
+    } finally { editSaving.current = false; setEditBusy(false); }
+  };
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null);
   const [morningAnalysis, setMorningAnalysis] = useState<MorningWeightAnalysis | null>(null);
   const [showGoalReached, setShowGoalReached] = useState(false);
@@ -280,7 +292,7 @@ export function DailyScreen() {
       if (!cancelled && s) setLightSavings(s);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [today]);
+  }, [today, owner, JSON.stringify(mealMeta.map(m=>[m.id,m.lightSwap]))]);
 
 
 
@@ -443,13 +455,6 @@ export function DailyScreen() {
           }
         : undefined;
       if (!await addMealEntry(mealText.trim(), false, mealTime, lightSwap, draftFlags)) return;
-      if (lightSwap) {
-        // Оптимистично обновляем копилку на экране
-        setLightSavings(prev => ({
-          total_kcal: (prev?.total_kcal ?? 0) + lightSwap.savedKcal,
-          swaps_count: (prev?.swaps_count ?? 0) + draftLightSwaps.length,
-        }));
-      }
       setMealText('');
       setMealTime(nowHHMM());
       setDraftFlags(emptyDraftFlags); draftTouched.current.clear();
@@ -872,6 +877,12 @@ export function DailyScreen() {
                     </button>
                   )}
                 </span>
+                <div className="flex items-center gap-2">
+                <button type="button" disabled={diary.pending>0} aria-label="Редактировать"
+                  className="flex items-center justify-center min-w-10 min-h-10"
+                  onClick={() => { setEditingMealId(m.id); setEditingText(m.desc); }}>
+                  <Pencil size={18} />
+                </button>
                 <button
                   disabled={diary.pending>0} onClick={() => setConfirmDeleteIndex(m.i)}
                   className="flex items-center justify-center"
@@ -880,6 +891,7 @@ export function DailyScreen() {
                 >
                   <Trash2 size={20} />
                 </button>
+                </div>
               </div>
               <p className="text-sm text-muted-foreground mb-1">{m.desc}</p>
               <div className="flex items-center gap-1.5 mb-3 text-[11px]" style={{ color: '#8A7A70' }}>
@@ -1333,6 +1345,21 @@ export function DailyScreen() {
                   <div className="flex gap-2">
                     <button onClick={handleAddEveningMeal} className="flex-1 py-2 rounded-xl text-sm font-medium" style={{ background: '#4A3580', color: '#fff' }}>Добавить</button>
                     <button onClick={() => { setShowEveningInput(false); setEveningText(''); setDraftFlags(emptyDraftFlags); draftTouched.current.clear(); }} className="inga-btn-secondary flex-1">Отмена</button>
+                  </div>
+                </div>
+              )}
+
+              {editingMealId !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                  <div role="dialog" aria-modal="true" aria-label="Редактировать" className="bg-card rounded-2xl p-5 w-full max-w-md shadow-xl">
+                    <textarea aria-label="Приём пищи" value={editingText} maxLength={1000} autoFocus
+                      disabled={editBusy} onChange={e=>setEditingText(e.target.value)}
+                      className="inga-input w-full min-h-28 mb-3" />
+                    <p className="text-sm text-muted-foreground mb-4">После изменения описания состав будет рассчитан заново. Ручные отметки, белок и зачёт лёгкого рецепта для этой записи будут сброшены.</p>
+                    <div className="flex gap-2">
+                      <button disabled={editBusy} onClick={()=>setEditingMealId(null)} className="inga-btn-secondary flex-1">Отмена</button>
+                      <button disabled={editBusy || diary.pending>0 || !editingText.trim()} onClick={saveEditedMeal} className="inga-btn-primary flex-1">Сохранить →</button>
+                    </div>
                   </div>
                 </div>
               )}

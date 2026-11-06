@@ -1,7 +1,8 @@
 import { isAiLimitError } from '@/lib/request-limits';
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api-client';
-import { currentSession } from '@/lib/auth-storage';
+import { currentSession, isSessionCurrent, sessionSnapshot } from '@/lib/auth-storage';
+import { foodWriteIntent } from './food-write-intent';
 import { FoodLogRow, MealTag } from '@/lib/db';
 import { toast } from 'sonner';
 
@@ -28,6 +29,7 @@ export function rowMeta(row:FoodLogRow, loading=false):MealMeta {
     proteinLoading:loading,proteinManual:!!m.proteinManual,lightSwap:m.lightSwap as LightSwapMeta|null};
 }
 export function useMealDiary(date:string) {
+  const session=sessionSnapshot();
   const owner=currentSession()?.user.id;
   const [rows,setRows]=useState<FoodLogRow[]>([]);
   const [loading,setLoading]=useState(true);
@@ -40,13 +42,12 @@ export function useMealDiary(date:string) {
   const generation=useRef(0);
   const adding=useRef(false);
   const queues=useRef(new Map<string,Promise<unknown>>());
-  const live=(g:number) => g===generation.current && currentSession()?.user.id===owner;
+  const live=(g:number) => g===generation.current && isSessionCurrent(session);
   const apply=(row:FoodLogRow,g:number) => {if(live(g))setRows(prev=>prev.map(r=>r.log_id===row.log_id?row:r));};
-  const analyze=async(row:FoodLogRow,g:number) => {
+  const runAnalysis=async(row:FoodLogRow,g:number) => {
     if(row.meta?.nutritionVersion===3 || !live(g) || analysisLimited.current)return;
     setPending(n=>n+1);setEstimating(ids=>[...ids,row.log_id]);
     const task=apiFetch<FoodLogRow>(`/food-logs/${row.log_id}/analyze`,{method:'POST'});
-    queues.current.set(row.log_id,task);
     try {apply(await task,g);} catch (error) {
       if(live(g) && isAiLimitError(error)) {
         analysisLimited.current=true;setAnalysisLimit(true);
@@ -54,6 +55,11 @@ export function useMealDiary(date:string) {
       // Other unknown composition remains unknown; retry is explicit.
     }
     finally {if(live(g)){setPending(n=>n-1);setEstimating(ids=>ids.filter(id=>id!==row.log_id));}}
+  };
+  const analyze=(row:FoodLogRow,g:number) => {
+    const task=(queues.current.get(row.log_id)||Promise.resolve()).catch(()=>{}).then(()=>runAnalysis(row,g));
+    queues.current.set(row.log_id,task);
+    return task;
   };
   useEffect(()=>{
     const g=++generation.current;
@@ -67,28 +73,38 @@ export function useMealDiary(date:string) {
       for(const row of data) {if(!live(g))break; await analyze(row,g);}
     }).catch(()=>{if(live(g)){setError(true);setLoading(false);}});
     return ()=>{generation.current++;};
-  },[date,owner,reload]);
+  },[date,owner,session.generation,reload]);
   const add=async(description:string,mealTag:MealTag,datetime:string,meta:Record<string,unknown>)=>{
     if(adding.current||loading||error)return false;
     adding.current=true;const g=generation.current;setPending(n=>n+1);
     try {
-      const row=await apiFetch<FoodLogRow>('/food-logs',{method:'POST',body:{description,mealTag,datetime,meta}});
+      const intent=foodWriteIntent(session,date,{description,mealTag,datetime,meta});
+      const row=await apiFetch<FoodLogRow>('/food-logs',{method:'POST',body:{...intent.payload,requestId:intent.requestId}});
       if(!live(g))return false;
-      setRows(prev=>[...prev,row]);void analyze(row,g);return true;
+      intent.confirm();
+      setRows(prev=>prev.some(r=>r.log_id===row.log_id)?prev.map(r=>r.log_id===row.log_id?row:r):[...prev,row]);void analyze(row,g);return true;
     } catch {if(live(g))toast.error('Не удалось сохранить приём пищи. Повторите попытку.');return false;}
     finally {if(live(g)){adding.current=false;setPending(n=>n-1);}}
   };
-  const mutate=async(id:string,method:'PATCH'|'DELETE',body?:unknown)=>{
+  const mutate=(id:string,method:'PATCH'|'DELETE',body?:unknown):Promise<boolean>=>{
     const g=generation.current;setPending(n=>n+1);
+    let confirm!:(saved:boolean)=>void;
+    const confirmed=new Promise<boolean>(resolve=>{confirm=resolve;});
     const task=(queues.current.get(id)||Promise.resolve()).catch(()=>{}).then(async()=>{
       if(!live(g))return;
       const row=await apiFetch<FoodLogRow>(`/food-logs/${id}`,{method,body});
       if(!live(g))return;
       if(method==='DELETE')setRows(prev=>prev.filter(r=>r.log_id!==id));else apply(row,g);
-    });
+      // Close the editor on saved data; provider latency is not a save failure.
+      confirm(true);
+      if(method==='PATCH'){
+        const patch=body as {description?:string;meta?:{lightSwap?:unknown}};
+        if(patch?.description != null || patch?.meta?.lightSwap !== undefined) await runAnalysis(row,g);
+      }
+    }).catch(()=>{if(live(g))toast.error('Не удалось сохранить изменения. Повторите попытку.');})
+      .finally(()=>{if(live(g))setPending(n=>n-1);confirm(false);});
     queues.current.set(id,task);
-    try {await task;} catch {if(live(g))toast.error('Не удалось сохранить изменения. Повторите попытку.');}
-    finally {if(live(g))setPending(n=>n-1);}
+    return confirmed.then(saved=>saved&&live(g));
   };
   return {meals:rows.map(r=>r.raw_text||''),mealMeta:rows.map(r=>rowMeta(r,estimating.includes(r.log_id))),
     loading,error,analysisLimit,pending,add,patch:(id:string,body:unknown)=>mutate(id,'PATCH',body),remove:(id:string)=>mutate(id,'DELETE'),
