@@ -20,6 +20,8 @@ export interface UserProfile {
   age: number;
   height: number;
   weight: number;
+  startWeight?: number;
+  weightDate?: string | null;
   stepsPerDay: number;
   weightGainReasons: string[];
   emotionalTrigger: string;

@@ -25,6 +25,7 @@ const originalQuery = async (sql, values) => {
   return { ...result, rowCount: result.rows.length || result.affectedRows || 0 };
 };
 pool.query = originalQuery;
+pool.connect = async () => ({ query: originalQuery, release() {} });
 const { createSession } = await import('../sessions.js');
 const { default: checkins } = await import('../routes/checkins.js');
 const { default: diary } = await import('../routes/diary.js');

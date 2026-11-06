@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { deepseekChat } from '../deepseek.js';
 import { recipes, METHOD_RULES } from './estimate.js';
 import { mealFacts } from './facts.js';
+import { readWeightState } from '../weight-state.js';
 export const ANALYSIS_VERSION = 5;
 export const DAY_PROMPT = `Вы — Инга, помощник по питанию. Обращайтесь на «вы», спокойно, конкретно. Это разбор записанной части текущего дня, а не итог или оценка человека.
 Верните только JSON: {"present":[string],"attention":[string],"next":[string],"recipeIds":[string]}.
@@ -38,14 +39,15 @@ function validate(value) {
   return result;
 }
 export async function readSource(userId, date, timezone, db = pool) {
-  const [{rows:meals},{rows:[profile]}] = await Promise.all([
+  const [{rows:meals},{rows:[profile]}, weightState] = await Promise.all([
     db.query(`SELECT log_id, raw_text, meal_tag, datetime, meta FROM public.food_logs
       WHERE user_id=$1 AND datetime >= ($2::date::timestamp AT TIME ZONE $3)
       AND datetime < (($2::date + INTERVAL '1 day') AT TIME ZONE $3) ORDER BY datetime,log_id`, [userId,date,timezone]),
     db.query(`SELECT current_stage, current_weight_kg, goal_weight_kg, current_fixation_calories, equilibrium_calories
       FROM public.user_profile WHERE user_id=$1`, [userId]),
+    readWeightState(db, userId),
   ]);
-  return {date,timezone,profile:profile||{},meals};
+  return {date,timezone,profile:{...profile, current_weight_kg:weightState.weight},meals};
 }
 const running = new Map();
 export function analyzeDay(userId,date,timezone,db=pool,chat=deepseekChat) {

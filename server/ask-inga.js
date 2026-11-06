@@ -6,6 +6,7 @@ import { pool } from "./db.js";
 import { requireAuthInline as requireAuth } from "./middleware/auth.js";
 import { deepseekChat } from "./deepseek.js";
 import { ChatContextError, chatHistory, chatTimezone, currentChatDay } from './chat-context.js';
+import { readWeightState } from './weight-state.js';
 
 const TONE_DEFAULT = `Ты — Инга, тёплый и спокойный AI-помощник, нутрициолог, консультант по снижению веса по методу «Лёгкая замена».
 О себе говоришь в женском роде. К пользователю обращаешься СТРОГО на «вы», в роде, соответствующем полу.
@@ -286,6 +287,8 @@ export async function handleAskInga(req, res) {
 
     const timezone = chatTimezone(body.timezone);
     const day = await currentChatDay(pool, auth.authId, timezone);
+    // The saved measurement remains authoritative even in an older open tab.
+    ctx.weight = (await readWeightState(pool, auth.authId)).weight;
 
     const { overrides, limits, model } = await loadSettings();
     checkSize(body, limits);

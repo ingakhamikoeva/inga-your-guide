@@ -14,7 +14,9 @@ export async function isAuthenticated(): Promise<boolean> {
 
 // ============ USER PROFILE ============
 
-export async function saveUserProfile(profile: Partial<UserProfile>) {
+export type WeightState = Pick<Partial<UserProfile>, 'weight' | 'startWeight' | 'weightDate'>;
+
+export async function saveUserProfile(profile: Partial<UserProfile>, options: { recordWeight?: boolean } = {}): Promise<WeightState | void> {
   // Pass through every camelCase field the server knows about; it maps to columns.
   const body: Record<string, unknown> = {};
   const passthrough: (keyof UserProfile)[] = [
@@ -25,7 +27,12 @@ export async function saveUserProfile(profile: Partial<UserProfile>) {
   for (const k of passthrough) {
     if (profile[k] !== undefined) body[k as string] = profile[k];
   }
-  await apiFetch('/profile', { method: 'PUT', body });
+  if (profile.weight !== undefined && options.recordWeight !== false) {
+    body.recordWeight = true;
+    body.timezone = deviceTimezone();
+  }
+  const result = await apiFetch<{ weightState?: WeightState }>('/profile', { method: 'PUT', body });
+  return result.weightState;
 }
 
 export async function loadUserProfile(options: { strict?: boolean } = {}): Promise<Partial<UserProfile> | null> {
@@ -125,10 +132,11 @@ export async function saveDailyCheckin(
   if (stoolYesterday != null) body.stoolYesterday = stoolYesterday;
   if (!Object.keys(body).length) return;
 
-  await apiFetch(`/checkins/${date}`, {
+  const result = await apiFetch<{ weightState?: WeightState }>(`/checkins/${date}`, {
     method: 'PUT',
     body,
   });
+  return result.weightState;
 }
 
 export async function loadCheckins(options: { strict?: boolean } = {}): Promise<{ date: string; weight: number }[]> {

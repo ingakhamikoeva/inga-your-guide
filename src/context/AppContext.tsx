@@ -2,7 +2,8 @@ import { currentSession, subscribe, sessionSnapshot, isSessionCurrent } from '@/
 import { useAchievements } from '@/lib/achievement-client';
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport, Medal, FixationAction } from '@/lib/types';
-import { calculateAll, calculateCalorieCorridor, roundTo50 } from '@/lib/calculations';
+import { calculateAll } from '@/lib/calculations';
+import { refreshBodyCalculations, restorePlanCalculations } from '@/lib/profile-calculations';
 import {
   saveFixationAction,
   saveUserProfile,
@@ -119,11 +120,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const session = sessionSnapshot();
     if (!session.owner) throw new Error('account_changed');
     // Send only the edit; publish it locally only after the server confirms it.
-    await saveUserProfile(data);
+    const weightState = await saveUserProfile(data);
     if (!isSessionCurrent(session)) throw new Error('account_changed');
-    const nextProfile = { ...stateRef.current.profile, ...data };
-    stateRef.current = { ...stateRef.current, profile: nextProfile };
+    const nextProfile = { ...stateRef.current.profile, ...data, ...weightState };
+    nextProfile.current_weight_kg = nextProfile.weight;
+    const nextCalculations = refreshBodyCalculations(nextProfile, stateRef.current.calculations);
+    let nextWeekly = stateRef.current.weeklyData;
+    if (weightState && weightState.weightDate && weightState.weight != null) {
+      nextWeekly = [...nextWeekly.filter(entry => entry.date !== weightState.weightDate),
+        { date: weightState.weightDate, weight: weightState.weight }].sort((a, b) => a.date.localeCompare(b.date));
+      setWeeklyData(nextWeekly);
+    }
+    stateRef.current = { ...stateRef.current, profile: nextProfile, calculations: nextCalculations, weeklyData: nextWeekly };
     setProfile(nextProfile);
+    setCalculations(nextCalculations);
   }, []);
 
   const performFixationAction = useCallback(async (action: FixationAction) => {
@@ -172,11 +182,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addWeightEntry = useCallback(async (date: string, weight?: number, metrics?: {sleepHours?:number;stepsYesterday?:number;stoolYesterday?:boolean|null}) => {
-    const userId = currentSession()?.user.id;
-    if (!userId) throw new Error('account_changed');
-    await saveDailyCheckin(date, weight, metrics?.sleepHours, metrics?.stepsYesterday, metrics?.stoolYesterday);
-    if (currentSession()?.user.id !== userId) throw new Error('account_changed');
-    if (weight != null) setWeeklyData(prev => [...prev.filter(entry => entry.date !== date), { date, weight }]);
+    const session = sessionSnapshot();
+    if (!session.owner) throw new Error('account_changed');
+    const weightState = await saveDailyCheckin(date, weight, metrics?.sleepHours, metrics?.stepsYesterday, metrics?.stoolYesterday);
+    if (!isSessionCurrent(session)) throw new Error('account_changed');
+    if (weight != null) {
+      const nextWeekly = [...stateRef.current.weeklyData.filter(entry => entry.date !== date), { date, weight }]
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const latest = nextWeekly[nextWeekly.length - 1];
+      const nextProfile = {
+        ...stateRef.current.profile,
+        startWeight: stateRef.current.profile.startWeight ?? stateRef.current.profile.weight ?? nextWeekly[0].weight,
+        weight: latest.weight, weightDate: latest.date,
+        ...weightState,
+      };
+      nextProfile.current_weight_kg = nextProfile.weight;
+      const nextCalculations = refreshBodyCalculations(nextProfile, stateRef.current.calculations);
+      stateRef.current = { ...stateRef.current, profile: nextProfile, calculations: nextCalculations, weeklyData: nextWeekly };
+      setWeeklyData(nextWeekly);
+      setProfile(nextProfile);
+      setCalculations(nextCalculations);
+    }
   }, []);
 
   // Full sync to DB (called manually or on key events)
@@ -187,7 +213,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     check();
     const { profile: currentProfile, calculations: currentCalculations } = stateRef.current;
-    await saveUserProfile(currentProfile);
+    await saveUserProfile(currentProfile, { recordWeight: false });
     check();
     // RouteReady's effect may not have rendered its preview yet.
     const plan = currentCalculations || (currentProfile.height && currentProfile.weight && currentProfile.age
@@ -262,6 +288,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       currentStage: dbProfile.currentStage ?? 'loss',
       fixationProgress: dbProfile.fixationProgress ?? null,
       goalWeight: dbProfile.goalWeight,
+      weight: dbProfile.weight,
+      current_weight_kg: dbProfile.weight,
+      startWeight: dbProfile.startWeight,
+      weightDate: dbProfile.weightDate,
       goal_weight_kg: dbProfile.goalWeight,
       // A loaded profile is authoritative, including an absent sex.
       ...(dbProfile ? { gender: dbProfile.gender === 'male' || dbProfile.gender === 'female' ? dbProfile.gender : undefined } : {}),
@@ -287,12 +317,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (merged.height && merged.weight && merged.age) {
-      const calc = calculateAll(merged);
-      // Apply the same corridor rule to a saved maintenance-calorie plan.
-      if (dbPlan?.calorieTarget) {
-        calc.totalCalories = roundTo50(dbPlan.calorieTarget);
-        Object.assign(calc, calculateCalorieCorridor(dbPlan.calorieTarget));
-      }
+      const calc = restorePlanCalculations(merged, dbPlan);
       setCalculations(calc);
     }
 

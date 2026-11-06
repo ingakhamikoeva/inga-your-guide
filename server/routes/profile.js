@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { pool, upsert } from "./_helpers.js";
+import { readWeightState, syncWeightState, measurementDate } from '../weight-state.js';
 
-import { requireAccess } from '../access.js';
+import { requireAccess, getAccess } from '../access.js';
 import { transitionFixation, FixationError } from '../fixation/flow.js';
 
 const r = Router();
@@ -13,7 +14,6 @@ const TO_DB = {
   gender: "sex",
   age: "age",
   height: "height_cm",
-  weight: "current_weight_kg",     // also updates start_weight_kg on first set
   goalWeight: "goal_weight_kg",
   waist: "waist_cm",
   hips: "hips_cm",
@@ -24,7 +24,7 @@ const TO_DB = {
   kgToLose: "kg_to_lose",
 };
 
-function rowToProfile(p, u) {
+function rowToProfile(p, u, weightState) {
   if (!p && !u) return null;
   return {
     fixationProgress: p?.fixation_progress ?? null,
@@ -33,6 +33,8 @@ function rowToProfile(p, u) {
     age: p?.age ?? undefined,
     height: p?.height_cm ?? undefined,
     weight: p?.current_weight_kg != null ? Number(p.current_weight_kg) : undefined,
+    startWeight: p?.start_weight_kg != null ? Number(p.start_weight_kg) : undefined,
+    ...weightState,
     goalWeight: p?.goal_weight_kg != null ? Number(p.goal_weight_kg) : undefined,
     waist: p?.waist_cm != null ? Number(p.waist_cm) : undefined,
     hips: p?.hips_cm != null ? Number(p.hips_cm) : undefined,
@@ -54,11 +56,12 @@ function rowToProfile(p, u) {
 
 r.get("/", async (req, res) => {
   try {
-    const [u, p] = await Promise.all([
+    const [u, p, weightState] = await Promise.all([
       pool.query(`SELECT name FROM public.users WHERE user_id = $1`, [req.userId]),
       pool.query(`SELECT * FROM public.user_profile WHERE user_id = $1`, [req.userId]),
+      readWeightState(pool, req.userId),
     ]);
-    res.json(rowToProfile(p.rows[0], u.rows[0]) ?? null);
+    res.json(rowToProfile(p.rows[0], u.rows[0], weightState) ?? null);
   } catch (e) {
     console.error("GET /profile:", e);
     res.status(500).json({ error: "load_failed" });
@@ -96,6 +99,14 @@ r.put("/", async (req, res) => {
   const has = key => Object.prototype.hasOwnProperty.call(body, key);
   const asNumber = value => (typeof value === "number" || (typeof value === "string" && value.trim()))
     ? Number(value) : NaN;
+  if (has('weight') && (typeof body.weight !== 'number' || !Number.isFinite(body.weight) || body.weight <= 0 || body.weight > 999.9)) {
+    return res.status(400).json({ error: 'invalid_weight' });
+  }
+  let weightDate;
+  if (has('weight') && body.recordWeight === true) {
+    try { weightDate = measurementDate(body.timezone); }
+    catch { return res.status(400).json({ error: 'invalid_timezone' }); }
+  }
   let client;
   try {
     client = await pool.connect();
@@ -111,6 +122,7 @@ r.put("/", async (req, res) => {
       [req.userId]
     );
     const previous = existing.rows[0];
+    const beforeWeight = await readWeightState(client, req.userId);
     const row = {};
     for (const [camel, col] of Object.entries(TO_DB)) {
       if (has(camel)) row[col] = body[camel];
@@ -141,14 +153,31 @@ r.put("/", async (req, res) => {
       const trimmed = String(body.name ?? "").trim();
       await client.query("UPDATE public.users SET name = $1 WHERE user_id = $2", [trimmed || null, req.userId]);
     }
-    if (has("weight") && (!previous || previous.start_weight_kg == null)) {
-      row.start_weight_kg = body.weight;
+    if (has('weight')) {
+      // A full/legacy profile sync must not replay a stale weight over the diary.
+      // Explicit profile edits join the same daily measurement history once it exists.
+      if (beforeWeight.weightDate) {
+        if (body.recordWeight === true) {
+          const access = await getAccess(req.userId, client);
+          if (!access.active) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'access_required', access });
+          }
+          await upsert('public.daily_checkins', ['user_id', 'date'], [req.userId, weightDate], {
+            weight_kg: body.weight, weight_recorded_at: new Date(),
+          }, client);
+        }
+      } else {
+        row.current_weight_kg = body.weight;
+      }
+      if (previous?.start_weight_kg == null) row.start_weight_kg = beforeWeight.startWeight ?? body.weight;
     }
     if (Object.keys(row).length) {
       await upsert("public.user_profile", ["user_id"], [req.userId], row, client);
     }
+    const weightState = await syncWeightState(client, req.userId);
     await client.query("COMMIT");
-    res.json({ ok: true });
+    res.json({ ok: true, weightState });
   } catch (e) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     console.error("PUT /profile:", e);

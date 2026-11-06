@@ -2,6 +2,7 @@ import { requireAccessForWrite } from '../access.js';
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { pool, upsert } from "./_helpers.js";
+import { syncWeightState } from '../weight-state.js';
 
 const r = Router();
 r.use(requireAuth);
@@ -70,17 +71,31 @@ r.put("/:date", async (req, res) => {
     }
     row.weight_recorded_at = new Date();
   }
+  let client;
   try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const user = await client.query('SELECT user_id FROM public.users WHERE user_id=$1 FOR UPDATE', [req.userId]);
+    if (!user.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'user_not_found' });
+    }
     await upsert(
       "public.daily_checkins",
       ["user_id", "date"],
       [req.userId, date],
-      row
+      row,
+      client
     );
-    res.json({ ok: true });
+    const weightState = row.weight_kg !== undefined ? await syncWeightState(client, req.userId) : undefined;
+    await client.query('COMMIT');
+    res.json({ ok: true, weightState });
   } catch (e) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
     console.error("PUT /checkins/:date:", e);
     res.status(500).json({ error: "save_failed" });
+  } finally {
+    client?.release();
   }
 });
 

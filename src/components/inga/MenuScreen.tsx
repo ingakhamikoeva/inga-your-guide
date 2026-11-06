@@ -2358,7 +2358,6 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
       case 'height': patch.height = Math.round(num); break;
       case 'weight':
         patch.weight = num;
-        (patch as any).current_weight_kg = num;
         break;
       case 'goal':
         patch.goalWeight = num;
@@ -2395,10 +2394,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
   };
 
   // ---------- derived ----------
-  const startWeight =
-    (profile as any).start_weight_kg ??
-    (profile as any).current_weight_kg ??
-    profile.weight;
+  const startWeight = profile.startWeight ?? profile.weight;
   const currentWeight = profile.weight;
   const goalWeight = profile.goalWeight ?? (profile as any).goal_weight_kg;
 
