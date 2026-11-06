@@ -5,8 +5,11 @@ import { detectStage } from '@/lib/soft-swap';
 import { withName, hasName } from '@/lib/user-name';
 import { askInga, classifyRoute } from '@/lib/ai-provider';
 import { VoiceInput } from './VoiceInput';
+import { sessionSnapshot, isSessionCurrent, subscribe } from '@/lib/auth-storage';
+import { deviceTimezone } from '@/lib/achievement-client';
+import { readConversation, saveConversation, conversationHistory, type ChatMessage } from '@/lib/chat-conversation';
 
-type Msg = { role: 'user' | 'assistant'; content: string };
+type Msg = ChatMessage;
 
 // Symptom detection used to flag safety chat events.
 const SAFETY_HINT = /(обморок|предобморок|сильная слабость|головокруж|кружится голова|голова кружится|темнеет в глазах|тошнит|тошнота|боль в груди|рвота|вызвать рвоту|хочу голодать)/i;
@@ -24,18 +27,16 @@ function extractChatEvent(text: string): { type: string; summary: string } | nul
 }
 
 export function ChatScreen() {
-  const { setStep, profile, calculations, dailyReports, weeklyData } = useApp();
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const { setStep, profile, calculations } = useApp();
+  const owner = useRef(sessionSnapshot());
+  const [messages, setMessages] = useState<Msg[]>(() => readConversation(owner.current));
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const today = new Date().toISOString().slice(0, 10);
-  const todayReport = dailyReports.find(r => r.date === today);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const yesterdayReport = dailyReports.find(r => r.date === yesterday);
+  const requestVersion = useRef(0);
+  const busy = useRef(false);
   const stage = detectStage(profile.weight, profile.goalWeight, profile.currentStage);
 
   useEffect(() => {
@@ -50,12 +51,26 @@ export function ChatScreen() {
   }, []);
 
   useEffect(() => {
+    const unsubscribe = subscribe(() => {
+      if (!isSessionCurrent(owner.current)) {
+        requestVersion.current++;
+        busy.current = false;
+        setMessages([]); setInput(''); setError(null); setLoading(false);
+      }
+    });
+    return () => { requestVersion.current++; unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
   const send = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || loading) return;
+    if (!trimmed || busy.current || !owner.current.owner || !isSessionCurrent(owner.current)) return;
+    busy.current = true;
+    const version = ++requestVersion.current;
+    const current = () => version === requestVersion.current && isSessionCurrent(owner.current);
     setError(null);
 
     const userMsg: Msg = { role: 'user', content: trimmed };
@@ -88,45 +103,43 @@ export function ChatScreen() {
           : undefined,
     };
 
-    const now = new Date();
-    const partOfDay = (h => h < 6 ? 'ночь' : h < 12 ? 'утро' : h < 18 ? 'день' : 'вечер')(now.getHours());
-    const dayContext = {
-      todayMeals: todayReport?.meals.map(m => m.description) ?? [],
-      sleepHours: todayReport?.sleepHours,
-      stepsYesterday: todayReport?.stepsYesterday,
-      yesterdayConclusion: yesterdayReport?.hardestPart,
-      now: `${partOfDay}, ${now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`,
-    };
-
     const route = classifyRoute(trimmed, userContext);
     const assistantIndex = nextMessages.length;
     setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
     try {
-      const { answer } = await askInga({
+      const { answer, ok } = await askInga({
         message: trimmed,
         routeType: route,
         userContext,
-        dayContext,
+        timezone: deviceTimezone(),
+        history: conversationHistory(messages),
       });
+      if (!current()) return;
 
       const display = stripMarkers(answer);
-      setMessages(prev => prev.map((m, i) => i === assistantIndex ? { ...m, content: display } : m));
+      const completed: Msg[] = [...messages, { ...userMsg, history: ok }, { role: 'assistant' as const, content: display, history: ok }].slice(-40);
+      saveConversation(owner.current, completed);
+      setMessages(completed);
 
       // Log a safety chat event when symptoms are detected.
-      if (route === 'safety' || SAFETY_HINT.test(trimmed)) {
+      if (ok && (route === 'safety' || SAFETY_HINT.test(trimmed))) {
         saveChatEvent('safety', trimmed.slice(0, 200)).catch(() => {});
       }
 
       const event = extractChatEvent(answer);
-      if (event) saveChatEvent(event.type, event.summary).catch(() => {});
+      if (ok && event) saveChatEvent(event.type, event.summary).catch(() => {});
     } catch (e) {
-      console.error(e);
+      if (!current()) return;
+      console.error('chat request failed');
       setError('Инга сейчас временно не отвечает. Попробуйте ещё раз чуть позже.');
       setMessages(prev => prev.slice(0, assistantIndex));
     } finally {
-      setLoading(false);
-      requestAnimationFrame(() => inputRef.current?.focus());
+      if (current()) {
+        busy.current = false;
+        setLoading(false);
+        requestAnimationFrame(() => inputRef.current?.focus());
+      }
     }
   };
 

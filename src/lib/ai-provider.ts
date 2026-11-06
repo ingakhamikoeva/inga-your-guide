@@ -41,11 +41,14 @@ export interface AskIngaInput {
   routeType?: RouteType;
   userContext?: AskIngaUserContext;
   dayContext?: AskIngaDayContext;
+  timezone?: string;
+  history?: { role: 'user' | 'assistant'; content: string }[];
 }
 
 export interface AskIngaResult {
   answer: string;
   route: RouteType;
+  ok?: boolean;
 }
 
 const FALLBACK_MESSAGE = 'Инга сейчас временно не отвечает. Попробуйте ещё раз чуть позже.';
@@ -81,16 +84,18 @@ export async function askInga(input: AskIngaInput): Promise<AskIngaResult> {
       routeType,
       userContext: input.userContext ?? {},
       dayContext: input.dayContext ?? {},
+      timezone: input.timezone,
+      history: input.history,
     });
 
     if (error || !data || typeof (data as { answer?: unknown }).answer !== 'string') {
       const userMessage = (data as { userMessage?: string } | null)?.userMessage;
-      return { answer: userMessage || FALLBACK_MESSAGE, route: routeType };
+      return { answer: userMessage || FALLBACK_MESSAGE, route: routeType, ok: false };
     }
 
-    return { answer: (data as { answer: string }).answer, route: routeType };
+    return { answer: (data as { answer: string }).answer, route: routeType, ok: true };
   } catch (e) {
-    console.error('askInga failed:', e);
-    return { answer: FALLBACK_MESSAGE, route: routeType };
+    console.error('askInga failed');
+    return { answer: FALLBACK_MESSAGE, route: routeType, ok: false };
   }
 }
