@@ -1234,6 +1234,43 @@ export function MenuScreen() {
     );
   }
 
+  if (section === 'how-to' && nutrientSection === 'Меню30') {
+    return (
+      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
+        <div className="w-full max-w-md">
+          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
+          <h2 className="text-2xl font-bold mb-2">Примеры меню на 30 дней</h2>
+          <p className="text-sm text-muted-foreground mb-6">Примерный рацион по методу «Лёгкая замена». Порции — по методу тарелки или ладони.</p>
+
+          <div className="space-y-3 mb-8">
+            {[
+              { day: 'День 1', meals: ['Завтрак: омлет из 3 белков + греческий йогурт 0% + яблоко', 'Перекус: творог 0% с ягодами', 'Обед: грудка курицы + гречка + салат из свежих овощей', 'Перекус: кефир 1%', 'Ужин: рыба (треска) + тушёные овощи', 'Метаболическая точка: грудка + огурец'] },
+              { day: 'День 2', meals: ['Завтрак: творог 0% с ягодами + кофе', 'Перекус: греческий йогурт 2% + груша', 'Обед: индейка + бурый рис + капустный салат', 'Перекус: кефир + яблоко', 'Ужин: тунец + стручковая фасоль', 'Метаболическая точка: белковый омлет + помидор'] },
+              { day: 'День 3', meals: ['Завтрак: белковый омлет с грибами + огурец', 'Перекус: творог 0% + персик', 'Обед: грудка + чечевица + салат с зеленью', 'Перекус: греческий йогурт', 'Ужин: кальмары + брокколи на пару', 'Метаболическая точка: грудка + листья салата'] },
+              { day: 'День 4', meals: ['Завтрак: творог 0% с яблоком и корицей', 'Перекус: кефир 1%', 'Обед: говядина постная + гречка + свежий перец', 'Перекус: греческий йогурт + ягоды', 'Ужин: горбуша + огурцы', 'Метаболическая точка: белковый омлет + капуста'] },
+              { day: 'День 5', meals: ['Завтрак: омлет из 2 яиц + 1 белок + помидор', 'Перекус: творог 0% + клубника', 'Обед: креветки + бурый рис + квашеная капуста', 'Перекус: кефир + яблоко', 'Ужин: треска + тушёный кабачок', 'Метаболическая точка: грудка индейки + зелень'] },
+            ].map(item => (
+              <div key={item.day} className="inga-card">
+                <p className="text-sm font-semibold mb-2">{item.day}</p>
+                <div className="space-y-1">
+                  {item.meals.map(meal => (
+                    <div key={meal} className="flex gap-2 items-start">
+                      <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                      <span className="text-xs text-muted-foreground leading-relaxed">{meal}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="inga-card opacity-60">
+              <p className="text-xs text-muted-foreground text-center">Дни 6–30 скоро появятся здесь</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (section === 'how-to') {
     return (
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
@@ -2046,43 +2083,6 @@ export function MenuScreen() {
               <p className="text-xs text-muted-foreground">Скоро появятся новые материалы для скачивания.</p>
             </div>
 
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (section === 'how-to' && nutrientSection === 'Меню30') {
-    return (
-      <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
-        <div className="w-full max-w-md">
-          <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
-          <h2 className="text-2xl font-bold mb-2">Примеры меню на 30 дней</h2>
-          <p className="text-sm text-muted-foreground mb-6">Примерный рацион по методу «Лёгкая замена». Порции — по методу тарелки или ладони.</p>
-
-          <div className="space-y-3 mb-8">
-            {[
-              { day: 'День 1', meals: ['Завтрак: омлет из 3 белков + греческий йогурт 0% + яблоко', 'Перекус: творог 0% с ягодами', 'Обед: грудка курицы + гречка + салат из свежих овощей', 'Перекус: кефир 1%', 'Ужин: рыба (треска) + тушёные овощи', 'Метаболическая точка: грудка + огурец'] },
-              { day: 'День 2', meals: ['Завтрак: творог 0% с ягодами + кофе', 'Перекус: греческий йогурт 2% + груша', 'Обед: индейка + бурый рис + капустный салат', 'Перекус: кефир + яблоко', 'Ужин: тунец + стручковая фасоль', 'Метаболическая точка: белковый омлет + помидор'] },
-              { day: 'День 3', meals: ['Завтрак: белковый омлет с грибами + огурец', 'Перекус: творог 0% + персик', 'Обед: грудка + чечевица + салат с зеленью', 'Перекус: греческий йогурт', 'Ужин: кальмары + брокколи на пару', 'Метаболическая точка: грудка + листья салата'] },
-              { day: 'День 4', meals: ['Завтрак: творог 0% с яблоком и корицей', 'Перекус: кефир 1%', 'Обед: говядина постная + гречка + свежий перец', 'Перекус: греческий йогурт + ягоды', 'Ужин: горбуша + огурцы', 'Метаболическая точка: белковый омлет + капуста'] },
-              { day: 'День 5', meals: ['Завтрак: омлет из 2 яиц + 1 белок + помидор', 'Перекус: творог 0% + клубника', 'Обед: креветки + бурый рис + квашеная капуста', 'Перекус: кефир + яблоко', 'Ужин: треска + тушёный кабачок', 'Метаболическая точка: грудка индейки + зелень'] },
-            ].map(item => (
-              <div key={item.day} className="inga-card">
-                <p className="text-sm font-semibold mb-2">{item.day}</p>
-                <div className="space-y-1">
-                  {item.meals.map(meal => (
-                    <div key={meal} className="flex gap-2 items-start">
-                      <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
-                      <span className="text-xs text-muted-foreground leading-relaxed">{meal}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <div className="inga-card opacity-60">
-              <p className="text-xs text-muted-foreground text-center">Дни 6–30 скоро появятся здесь</p>
-            </div>
           </div>
         </div>
       </div>

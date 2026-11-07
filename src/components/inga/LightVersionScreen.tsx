@@ -12,7 +12,7 @@ import {
 
 interface Props {
   onBack: () => void;
-  onOpenRecipe: (section: 'breakfasts' | 'sweet', recipeId: string) => void;
+  onOpenRecipe: (section: LightRecipeEntry['recipeSection'], recipeId: string) => void;
 }
 
 // Логируем каждый поиск: список «искали, но не нашли» — план будущих рецептов Инги.

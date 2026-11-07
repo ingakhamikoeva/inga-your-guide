@@ -1,19 +1,13 @@
 # --- build stage ---
-FROM node:20-alpine AS build
+FROM node:22.23.4-alpine AS build
 WORKDIR /app
 
 # The frontend only needs to know where the Node API lives.
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-COPY package.json bun.lockb* package-lock.json* ./
-RUN if [ -f bun.lockb ]; then \
-      npm i -g bun && bun install; \
-    elif [ -f package-lock.json ]; then \
-      npm ci; \
-    else \
-      npm install; \
-    fi
+COPY package.json package-lock.json ./
+RUN npm ci --include=dev --no-audit --no-fund
 
 COPY . .
 RUN npm run build
