@@ -12,7 +12,7 @@ import { useApp } from '@/context/AppContext';
 import type { UserProfile, AppStep } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles, LockKeyhole } from 'lucide-react';
-import { LightVersionScreen } from './LightVersionScreen';
+import { LightVersionScreen, type LightVersionSearchState } from './LightVersionScreen';
 import { ProgressPhotosSection } from './ProgressPhotosSection';
 import { localDay } from '@/lib/achievement-client';
 import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
@@ -159,6 +159,7 @@ export function MenuScreen() {
   const [recipeSection, setRecipeSection] = useState<string | null>(null);
   const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [activeRecipe, setActiveRecipe] = useState<string | null>(null);
+  const [lightVersionSearch, setLightVersionSearch] = useState<LightVersionSearchState | null>(null);
   // Универсальное «откуда пришли»: если в MenuScreen попали по ссылке извне
   // (карточка дня программы, «Показать лёгкие версии» и т.п.) — первое же
   // нажатие «Назад» на любом уровне вернёт туда, а не в дефолтный список.
@@ -179,6 +180,16 @@ export function MenuScreen() {
       setStep(target);
     } else {
       defaultAction();
+    }
+  };
+
+  const goBackFromRecipe = () => {
+    if (lightVersionSearch) {
+      setActiveRecipe(null);
+      setRecipeSection(null);
+      setSection('light-version');
+    } else {
+      goBack(() => setActiveRecipe(null));
     }
   };
 
@@ -1481,7 +1492,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => goBack(() => setActiveRecipe(null))} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <button onClick={goBackFromRecipe} className="text-base text-muted-foreground mb-4 block">← Назад</button>
             <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
             <div className="mb-4">
               <h2 className="text-2xl font-bold">{recipe.name}</h2>
@@ -1545,7 +1556,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => goBack(() => setActiveRecipe(null))} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <button onClick={goBackFromRecipe} className="text-base text-muted-foreground mb-4 block">← Назад</button>
             <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
             <div className="mb-4">
               <h2 className="text-2xl font-bold">{recipe.name}</h2>
@@ -1632,7 +1643,7 @@ export function MenuScreen() {
       return (
         <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
           <div className="w-full max-w-md">
-            <button onClick={() => goBack(() => setActiveRecipe(null))} className="text-base text-muted-foreground mb-4 block">← Назад</button>
+            <button onClick={goBackFromRecipe} className="text-base text-muted-foreground mb-4 block">← Назад</button>
             {recipe.image ? (
               <img src={recipe.image} alt={recipe.name} className="w-full rounded-2xl mb-4 object-cover" style={{ maxHeight: 240 }} />
             ) : (
@@ -2092,8 +2103,13 @@ export function MenuScreen() {
   if (section === 'light-version') {
     return (
       <LightVersionScreen
-        onBack={() => setSection('main')}
-        onOpenRecipe={(recipeSec, recipeId) => {
+        initialSearch={lightVersionSearch ?? undefined}
+        onBack={() => {
+          setLightVersionSearch(null);
+          goBack(() => setSection('main'));
+        }}
+        onOpenRecipe={(recipeSec, recipeId, search) => {
+          setLightVersionSearch(search);
           setSection('recipes');
           setRecipeSection(recipeSec);
           setActiveRecipe(recipeId);

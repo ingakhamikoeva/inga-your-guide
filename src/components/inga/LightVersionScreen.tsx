@@ -10,9 +10,15 @@ import {
   LightSearchResult,
 } from '@/lib/light-version';
 
+export interface LightVersionSearchState {
+  query: string;
+  result: LightSearchResult | null;
+}
+
 interface Props {
   onBack: () => void;
-  onOpenRecipe: (section: LightRecipeEntry['recipeSection'], recipeId: string) => void;
+  initialSearch?: LightVersionSearchState;
+  onOpenRecipe: (section: LightRecipeEntry['recipeSection'], recipeId: string, search: LightVersionSearchState) => void;
 }
 
 // Логируем каждый поиск: список «искали, но не нашли» — план будущих рецептов Инги.
@@ -23,9 +29,9 @@ function logSearch(query: string, resultKind: string) {
   }).catch(() => { /* лог не должен ломать поиск */ });
 }
 
-export function LightVersionScreen({ onBack, onOpenRecipe }: Props) {
-  const [query, setQuery] = useState('');
-  const [result, setResult] = useState<LightSearchResult | null>(null);
+export function LightVersionScreen({ onBack, onOpenRecipe, initialSearch }: Props) {
+  const [query, setQuery] = useState(initialSearch?.query ?? '');
+  const [result, setResult] = useState<LightSearchResult | null>(initialSearch?.result ?? null);
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -55,7 +61,7 @@ export function LightVersionScreen({ onBack, onOpenRecipe }: Props) {
       return (
         <button
           key={entry.recipeId}
-          onClick={() => onOpenRecipe(entry.recipeSection, entry.recipeId)}
+          onClick={() => onOpenRecipe(entry.recipeSection, entry.recipeId, { query, result })}
           className="text-left bg-card border border-border rounded-2xl px-3.5 py-3 hover:border-primary/60 active:scale-[0.99] transition-all"
         >
           <p className="font-semibold text-sm">«{entry.name}»</p>
@@ -88,7 +94,7 @@ export function LightVersionScreen({ onBack, onOpenRecipe }: Props) {
           {timesLighter(entry.classicKcal, entry.lightKcal).replace(/^в/, 'В')}{entry.tagline ? ` — ${entry.tagline}` : ''}
         </p>
         <button
-          onClick={() => onOpenRecipe(entry.recipeSection, entry.recipeId)}
+          onClick={() => onOpenRecipe(entry.recipeSection, entry.recipeId, { query, result })}
           className="inga-btn-primary w-full"
         >
           Открыть рецепт
