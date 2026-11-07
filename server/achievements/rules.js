@@ -1,10 +1,6 @@
 // Product rules, not medical thresholds. All inputs come from saved DB rows.
-export const RECIPE_IDS = new Set([
-  'oatmeal-plain', 'oatmeal', 'pate', 'zucchini', 'bliny', 'varenie',
-  'shaurma', 'taco', 'pirozhki', 'nezhnost', 'nevesimost', 'oblaka',
-  'slivovoe', 'grusha', 'milfey', 'morozhenoe', 'maffiny', 'sharlotka',
-  'okroshka', 'turkey-cutlets', 'fried-potatoes-mushrooms', 'pizza', 'cappuccino',
-]);
+import { recipeIds as RECIPE_IDS } from '../nutrition/recipe-catalog.js';
+export { RECIPE_IDS };
 export const STREAKS = [7, 14, 21, 30, 60, 90];
 export const MAINTENANCE = [[1, 'Практик'], [2, 'Мастер'], [3, 'Эксперт'], [6, 'Легенда']];
 const catalog = {};

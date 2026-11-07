@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs';
 import { deepseekChat } from '../deepseek.js';
-export const recipes = JSON.parse(readFileSync(new URL('./recipes.json', import.meta.url), 'utf8'));
+import { recipes } from './recipe-catalog.js';
+export { recipes } from './recipe-catalog.js';
 export const ESTIMATE_VERSION = 3;
 export const METHOD_RULES = `Отметки «Белок», «Углеводы» и «Клетчатка» обозначают группы продуктов метода «Легче», а не наличие любого количества нутриента.
 Белок: мясо, птица, рыба, морепродукты, яйца и другие самостоятельные белковые продукты. Куриный шницель — белковое блюдо, даже если размер порции не указан. Небольшое количество яйца или молока в тесте само по себе не означает отдельную белковую порцию.
