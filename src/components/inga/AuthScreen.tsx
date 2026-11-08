@@ -8,7 +8,7 @@ import girlImg from '@/assets/legche-girl.png';
 type AuthMode = 'login' | 'signup';
 
 export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
-  const { setStep, hydrateFromDb, resetLocalState } = useApp();
+  const { setStep, resetLocalState } = useApp();
   const [mode, setMode] = useState<AuthMode>(initialMode ?? 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,8 +79,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
           password,
         });
         if (signInError) throw signInError;
-        await hydrateFromDb();
-        // hydrateFromDb уже вызывает setStep внутри себя
+        // AppFlow loads the new session after the account contexts remount.
       }
     } catch (err: any) {
       setError(err.message || 'Произошла ошибка');

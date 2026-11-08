@@ -846,7 +846,7 @@ export function DailyScreen() {
                   </button>
                 ))}
               </div>
-              <button onClick={() => setWaterCount(c => c + 1)} className="min-w-[44px] min-h-[44px] rounded-full bg-[#B84300] text-white text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
+              <button onClick={() => setWaterCount(c => c + 1)} className="min-w-[44px] min-h-[44px] rounded-full bg-primary text-[#382318] text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
               <span className="text-sm font-semibold tabular-nums">{waterCount}/6</span>
             </div>
 

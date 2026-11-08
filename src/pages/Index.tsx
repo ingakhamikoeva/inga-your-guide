@@ -24,9 +24,13 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
   const [isAuthed, setIsAuthed] = useState(false);
   const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const hydration = useRef(0);
+  // Index remounts this flow for every login/logout. The departing flow must
+  // not load the incoming account before React processes that remount.
+  const ownerSession = useRef(sessionSnapshot());
   const started = useRef(false);
 
   const loadProfile = useCallback(async () => {
+    if (!isSessionCurrent(ownerSession.current)) return;
     const request = ++hydration.current;
     const session = sessionSnapshot();
     setLoadStatus('loading');
@@ -41,7 +45,7 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
   useEffect(() => {
     let active = true;
     const handleAuth = (authed: boolean) => {
-      if (!active) return;
+      if (!active || !isSessionCurrent(ownerSession.current)) return;
       setIsAuthed(authed);
       setAuthReady(true);
       if (!authed) {

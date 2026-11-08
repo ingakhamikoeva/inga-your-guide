@@ -27,13 +27,14 @@ for (const initialMode of ['login', 'signup'] as const) {
   });
 }
 
-test('I7: login submits unchanged credentials and loads saved profile', async () => {
+test('I7: login submits unchanged credentials and leaves hydration to the session flow', async () => {
   vi.mocked(auth.signInWithPassword).mockResolvedValue({ data: { user: null, session: null }, error: null });
   render(<AuthScreen initialMode="login" />);
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'i7@example.invalid' } });
   fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'synthetic-password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
-  await waitFor(() => expect(app.hydrateFromDb).toHaveBeenCalledOnce());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Войти' })).toBeEnabled());
+  expect(app.hydrateFromDb).not.toHaveBeenCalled();
   expect(auth.signInWithPassword).toHaveBeenCalledWith({ email: 'i7@example.invalid', password: 'synthetic-password' });
 });
 

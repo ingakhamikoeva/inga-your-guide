@@ -125,7 +125,7 @@
   }
 
   .inga-input {
-    @apply w-full rounded-xl border border-input bg-background px-4 transition-colors focus:outline-none focus:ring-2 focus:ring-ring;
+    @apply w-full rounded-xl border border-input bg-background px-4 transition-colors;
     font-size: 17px;
     min-height: 52px;
     padding-top: 0.75rem;
@@ -139,7 +139,7 @@
   }
 
   .inga-btn-primary {
-    @apply inga-btn bg-[#B84300] text-white hover:bg-[#9F3900] shadow-md;
+    @apply inga-btn bg-primary text-[#382318] hover:bg-[#FF7A29] shadow-md;
   }
 
   .inga-btn-secondary {
@@ -147,7 +147,7 @@
   }
 
   .inga-btn-outline {
-    @apply inga-btn border-2 border-primary text-[#A63B00] hover:bg-[#B84300] hover:text-white;
+    @apply inga-btn border-2 border-primary text-[#A63B00] hover:bg-primary hover:text-[#382318];
   }
 
   .inga-chip {
