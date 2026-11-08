@@ -139,7 +139,7 @@
   }
 
   .inga-btn-primary {
-    @apply inga-btn bg-primary text-primary-foreground hover:brightness-110 shadow-md;
+    @apply inga-btn bg-[#B84300] text-white hover:bg-[#9F3900] shadow-md;
   }
 
   .inga-btn-secondary {
@@ -147,7 +147,7 @@
   }
 
   .inga-btn-outline {
-    @apply inga-btn border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground;
+    @apply inga-btn border-2 border-primary text-[#A63B00] hover:bg-[#B84300] hover:text-white;
   }
 
   .inga-chip {
@@ -190,4 +190,10 @@
     max-height: 100vh;
     max-height: 100dvh;
   }
+}
+
+/* A consistent keyboard focus indicator, including small icon controls. */
+:is(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid #601645;
+  outline-offset: 3px;
 }

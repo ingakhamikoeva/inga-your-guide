@@ -1,7 +1,7 @@
 import { DIARY_AI_LIMIT_MESSAGE } from '@/lib/request-limits';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { MealCard, mealPillStyle } from './MealCard';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
 import { mealFacts } from '../../../server/nutrition/facts.js';
@@ -825,188 +825,28 @@ export function DailyScreen() {
 
 
 
-          const pillStyle = (active: boolean, kind: 'protein' | 'carbs' | 'fiber') => {
-            if (!active) return { background: '#F7F2EE', color: '#8A7A70', border: '1px solid #E5DDD8' };
-            if (kind === 'protein') return { background: '#F9EDEA', color: '#CF7B5A', border: '1px solid #CF7B5A' };
-            if (kind === 'carbs') return { background: '#FAF4E5', color: '#C49A3E', border: '1px solid #C49A3E' };
-            return { background: '#EDF5F0', color: '#5E9E72', border: '1px solid #5E9E72' };
+          const mealCardProps = {
+            pending: diary.pending > 0,
+            editingTimeIdx, setEditingTimeIdx, updateMealTime,
+            editingProteinIdx, setEditingProteinIdx, editingProteinValue, setEditingProteinValue,
+            saveManualProtein, toggleMealFlag, setMealPortion,
+            onEditMeal: (id: string, description: string) => { setEditingMealId(id); setEditingText(description); },
+            onDeleteMeal: setConfirmDeleteIndex,
           };
-
-          const MealCard = ({ m, hideCarbs = false }: { m: typeof regular[number]; hideCarbs?: boolean }) => (
-            <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <span className="font-semibold text-sm flex items-center gap-1">
-                  <span>{m.name}</span>
-                  <span style={{ color: '#8A7A70' }}>·</span>
-                  {editingTimeIdx === m.i ? (
-                    <input
-                      type="time"
-                      autoFocus
-                      value={m.time}
-                      onChange={e => updateMealTime(m.i, e.target.value)}
-                      onBlur={() => setEditingTimeIdx(null)}
-                      onKeyDown={e => { if (e.key === 'Enter') setEditingTimeIdx(null); }}
-                      className="meal-time-input"
-                      style={{
-                        color: '#6A5A50',
-                        background: 'transparent',
-                        border: '1px solid #FF6200',
-                        borderRadius: 6,
-                        padding: '1px 4px',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        outline: 'none',
-                      }}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={diary.pending>0} onClick={() => setEditingTimeIdx(m.i)}
-                      style={{
-                        color: '#6A5A50',
-                        background: 'transparent',
-                        border: 'none',
-                        padding: '1px 4px',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                      aria-label="Изменить время"
-                    >
-                      {m.time}
-                    </button>
-                  )}
-                </span>
-                <div className="flex items-center gap-2">
-                <button type="button" disabled={diary.pending>0} aria-label="Редактировать"
-                  className="flex items-center justify-center min-w-10 min-h-10"
-                  onClick={() => { setEditingMealId(m.id); setEditingText(m.desc); }}>
-                  <Pencil size={18} />
-                </button>
-                <button
-                  disabled={diary.pending>0} onClick={() => setConfirmDeleteIndex(m.i)}
-                  className="flex items-center justify-center"
-                  style={{ color: '#E53935' }}
-                  aria-label="Удалить"
-                >
-                  <Trash2 size={20} />
-                </button>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground mb-1">{m.desc}</p>
-              <div className="flex items-center gap-1.5 mb-3 text-[11px]" style={{ color: '#8A7A70' }}>
-                {editingProteinIdx === m.i ? (
-                  <>
-                    <input
-                      type="number"
-                      min={0}
-                      max={300}
-                      autoFocus
-                      value={editingProteinValue}
-                      onChange={e => setEditingProteinValue(e.target.value)}
-                      onBlur={() => saveManualProtein(m.i, editingProteinValue)}
-                      onKeyDown={e => { if (e.key === 'Enter') saveManualProtein(m.i, editingProteinValue); }}
-                      style={{
-                        width: 50, color: '#6A5A50', background: 'transparent',
-                        border: '1px solid #CF7B5A', borderRadius: 6, padding: '1px 4px',
-                        fontSize: 11, outline: 'none',
-                      }}
-                    />
-                    <span>г белка</span>
-                  </>
-                ) : m.proteinLoading ? (
-                  <span>... оценка состава</span>
-                ) : m.proteinAi !== null ? (
-                  <>
-                    <span>~{m.proteinAi}г белка{m.proteinManual ? '' : ''}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingProteinIdx(m.i);
-                        setEditingProteinValue(String(m.proteinAi ?? ''));
-                      }}
-                      aria-label="Скорректировать белок"
-                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11 }}
-                    >
-                      ✏️
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => { setEditingProteinIdx(m.i); setEditingProteinValue(''); }}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11, color: '#8A7A70' }}
-                  >
-                    + указать белок ✏️
-                  </button>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5 mb-2 items-center">
-                <button disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'protein')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.protein, 'protein')}>
-                  {m.protein === null ? '?' : m.protein ? '✓' : '+'} Белок
-                </button>
-                {!hideCarbs && (
-                  <button disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'carbs')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.carbs, 'carbs')}>
-                    {m.carbs === null ? '?' : m.carbs ? '✓' : '+'} Углеводы
-                  </button>
-                )}
-                <button disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'fiber')} className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={pillStyle(m.fiber, 'fiber')}>
-                  {m.fiber === null ? '?' : m.fiber ? '✓' : '+'} Клетчатка
-                </button>
-                {!m.isEvening && (
-                  <button
-                    disabled={diary.pending>0} onClick={() => toggleMealFlag(m.i, 'sweet')}
-                    className="text-[11px] font-medium"
-                    style={{ color: m.sweet ? '#CF7B5A' : '#8A7A70', background: 'transparent', border: 'none', padding: 0 }}
-                  >
-                    🍰 {m.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
-                  </button>
-                )}
-              </div>
-              {m.protein && (
-                <div className="mb-2 pl-1">
-                  <p className="text-[11px] mb-1" style={{ color: '#8A7A70' }}>Сколько белка?</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {([
-                      { key: 'small' as ProteinPortion, label: '🤏 Меньше ладони' },
-                      { key: 'palm' as ProteinPortion, label: '🤚 Ладонь' },
-                      { key: 'large' as ProteinPortion, label: '👐 Больше ладони' },
-                    ]).map(opt => {
-                      const active = m.proteinPortion === opt.key;
-                      return (
-                        <button
-                          key={opt.key}
-                          disabled={diary.pending>0} onClick={() => setMealPortion(m.i, opt.key)}
-                          className="text-[11px] px-2.5 py-1 rounded-full font-medium"
-                          style={{
-                            background: active ? '#F9EDEA' : '#F7F2EE',
-                            color: active ? '#CF7B5A' : '#8A7A70',
-                            border: active ? '1px solid #CF7B5A' : '1px solid #E5DDD8',
-                          }}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
 
           return (
           <div className="space-y-4 animate-fade-in-up">
             {/* Water tracker */}
-            <div className="bg-white flex items-center gap-2" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: '10px 14px' }}>
+            <div className="bg-white flex flex-wrap items-center gap-2" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: '10px 14px' }}>
               <span className="text-sm font-medium">💧 Вода</span>
-              <div className="flex gap-1 flex-1 justify-center">
+              <div className="flex flex-wrap gap-1 justify-center">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <button key={i} onClick={() => setWaterCount(i + 1 === waterCount ? i : i + 1)} className="text-lg leading-none" aria-label={`Стакан ${i + 1}`}>
+                  <button key={i} onClick={() => setWaterCount(i + 1 === waterCount ? i : i + 1)} className="min-w-[44px] min-h-[44px] rounded-md text-lg leading-none" aria-label={`Стакан ${i + 1}`}>
                     {i < waterCount ? '🥛' : <span style={{ opacity: 0.3 }}>🥛</span>}
                   </button>
                 ))}
               </div>
-              <button onClick={() => setWaterCount(c => c + 1)} className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
+              <button onClick={() => setWaterCount(c => c + 1)} className="min-w-[44px] min-h-[44px] rounded-full bg-[#B84300] text-white text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
               <span className="text-sm font-semibold tabular-nums">{waterCount}/6</span>
             </div>
 
@@ -1022,16 +862,15 @@ export function DailyScreen() {
                     type="time"
                     value={mealTime}
                     onChange={e => setMealTime(e.target.value)}
-                    className="meal-time-input"
+                    className="meal-time-input min-h-[44px]"
                     style={{
                       color: '#6A5A50',
                       background: '#FAF5F0',
                       border: '1px solid transparent',
                       borderRadius: 8,
                       padding: '4px 8px',
-                      fontSize: 13,
+                      fontSize: 16,
                       fontWeight: 600,
-                      outline: 'none',
                     }}
                     onFocus={e => (e.currentTarget.style.border = '1px solid #FF6200')}
                     onBlur={e => (e.currentTarget.style.border = '1px solid transparent')}
@@ -1054,8 +893,8 @@ export function DailyScreen() {
                 </div>
                 <button
                   onClick={() => setShowLightPicker(true)}
-                  className="text-xs font-medium"
-                  style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}
+                  className="text-[14px] min-h-[44px] rounded-md font-medium"
+                  style={{ color: '#A63B00', background: 'transparent', border: 'none', padding: 0 }}
                 >
                   📋 Из лёгких рецептов
                 </button>
@@ -1065,8 +904,8 @@ export function DailyScreen() {
                       <button
                         key={i}
                         onClick={() => removeDraftLightSwap(i)}
-                        className="text-[11px] px-2.5 py-1 rounded-full font-medium"
-                        style={{ background: '#FFF1E8', color: '#FF6200', border: '1px solid #FFD9C2' }}
+                        className="text-[14px] min-h-[44px] px-2.5 py-1 rounded-full font-medium"
+                        style={{ background: '#FFF1E8', color: '#A63B00', border: '1px solid #FFD9C2' }}
                         title="Убрать"
                       >
                         {s.name} +{s.savedKcal} 🪙 ✕
@@ -1077,22 +916,22 @@ export function DailyScreen() {
                 {showMealHint && (
                   <div className="text-xs leading-relaxed" style={{ background: '#FFF7F0', border: '1px solid #FFD9C2', borderRadius: 10, padding: '8px 10px', color: '#6A5A50' }}>
                     Источники белка, углеводов и клетчатки определяются по описанию блюда. Проверьте отметки и при необходимости поправьте их. «Из лёгких рецептов» — если готовили по нашему рецепту, впишем экономию в Копилку лёгкости.
-                    <button onClick={dismissMealHint} className="block mt-1.5 font-semibold" style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}>
+                    <button onClick={dismissMealHint} className="block min-h-[44px] min-w-[44px] rounded-md mt-1.5 font-semibold" style={{ color: '#A63B00', background: 'transparent', border: 'none', padding: 0 }}>
                       Понятно
                     </button>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 items-center">
-                  <button onClick={() => toggleDraftFlag('protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.protein, 'protein')}>
+                  <button onClick={() => toggleDraftFlag('protein')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.protein, 'protein')}>
                     {draftFlags.protein ? '✓' : '+'} Белок
                   </button>
-                  <button onClick={() => toggleDraftFlag('carbs')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.carbs, 'carbs')}>
+                  <button onClick={() => toggleDraftFlag('carbs')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.carbs, 'carbs')}>
                     {draftFlags.carbs ? '✓' : '+'} Углеводы
                   </button>
-                  <button onClick={() => toggleDraftFlag('fiber')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.fiber, 'fiber')}>
+                  <button onClick={() => toggleDraftFlag('fiber')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.fiber, 'fiber')}>
                     {draftFlags.fiber ? '✓' : '+'} Клетчатка
                   </button>
-                  <button onClick={() => toggleDraftFlag('sweet')} className="text-xs font-medium" style={{ color: draftFlags.sweet ? '#CF7B5A' : '#8A7A70', background: 'transparent', border: 'none', padding: 0 }}>
+                  <button onClick={() => toggleDraftFlag('sweet')} className="text-[14px] min-h-[44px] rounded-md font-medium" style={{ color: draftFlags.sweet ? '#994B30' : '#6A5A50', background: 'transparent', border: 'none', padding: 0 }}>
                     🍰 {draftFlags.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
                   </button>
                 </div>
@@ -1294,7 +1133,7 @@ export function DailyScreen() {
             <button onClick={()=>setTab('analysis')} className="inga-btn-secondary w-full">Разбор питания сегодня →</button>
 
             {/* Regular meal cards */}
-            {regular.map(m => <MealCard key={m.i} m={m} />)}
+            {regular.map(m => <MealCard key={m.id} m={m} {...mealCardProps} />)}
 
             {/* Evening divider */}
             <div className="flex items-center gap-2 py-1">
@@ -1309,7 +1148,7 @@ export function DailyScreen() {
               <p className="text-xs mb-3" style={{ color: '#4A3580', opacity: 0.85 }}>
                 Только белок + клетчатка, без жира и углеводов. Можно есть даже на ночь.
               </p>
-              {evening.map(m => <div key={m.i} className="mb-2"><MealCard m={m} /></div>)}
+              {evening.map(m => <div key={m.id} className="mb-2"><MealCard m={m} {...mealCardProps} /></div>)}
               {!showEveningInput ? (
                 <button
                   onClick={() => setShowEveningInput(true)}
@@ -1335,10 +1174,10 @@ export function DailyScreen() {
                     />
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => toggleDraftFlag('protein')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.protein, 'protein')}>
+                    <button onClick={() => toggleDraftFlag('protein')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.protein, 'protein')}>
                       {draftFlags.protein ? '✓' : '+'} Белок
                     </button>
-                    <button onClick={() => toggleDraftFlag('fiber')} className="text-xs px-3 py-1 rounded-full font-medium" style={pillStyle(draftFlags.fiber, 'fiber')}>
+                    <button onClick={() => toggleDraftFlag('fiber')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.fiber, 'fiber')}>
                       {draftFlags.fiber ? '✓' : '+'} Клетчатка
                     </button>
                   </div>

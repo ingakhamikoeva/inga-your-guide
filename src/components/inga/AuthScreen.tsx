@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { useApp } from '@/context/AppContext';
@@ -90,6 +90,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
   };
 
   const isSignup = mode === 'signup';
+  const formId = useId();
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
@@ -158,23 +159,33 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label htmlFor={`${formId}-email`} className="block text-sm font-medium mb-1">Email</label>
             <input
+              id={`${formId}-email`}
+              name="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="inga-input"
-              placeholder="Email"
               required
             />
           </div>
           <div>
+            <label htmlFor={`${formId}-password`} className="block text-sm font-medium mb-1">
+              {isSignup ? 'Пароль (минимум 6 символов)' : 'Пароль'}
+            </label>
             <div className="relative">
               <input
+                id={`${formId}-password`}
+                name="password"
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="inga-input pr-12"
-                placeholder={isSignup ? 'Пароль (минимум 6 символов)' : 'Пароль'}
                 minLength={6}
                 required
               />
@@ -183,7 +194,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => setShowPassword(v => !v)}
                 aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-[44px] h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full"
               >
                 {showPassword ? <EyeOff className="w-[18px] h-[18px]" strokeWidth={1.75} /> : <Eye className="w-[18px] h-[18px]" strokeWidth={1.75} />}
               </button>
@@ -192,7 +203,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
 
           {isSignup && (
             <div className="space-y-2">
-              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+              <label className="flex items-start gap-2 min-h-[44px] text-xs text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={termsConsent}
@@ -207,7 +218,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
                   <a href="https://legche.online/user-agreement.html" target="_blank" rel="noreferrer" className="underline">Пользовательского соглашения</a>
                 </span>
               </label>
-              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+              <label className="flex items-start gap-2 min-h-[44px] text-xs text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={pdConsent}
@@ -223,7 +234,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
               <p className="pl-5 text-xs text-muted-foreground">
                 <a href="https://legche.online/privacy" target="_blank" rel="noreferrer" className="underline">Политика конфиденциальности</a>
               </p>
-              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+              <label className="flex items-start gap-2 min-h-[44px] text-xs text-muted-foreground cursor-pointer">
                 <input
                   type="checkbox"
                   checked={marketingConsent}
@@ -242,12 +253,12 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
           )}
 
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-2">
+            <div role="alert" className="text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-2">
               {error}
             </div>
           )}
           {info && (
-            <div className="text-sm text-foreground bg-primary/10 rounded-xl px-4 py-3">
+            <div role="status" className="text-sm text-foreground bg-primary/10 rounded-xl px-4 py-3">
               {info}
             </div>
           )}
@@ -267,7 +278,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
               Уже есть аккаунт?{' '}
               <button
                 onClick={() => { setMode('login'); setError(''); setInfo(''); }}
-                className="text-primary font-medium underline"
+                className="text-[#A63B00] min-h-[44px] px-2 rounded-md font-medium underline"
               >
                 Войти
               </button>
@@ -275,7 +286,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
           ) : (
             <button
               onClick={() => { setMode('signup'); setError(''); setInfo(''); }}
-              className="underline"
+              className="underline min-h-[44px] px-2 rounded-md"
             >
               Нет аккаунта? Создать
             </button>
@@ -288,7 +299,7 @@ export function AuthScreen({ initialMode }: { initialMode?: AuthMode } = {}) {
               type="button"
               onClick={handleForgotPassword}
               disabled={loading}
-              className="text-sm text-muted-foreground underline"
+              className="text-sm text-foreground underline min-h-[44px] px-2 rounded-md"
             >
               Забыли пароль?
             </button>

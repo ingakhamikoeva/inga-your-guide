@@ -13,11 +13,11 @@ async function openLogin() {
   render(<App />);
   await act(async () => { await vi.advanceTimersByTimeAsync(1); });
   fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
-  fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'synthetic@example.invalid' } });
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'synthetic@example.invalid' } });
 }
 test('login spinner ends with the existing error text after a stalled request', async () => {
   await openLogin();
-  fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: 'synthetic-password' } });
+  fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'synthetic-password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
   expect(screen.getByRole('button', { name: '...' })).toBeDisabled();
   await act(async () => { await vi.advanceTimersByTimeAsync(30001); });
