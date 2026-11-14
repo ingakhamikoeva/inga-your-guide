@@ -1911,6 +1911,19 @@ export function MenuScreen() {
           <h2 className="text-2xl font-bold mb-2">Аудио-поддержка</h2>
           <p className="text-sm text-muted-foreground mb-5">Короткие аудио для поддержки, мотивации и возвращения в ритм.</p>
           <div className="space-y-2.5">
+            <div className="inga-card space-y-3">
+              <div>
+                <div id="ya-vybirayu-title" className="font-medium text-sm">Я выбираю</div>
+                <div className="text-xs text-muted-foreground">3:04</div>
+              </div>
+              <audio
+                controls
+                preload="none"
+                aria-labelledby="ya-vybirayu-title"
+                className="block w-full"
+                src="/audio/ya-vybirayu.mp3"
+              />
+            </div>
             {audioItems.map(item => (
               <div key={item.title} className="inga-card flex items-center gap-3">
                 <button className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
