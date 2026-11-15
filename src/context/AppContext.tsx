@@ -1,4 +1,5 @@
 import { currentSession, subscribe, sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
+import { readView, saveView } from '@/lib/view-storage';
 import { useAchievements } from '@/lib/achievement-client';
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { AppStep, UserProfile, Calculations, DailyReport, Medal, FixationAction } from '@/lib/types';
@@ -77,6 +78,10 @@ function saveLocalState(state: AppState, userId: string | null) {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [saved] = useState(loadState);
+  const viewSession = useRef(sessionSnapshot());
+  const initialView = useRef(readView(viewSession.current));
+  const [viewReady, setViewReady] = useState(false);
+  const viewRestored = useRef(false);
   const stateOwner = useRef(currentSession()?.user.id ?? null);
   const hydrationGeneration = useRef(0);
   const [step, setStep] = useState<AppStep>(saved.step || 'auth');
@@ -96,6 +101,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
   const ownerId = stateOwner.current;
+
+  useEffect(() => {
+    if (viewReady) saveView(step, undefined, viewSession.current);
+  }, [step, viewReady]);
 
   // Save to localStorage on every change
   useEffect(() => {
@@ -311,6 +320,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Require an explicit saved choice before resuming onboarding or the diary.
     if (merged.gender !== 'male' && merged.gender !== 'female') {
+      viewRestored.current = true;
+      setViewReady(true);
       setCalculations(null);
       setStep('survey-name');
       return 'survey-name';
@@ -323,8 +334,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Пользователь с чек-инами уже прошёл онбординг
     if (dbCheckins.length > 0) {
-      setStep('daily');
-      return 'daily';
+      const destination = !viewRestored.current ? initialView.current?.step ?? 'daily' : 'daily';
+      viewRestored.current = true;
+      setViewReady(true);
+      setStep(destination);
+      return destination;
     }
 
 
@@ -345,8 +359,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return 'tracking-method';
     })() as AppStep;
 
-    setStep(resume);
-    return resume;
+    const destination = resume === 'daily' && !viewRestored.current
+      ? initialView.current?.step ?? resume : resume;
+    viewRestored.current = true;
+    setViewReady(true);
+    setStep(destination);
+    return destination;
   }, [resetAchievements]);
 
   return (

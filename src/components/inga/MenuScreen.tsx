@@ -21,6 +21,7 @@ import { hasName, cleanName } from '@/lib/user-name';
 import { checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
 import { getSetting } from '@/lib/app-settings';
 import { getStoredUser, sessionSnapshot, isSessionCurrent } from '@/lib/auth-storage';
+import { readView, saveView, type MenuSection } from '@/lib/view-storage';
 import { loadDiaryHistory, diaryFortnight, diaryFortnightHtml } from '@/lib/diary-history';
 import palmMethodImage from '@/assets/palm-method.png';
 import logoTelegram from '@/assets/logo_telegram.png';
@@ -64,7 +65,6 @@ const palmMethodCards = [
   },
 ];
 
-type MenuSection = 'main' | 'how-to' | 'recipes' | 'light-version' | 'audio' | 'progress' | 'profile' | 'consultation' | 'materials';
 
 const howToTopics = [
   {
@@ -144,7 +144,12 @@ const paceLabels: Record<string, string> = {
 
 export function MenuScreen() {
   const { setStep, weeklyData, profile, dailyReports, medals, achievementStreak, uniqueRecipes, updateProfile } = useApp();
-  const [section, setSection] = useState<MenuSection>("main");
+  const viewSession = useRef(sessionSnapshot());
+  const [section, setSection] = useState<MenuSection>(() => {
+    const view = readView(viewSession.current);
+    return view?.step === 'menu' ? view.section ?? 'main' : 'main';
+  });
+  useEffect(() => { saveView('menu', section, viewSession.current); }, [section]);
   const subscription = useSubscription();
   const [showDiaryHistory, setShowDiaryHistory] = useState(false);
   const [nutrientSection, setNutrientSection] = useState<string | null>(null);
