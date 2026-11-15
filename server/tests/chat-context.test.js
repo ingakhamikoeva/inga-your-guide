@@ -5,6 +5,8 @@ import { readFile, readdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import express from 'express';
+import { createHash } from 'node:crypto';
+import { POTATO_GUIDANCE } from '../nutrition/potato-guidance.js';
 const root = process.env.B3_PGLITE_ROOT;
 const { PGlite } = await import(root ? pathToFileURL(`${root}/dist/index.js`).href : '@electric-sql/pglite');
 const { pgcrypto } = await import(root ? pathToFileURL(`${root}/dist/contrib/pgcrypto.js`).href : '@electric-sql/pglite/contrib/pgcrypto');
@@ -30,6 +32,7 @@ pool.query = originalQuery;
 const { createSession } = await import('../sessions.js');
 const { handleAskInga } = await import('../ask-inga.js');
 const { currentChatDay, chatHistory, chatTimezone } = await import('../chat-context.js');
+const { analyzeDay, readSource } = await import('../nutrition/day-analysis.js');
 const users = [randomUUID(), randomUUID()], tokens = [];
 let server, base;
 async function request(body, user = 0) {
@@ -60,6 +63,50 @@ beforeEach(async () => {
 after(async () => {
   globalThis.fetch = nativeFetch;
   if (server) await new Promise(r => server.close(r)); await database.close(); await pool.end();
+});
+
+test('potato guidance reaches chat with the actual meal and is separate from old assistant advice', async () => {
+  await pool.query("INSERT INTO public.food_logs(user_id,raw_text) VALUES ($1,$2)",
+    [users[0], 'Картофельное пюре на воде без масла, 150 г, индейка и салат']);
+  const result = await request({ message: 'Можно оставить пюре на ужин?', timezone: 'Europe/Moscow', history: [
+    { role: 'user', content: 'Оцени обед' },
+    { role: 'assistant', content: 'Пюре лучше заменить крупой.' },
+  ] });
+  assert.equal(result.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].messages[0].role, 'system');
+  assert.ok(calls[0].messages[0].content.includes(POTATO_GUIDANCE));
+  assert.match(calls[0].messages[1].content, /пюре на воде без масла, 150 г/);
+  assert.ok(calls[0].messages.some(m => m.role === 'assistant' && m.content === 'Пюре лучше заменить крупой.'));
+});
+
+test('new potato guidance regenerates old day analysis once, then reuses the updated cache', async () => {
+  const date = '2026-11-15', timezone = 'Europe/Moscow';
+  await pool.query("INSERT INTO public.food_logs(user_id,raw_text,datetime) VALUES ($1,$2,$3)",
+    [users[0], 'Пюре со сливками, 200 г; курица', '2026-11-15T12:00:00Z']);
+  const source = await readSource(users[0], date, timezone);
+  const oldHash = createHash('sha256').update(JSON.stringify({ version: 5, ...source })).digest('hex');
+  const oldAnalysis = { present: ['Пюре'], attention: [], next: ['Замените пюре крупой.'], recipeIds: [] };
+  await pool.query(`INSERT INTO public.daily_diet_analysis (user_id,date,timezone,fingerprint,analysis)
+    VALUES ($1,$2,$3,$4,$5::jsonb) ON CONFLICT (user_id,date,timezone)
+    DO UPDATE SET fingerprint=EXCLUDED.fingerprint,analysis=EXCLUDED.analysis`,
+    [users[0], date, timezone, oldHash, JSON.stringify(oldAnalysis)]);
+  let count = 0;
+  const updated = { present: ['Картофельный гарнир и курица'], attention: [],
+    next: ['Можно дополнить приём пищи салатом.'], recipeIds: [] };
+  const capture = async messages => {
+    count++;
+    assert.equal(messages[0].role, 'system');
+    assert.ok(messages[0].content.includes(POTATO_GUIDANCE));
+    assert.equal(JSON.parse(messages[1].content).meals[0].text, 'Пюре со сливками, 200 г; курица');
+    return JSON.stringify(updated);
+  };
+  const first = await analyzeDay(users[0], date, timezone, pool, capture);
+  assert.deepEqual(first.analysis, updated);
+  assert.notEqual(first.fingerprint, oldHash);
+  const second = await analyzeDay(users[0], date, timezone, pool, capture);
+  assert.deepEqual(second.analysis, updated);
+  assert.equal(count, 1);
 });
 
 test('I2: saved meals and zero checkins reach the AI; stale client diary and other owners never do', async () => {
