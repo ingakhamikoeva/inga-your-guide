@@ -1,7 +1,7 @@
 import { DIARY_AI_LIMIT_MESSAGE } from '@/lib/request-limits';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
-import { Coins } from 'lucide-react';
+import butterflyCoin from '@/assets/butterfly-coin.webp';
 import { MealCard, mealPillStyle } from './MealCard';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
@@ -914,7 +914,7 @@ export function DailyScreen() {
                         style={{ background: '#FFF1E8', color: '#A63B00', border: '1px solid #FFD9C2' }}
                         title="Убрать"
                       >
-                        {s.name} +{s.savedKcal} <Coins aria-hidden="true" className="inline-block h-4 w-4 align-middle text-primary" /> ✕
+                        {s.name} +{s.savedKcal} <img src={butterflyCoin} alt="" width={24} height={24} className="inline-block h-6 w-6 align-middle object-contain" /> ✕
                       </button>
                     ))}
                   </div>
@@ -1056,7 +1056,7 @@ export function DailyScreen() {
                                   </p>
                                   <p className="text-xs" style={{ color: '#8A7A70' }}>
                                     порция {r.portionGrams} {r.recipeSection === 'drinks' ? 'мл' : 'г'}
-                                    <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} <Coins aria-hidden="true" className="inline-block h-4 w-4 align-middle" /></span>
+                                    <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} <img src={butterflyCoin} alt="" width={24} height={24} className="inline-block h-6 w-6 align-middle object-contain" /></span>
                                   </p>
                                 </button>
                               );
@@ -1111,7 +1111,7 @@ export function DailyScreen() {
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>
-                  <Coins aria-hidden="true" className="inline-block h-6 w-6 mr-1 align-middle text-primary" /> {COPILKA_TEXTS.title}
+                  <img src={butterflyCoin} alt="" width={32} height={32} className="inline-block h-8 w-8 mr-1 align-middle object-contain" /> {COPILKA_TEXTS.title}
                   <span className="tabular-nums" style={{ color: '#FF6200' }}> · {(lightSavings?.total_kcal ?? 0).toLocaleString('ru-RU')}</span>
                 </p>
                 <span className="text-xs" style={{ color: '#A89A8E' }}>{copilkaOpen ? '▲' : '▼'}</span>
