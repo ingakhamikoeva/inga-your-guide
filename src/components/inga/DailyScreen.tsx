@@ -1,6 +1,7 @@
 import { DIARY_AI_LIMIT_MESSAGE } from '@/lib/request-limits';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
+import { PiggyBank } from 'lucide-react';
 import { MealCard, mealPillStyle } from './MealCard';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
@@ -841,12 +842,17 @@ export function DailyScreen() {
               <span className="text-sm font-medium">💧 Вода</span>
               <div className="flex flex-wrap gap-1 justify-center">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <button key={i} onClick={() => setWaterCount(i + 1 === waterCount ? i : i + 1)} className="min-w-[44px] min-h-[44px] rounded-md text-lg leading-none" aria-label={`Стакан ${i + 1}`}>
-                    {i < waterCount ? '🥛' : <span style={{ opacity: 0.3 }}>🥛</span>}
+                  <button key={i} onClick={() => setWaterCount(i + 1 === waterCount ? i : i + 1)} className="min-w-[44px] min-h-[44px] rounded-md flex items-center justify-center" aria-label={`Стакан ${i + 1}`} aria-pressed={i < waterCount}>
+                    <svg width="28" height="32" viewBox="0 0 28 32" fill="none" aria-hidden="true" focusable="false">
+                      <path d="M5 4H23L20.5 28H7.5L5 4Z" fill="#EFFAFF" />
+                      <path d="M6 13C9 11 12 15 15 13C18 11 20 12 22 13L20.5 28H7.5L6 13Z" fill={i < waterCount ? '#38BDF8' : '#CDEFFC'} />
+                      <path d="M5 4H23L20.5 28H7.5L5 4Z" stroke="#0284C7" strokeWidth="1.8" strokeLinejoin="round" />
+                      <path d="M9 7L10 17" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
                   </button>
                 ))}
               </div>
-              <button onClick={() => setWaterCount(c => c + 1)} className="min-w-[44px] min-h-[44px] rounded-full bg-primary text-[#382318] text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
+              <button onClick={() => setWaterCount(c => c + 1)} className="min-w-[44px] min-h-[44px] rounded-full bg-primary text-primary-foreground text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
               <span className="text-sm font-semibold tabular-nums">{waterCount}/6</span>
             </div>
 
@@ -908,7 +914,7 @@ export function DailyScreen() {
                         style={{ background: '#FFF1E8', color: '#A63B00', border: '1px solid #FFD9C2' }}
                         title="Убрать"
                       >
-                        {s.name} +{s.savedKcal} 🪙 ✕
+                        {s.name} +{s.savedKcal} <PiggyBank aria-hidden="true" className="inline-block h-4 w-4 align-middle text-primary" /> ✕
                       </button>
                     ))}
                   </div>
@@ -1050,7 +1056,7 @@ export function DailyScreen() {
                                   </p>
                                   <p className="text-xs" style={{ color: '#8A7A70' }}>
                                     порция {r.portionGrams} {r.recipeSection === 'drinks' ? 'мл' : 'г'}
-                                    <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} 🪙</span>
+                                    <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} <PiggyBank aria-hidden="true" className="inline-block h-4 w-4 align-middle" /></span>
                                   </p>
                                 </button>
                               );
@@ -1105,7 +1111,7 @@ export function DailyScreen() {
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>
-                  <span className="mr-1">🪙</span> {COPILKA_TEXTS.title}
+                  <PiggyBank aria-hidden="true" className="inline-block h-6 w-6 mr-1 align-middle text-primary" /> {COPILKA_TEXTS.title}
                   <span className="tabular-nums" style={{ color: '#FF6200' }}> · {(lightSavings?.total_kcal ?? 0).toLocaleString('ru-RU')}</span>
                 </p>
                 <span className="text-xs" style={{ color: '#A89A8E' }}>{copilkaOpen ? '▲' : '▼'}</span>
