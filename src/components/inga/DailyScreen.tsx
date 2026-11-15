@@ -3,6 +3,7 @@ import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
 import butterflyCoin from '@/assets/butterfly-coin.webp';
 import { MealCard, mealPillStyle } from './MealCard';
+import { WaterTracker } from './WaterTracker';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
 import { mealFacts } from '../../../server/nutrition/facts.js';
@@ -77,7 +78,17 @@ export function DailyScreen() {
   const [editingProteinIdx, setEditingProteinIdx] = useState<number | null>(null);
   const [editingProteinValue, setEditingProteinValue] = useState('');
   const [today, setToday] = useState(localDay);
-  useEffect(() => { const timer = window.setInterval(() => setToday(localDay()), 30000); return () => clearInterval(timer); }, []);
+  useEffect(() => {
+    const refreshDay = () => setToday(localDay());
+    const timer = window.setInterval(refreshDay, 30000);
+    window.addEventListener('focus', refreshDay);
+    document.addEventListener('visibilitychange', refreshDay);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', refreshDay);
+      document.removeEventListener('visibilitychange', refreshDay);
+    };
+  }, []);
   const diary = useMealDiary(today);
   const { meals, mealMeta } = diary;
   const morningDirty = useRef(new Set<string>());
@@ -110,17 +121,6 @@ export function DailyScreen() {
   // Лёгкие рецепты, выбранные в текущем окне ввода (своё + лёгкое в одной записи)
   const [draftLightSwaps, setDraftLightSwaps] = useState<{ recipeId: string; name: string; savedKcal: number }[]>([]);
 
-  const [waterCount, setWaterCount] = useState<number>(() => {
-    try {
-      const todayStr = localDay();
-      const savedDate = localStorage.getItem('waterDate');
-      const savedCount = localStorage.getItem('waterCount');
-      if (savedDate === todayStr && savedCount) {
-        return parseInt(savedCount, 10) || 0;
-      }
-    } catch {}
-    return 0;
-  });
   const [showMealInput, setShowMealInput] = useState(false);
   // Флажки, отмечаемые прямо при вводе приёма (чтобы не искать карточку внизу)
   const emptyDraftFlags = { protein: false, carbs: false, fiber: false, sweet: false };
@@ -219,14 +219,6 @@ export function DailyScreen() {
   useEffect(() => {
     loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
   }, [today]);
-
-  // Persist water count to localStorage on change
-  useEffect(() => {
-    try {
-      localStorage.setItem('waterCount', String(waterCount));
-      localStorage.setItem('waterDate', localDay());
-    } catch {}
-  }, [waterCount]);
 
   // If morning checkin already saved today → always go to meals tab
   useEffect(() => {
@@ -837,24 +829,7 @@ export function DailyScreen() {
 
           return (
           <div className="space-y-4 animate-fade-in-up">
-            {/* Water tracker */}
-            <div className="bg-white flex flex-wrap items-center gap-2" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: '10px 14px' }}>
-              <span className="text-sm font-medium">💧 Вода</span>
-              <div className="flex flex-wrap gap-1 justify-center">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <button key={i} onClick={() => setWaterCount(i + 1 === waterCount ? i : i + 1)} className="min-w-[44px] min-h-[44px] rounded-md flex items-center justify-center" aria-label={`Стакан ${i + 1}`} aria-pressed={i < waterCount}>
-                    <svg width="28" height="32" viewBox="0 0 28 32" fill="none" aria-hidden="true" focusable="false">
-                      <path d="M5 4H23L20.5 28H7.5L5 4Z" fill="#EFFAFF" />
-                      <path d="M6 13C9 11 12 15 15 13C18 11 20 12 22 13L20.5 28H7.5L6 13Z" fill={i < waterCount ? '#38BDF8' : '#CDEFFC'} />
-                      <path d="M5 4H23L20.5 28H7.5L5 4Z" stroke="#0284C7" strokeWidth="1.8" strokeLinejoin="round" />
-                      <path d="M9 7L10 17" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setWaterCount(c => c + 1)} className="min-w-[44px] min-h-[44px] rounded-full bg-primary text-primary-foreground text-sm leading-none flex items-center justify-center" aria-label="Добавить">+</button>
-              <span className="text-sm font-semibold tabular-nums">{waterCount}/6</span>
-            </div>
+            <WaterTracker date={today} />
 
             {/* Add meal */}
             {!showMealInput ? (

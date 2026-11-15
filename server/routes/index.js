@@ -8,6 +8,7 @@ import plan from "./plan.js";
 import behavior from "./behavior.js";
 import assessment from "./assessment.js";
 import checkins from "./checkins.js";
+import water from "./water.js";
 import mealPlans from "./meal-plans.js";
 import foodLogs from "./food-logs.js";
 import chatEvents from "./chat-events.js";
@@ -29,6 +30,7 @@ export function registerRoutes(app, base = "/api/v1") {
   app.use(`${base}/behavior`, behavior);
   app.use(`${base}/assessment`, assessment);
   app.use(`${base}/checkins`, checkins);
+  app.use(`${base}/water`, water);
   app.use(`${base}/meal-plans`, mealPlans);
   app.use(`${base}/food-logs`, foodLogs);
   app.use(`${base}/chat-events`, chatEvents);

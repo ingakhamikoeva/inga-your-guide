@@ -9,6 +9,7 @@ export function requestDeadline(path: string, method = 'GET'): number {
   const pathname = new URL(path, 'https://local.invalid').pathname.replace(/^\/api\/v1(?=\/|$)/, '');
   if (pathname === '/auth/forgot-password') return 60000;
   if (pathname.startsWith('/auth/')) return 30000;
+  if (/^\/water\/\d{4}-\d{2}-\d{2}$/.test(pathname)) return 30000;
   if (method.toUpperCase() === 'GET' && ['/profile','/plan','/behavior','/assessment','/checkins','/subscription'].includes(pathname)) return 30000;
   // Preserve AI/upload/save timing; this change targets auth and initial hydration only.
   return 0;
