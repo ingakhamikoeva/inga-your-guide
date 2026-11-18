@@ -5,7 +5,7 @@ export function WaterTracker({ date }: { date: string }) {
   const water = useWaterTracker(date);
   const disabled = !water.ready || water.busy;
   return (
-    <div className="bg-white flex flex-wrap items-center gap-2" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: '10px 14px' }} aria-busy={water.busy}>
+    <div className="legche-water bg-white flex flex-wrap items-center gap-2" style={{ borderRadius: 14, border: '1px solid var(--legche-line, #EDE5DF)', padding: '10px 14px' }} aria-busy={water.busy}>
       <span className="text-sm font-medium">💧 Вода</span>
       <div className="flex flex-wrap gap-1 justify-center">
         {Array.from({ length: 6 }).map((_, i) => (

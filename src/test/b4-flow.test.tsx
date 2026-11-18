@@ -151,7 +151,7 @@ test('B4: actual morning screen passes the maintenance stage and renders the mea
   fireEvent.change(screen.getByPlaceholderText('70.5'), { target: { value: '49' } });
   await act(async () => { fireEvent.click(button); });
   // Existing navigation opens meals after the first saved check-in; return to its analysis.
-  fireEvent.click(screen.getByRole('button', { name: '🌅 Утро' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Мой день' }));
   expect(await screen.findByText('Сейчас наша задача — сохранять достигнутый вес. Дальнейшее снижение не является целью.')).toBeVisible();
   expect(screen.getByText('С предыдущего измерения вес снизился на 5 кг.')).toBeVisible();
   expect(screen.getByText(/• за 6 дней:/)).toBeVisible();

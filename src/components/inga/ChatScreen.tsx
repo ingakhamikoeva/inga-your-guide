@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import ingaPhoto from '@/assets/inga-photo.jpg';
 import { useApp } from '@/context/AppContext';
 import { saveChatEvent } from '@/lib/db';
 import { detectStage } from '@/lib/soft-swap';
@@ -144,19 +145,12 @@ export function ChatScreen() {
   };
 
   return (
-    <div className="flex flex-col min-h-dvh max-h-dvh h-dvh bg-background">
+    <div className="legche-chat flex flex-col min-h-dvh max-h-dvh h-dvh">
       {/* Header */}
       <div className="border-b border-border bg-card shrink-0">
         <div className="mx-auto w-full max-w-[760px] flex items-center justify-between px-4 py-3">
-          <button onClick={() => {
-              try {
-                const today = new Date().toISOString().slice(0, 10);
-                localStorage.setItem('dailyActiveTab', 'meals');
-                localStorage.setItem('dailyActiveTabDate', today);
-              } catch {}
-              setStep('daily');
-            }} className="text-base text-muted-foreground">← Назад</button>
-          <h2 className="font-semibold text-lg">Поговорим?</h2>
+          <button onClick={() => setStep('daily')} className="text-base text-muted-foreground legche-back">← Назад</button>
+          <div className="legche-chat-person"><img src={ingaPhoto} alt=""/><div><h2 className="font-semibold text-base">Инга</h2><p className="text-xs text-muted-foreground">ИИ-помощник</p></div></div>
           <button onClick={() => setStep('menu')} className="text-base text-muted-foreground">Меню</button>
         </div>
       </div>
@@ -168,10 +162,10 @@ export function ChatScreen() {
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] px-4 py-3 rounded-[18px] whitespace-pre-wrap break-words text-[17px] leading-[1.5] ${
                 m.role === 'user'
-                  ? 'rounded-br-[4px]'
-                  : 'bg-secondary text-secondary-foreground rounded-bl-[4px]'
+                  ? 'legche-chat-user rounded-br-[4px]'
+                  : 'legche-chat-assistant bg-secondary text-secondary-foreground rounded-bl-[4px]'
               }`}
-              style={m.role === 'user' ? { backgroundColor: '#FBE0CC', color: '#2C1A0E' } : undefined}>
+              >
                 {m.content || (loading && i === messages.length - 1 ? '...' : '')}
               </div>
             </div>

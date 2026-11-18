@@ -1,7 +1,10 @@
 import { DIARY_AI_LIMIT_MESSAGE } from '@/lib/request-limits';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
-import butterflyCoin from '@/assets/butterfly-coin.webp';
+import { CalendarDays, ChevronRight, MessageCircle, Plus, BookOpen, X } from 'lucide-react';
+import { dailyInspiration } from './daily-inspiration';
+import { dailyRecipe } from './daily-recipe';
+import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 import { MealCard, mealPillStyle } from './MealCard';
 import { WaterTracker } from './WaterTracker';
 import { useApp } from '@/context/AppContext';
@@ -122,6 +125,13 @@ export function DailyScreen() {
   const [draftLightSwaps, setDraftLightSwaps] = useState<{ recipeId: string; name: string; savedKcal: number }[]>([]);
 
   const [showMealInput, setShowMealInput] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  useEffect(() => {
+    if (!showMealInput || tab !== 'meals' || showHistory) return;
+    const prior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prior; };
+  }, [showMealInput, tab, showHistory]);
   // Флажки, отмечаемые прямо при вводе приёма (чтобы не искать карточку внизу)
   const emptyDraftFlags = { protein: false, carbs: false, fiber: false, sweet: false };
   // Разовая обучающая подсказка про флажки/лёгкие рецепты — показывается,
@@ -139,6 +149,7 @@ export function DailyScreen() {
     draftTouched.current.add(key);
     setDraftFlags(f => ({ ...f, [key]: !f[key] }));
   };
+  const closeMealInput = () => { setShowMealInput(false); setMealText(''); setDraftFlags(emptyDraftFlags); draftTouched.current.clear(); setDraftLightSwaps([]); };
   const [showEveningInput, setShowEveningInput] = useState(false);
   const [eveningText, setEveningText] = useState('');
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
@@ -177,11 +188,6 @@ export function DailyScreen() {
     } catch {}
   }, [tab, today]);
 
-  // Russian date string: "Пятница, 13 июня"
-  const dateLabel = (() => {
-    const raw = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  })();
   // dayNumber больше не считается отдельно от dailyReports — раньше он мог
   // расходиться с «ДЕНЬ N ИЗ 30» на карточке программы (два разных счётчика
   // на одном экране путали пользователя). Теперь оба места показывают один
@@ -476,6 +482,8 @@ export function DailyScreen() {
 
   const startNewDay = () => { setShowPlanning(false); setTab('meals'); };
 
+  if (showHistory) return <DiaryHistoryScreen onBack={() => setShowHistory(false)} />;
+
   if (showPlanning) {
     return (
       <div className="flex flex-col items-center min-h-screen px-6 py-10 animate-fade-in-up">
@@ -515,63 +523,39 @@ export function DailyScreen() {
   const proteinGrams = facts.protein;
   const proteinTarget = facts.proteinTarget;
   const anyProteinLoading = mealMeta.some(m=>m.proteinLoading);
+  const recipe = dailyRecipe(today);
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-6 py-10 pb-[80px] animate-fade-in-up" style={{ maxWidth: 480, margin: '0 auto', width: '100%' }}>
+    <div className="legche-daily flex flex-col items-center min-h-screen">
       {showGoalReached && (
         <GoalReachedModal sex={profile.gender} onContinue={handleEnterFixation} busy={enteringFixation} />
       )}
-      {/* Header: date + day badge */}
-      <div className="w-full max-w-sm flex items-center justify-between mb-4">
-        <span className="text-sm text-muted-foreground">{dateLabel}</span>
-        <div className="flex items-center gap-2">
-        <span
-          style={{
-            background: '#FAEEDA',
-            color: '#FF6200',
-            fontWeight: 600,
-            borderRadius: '20px',
-            padding: '2px 10px',
-            fontSize: '12px',
-          }}
-        >
-          День {programDayNum}
-        </span>
-        <button
-          onClick={() => setStep('menu')}
-          className="text-sm font-semibold"
-          style={{
-            background: '#fff',
-            color: '#FF6200',
-            border: '1px solid #FFD9C2',
-            borderRadius: '20px',
-            padding: '4px 14px',
-          }}
-        >
-          ☰ Меню
-        </button>
-        </div>
-      </div>
+      <header className="legche-header w-full">
+        <img src="/legche-butterfly.webp" alt="Легче" className="legche-brand" />
+        <p className="legche-phrase">{dailyInspiration(today, profile.gender)}</p>
+        <button type="button" className="legche-glass legche-calendar" aria-label="Календарь — история дневника" onClick={() => setShowHistory(true)}><CalendarDays size={21}/></button>
+        <button type="button" className="legche-glass legche-menu" onClick={() => setStep('menu')}>Меню</button>
+      </header>
 
       {diary.loading && <p role="status" className="text-sm mb-3">Загружаем дневник…</p>}
       {diary.error && <div className="inga-card mb-3"><p>Не удалось загрузить дневник.</p><button onClick={diary.retry} className="inga-btn-secondary">Повторить</button></div>}
       {diary.analysisLimit && <p role="alert" className="inga-bubble mb-3">{DIARY_AI_LIMIT_MESSAGE}</p>}
       {!diary.loading && diary.pending===0 && mealMeta.some(m=>m.nutritionVersion!==3) && <button onClick={diary.retry} className="text-sm underline mb-3">Повторить оценку состава</button>}
       {/* Tab navigation */}
-      <div className="flex gap-2 mb-6 w-full max-w-sm">
+      <nav className="legche-tabs legche-glass w-full" aria-label="Разделы дня">
         {(['morning', 'meals', 'analysis'] as DailyTab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${tab === t ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+            aria-pressed={tab === t}
+            className="legche-tab"
           >
-            {t === 'morning' ? '🌅 Утро' : t === 'meals' ? '🍽️ Питание' : '🔎 Разбор'}
+            {t === 'morning' ? 'Мой день' : t === 'meals' ? 'Питание' : 'Разбор'}
           </button>
         ))}
-      </div>
+      </nav>
 
-
-      <div className="w-full max-w-sm">
+      <div className="legche-daily-content w-full">
         {profile.currentStage === 'fixation' && <div className="mb-5"><FixationProgressCard onMaintenance={openMaintenanceLesson} onLesson={() => handleProgramJump({ jump: { section:'how-to', nutrientSection:'Фиксация' } })} /></div>}
         {tab === 'morning' && (
           <div className="space-y-4 animate-fade-in-up">
@@ -619,8 +603,8 @@ export function DailyScreen() {
                         onClick={() => toggleFood(opt.label)}
                         className="text-left p-3 rounded-2xl text-sm font-medium transition-colors flex items-start gap-2"
                         style={{
-                          background: active ? '#FFF1E0' : '#FFFFFF',
-                          border: active ? '2px solid #FF6200' : '1px solid #EFE6DC',
+                          background: active ? 'var(--legche-warm, #FFF1E0)' : 'var(--legche-card, #FFFFFF)',
+                          border: active ? '2px solid var(--legche-accent, #FF6200)' : '1px solid var(--legche-line, #EFE6DC)',
                         }}
                       >
                         <span className="text-lg leading-none">{opt.emoji}</span>
@@ -721,7 +705,9 @@ export function DailyScreen() {
             )}
 
             {showCheckinFields && (<>
-            <h3 className="text-xl font-bold">Доброе утро! ☀️</h3>
+            <div className="legche-checkin inga-card">
+            <h3 className="text-lg font-bold">Доброе утро! ☀️</h3>
+            <div className="legche-checkin-grid">
             <div>
               <label className="block text-sm font-medium mb-1">Вес сегодня (кг)</label>
               <input disabled={morningBusy} type="number" value={weight} onChange={e => {
@@ -753,6 +739,7 @@ export function DailyScreen() {
                   Нет
                 </button>
               </div>
+            </div>
             </div>
             {!morningAnalysis && (
               <div className="inga-bubble">
@@ -790,13 +777,19 @@ export function DailyScreen() {
                 Перейти к питанию →
               </button>
             )}
+            </div>
             </>)}
+            {!showFoodSurvey && recipe && <button type="button" className="legche-recipe inga-card w-full text-left" onClick={() => { try { localStorage.setItem('inga-menu-jump', JSON.stringify({section:'recipes',recipeSection:recipe.recipeSection,activeRecipe:recipe.recipeId,returnTo:'daily'})); } catch {} setStep('menu'); }}>
+              <BookOpen className="legche-recipe-icon" size={24} aria-hidden="true"/>
+              <span className="min-w-0 flex-1"><span className="block text-sm text-muted-foreground">Рецепт дня</span><span className="block font-semibold">{recipe.name}</span>{recipe.subtitle && <span className="block text-sm text-muted-foreground">{recipe.subtitle}</span>}</span><ChevronRight size={20} aria-hidden="true"/>
+            </button>}
           </div>
         )}
 
 
         {tab === 'meals' && (() => {
           const totalMeals = mealMeta.length;
+          const recentTexts = [...new Set(meals.slice().reverse().filter(text=>typeof text==='string' && text.trim()))].slice(0,3);
           const pct = (v:number,t:number) => Math.min(100,Math.round(v/Math.max(1,t)*100));
           const regular = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => !m.isEvening);
           const evening = mealMeta.map((m, i) => ({ ...m, i, desc: meals[i] })).filter(m => m.isEvening);
@@ -828,16 +821,47 @@ export function DailyScreen() {
           };
 
           return (
-          <div className="space-y-4 animate-fade-in-up">
-            <WaterTracker date={today} />
+          <div className="legche-meals-view space-y-4">
+            <div className="legche-orient bg-white space-y-3" style={{borderRadius:14,border:'1px solid var(--legche-line, #EDE5DF)',padding:14}}>
+              <p className="text-xs font-bold tracking-wide text-muted-foreground">СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
+              <div className="space-y-2">
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="shrink-0">Белок</span>
+                  <span className="min-w-0 text-right">{anyProteinLoading?'Оценка…':facts.unknownProtein===totalMeals?'Недостаточно данных':`≈${proteinGrams} г${facts.unknownProtein?' в оценённых записях':''}`}{proteinTarget?` · цель ${proteinTarget} г`:''}</span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{background:'var(--legche-chip, #F2EBE5)'}} aria-hidden="true">
+                  <div style={{width:`${proteinTarget && facts.unknownProtein<totalMeals ? pct(proteinGrams,proteinTarget) : 0}%`,height:'100%',background:'#CF7B5A',transition:'width 0.3s'}} />
+                </div>
+              </div>
+              {([
+                ['Углеводы',facts.carbs,'#C49A3E'],
+                ['Клетчатка',facts.fiber,'#5E9E72'],
+              ] as const).map(([label,group,color])=>(
+                <div key={label} className="space-y-2">
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="shrink-0">{label}</span>
+                    <span className="min-w-0 text-right">{!totalMeals ? 'Пока нет записей' : group.count ? `В ${group.count} из ${totalMeals} записей` : group.unknown ? 'Недостаточно данных' : 'Источники не отмечены'}{group.unknown>0 && group.count>0?' · есть неоценённые':''}</span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden" style={{background:'var(--legche-chip, #F2EBE5)'}} aria-hidden="true">
+                    <div style={{width:`${pct(group.count,totalMeals)}%`,height:'100%',background:color,transition:'width 0.3s'}} />
+                  </div>
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">Отметки показывают наличие источников в блюдах, а не выполнение дневной нормы. Их можно поправить вручную.</p>
+            </div>
 
-            {/* Add meal */}
-            {!showMealInput ? (
-              <button onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }} className="inga-btn-primary w-full" style={{ borderRadius: 12 }}>
-                + Добавить приём пищи
-              </button>
-            ) : (
-              <div className="bg-white space-y-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
+
+            {showMealInput && (
+              <div className="legche-sheet-backdrop"><div role="dialog" aria-modal="true" aria-label="Записать еду" className="legche-sheet bg-card space-y-3" onKeyDown={event=>{
+                  if (event.key==='Escape' && !showLightPicker && !(event.target as HTMLElement).closest('.fixed')) { event.stopPropagation(); closeMealInput(); }
+                  if (event.key!=='Tab' || showLightPicker || event.currentTarget.querySelector('.fixed')) return;
+                  const nodes=Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex="0"]')).filter(node=>node.getClientRects().length>0);
+                  const first=nodes[0],last=nodes[nodes.length-1];
+                  if(event.shiftKey && event.target===first && last){event.preventDefault();last.focus();}
+                  else if(!event.shiftKey && event.target===last && first){event.preventDefault();first.focus();}
+                }}>
+                <div className="legche-sheet-handle" aria-hidden="true"/>
+                <div className="flex items-center justify-between gap-2"><h2 className="text-xl font-bold">Записать еду</h2><button type="button" aria-label="Закрыть" className="legche-icon-button" onClick={closeMealInput}><X size={22}/></button></div>
                 <div className="flex items-center gap-2">
                   <input
                     type="time"
@@ -845,8 +869,8 @@ export function DailyScreen() {
                     onChange={e => setMealTime(e.target.value)}
                     className="meal-time-input min-h-[44px]"
                     style={{
-                      color: '#6A5A50',
-                      background: '#FAF5F0',
+                      color: 'var(--legche-muted, #6A5A50)',
+                      background: 'var(--legche-chip, #FAF5F0)',
                       border: '1px solid transparent',
                       borderRadius: 8,
                       padding: '4px 8px',
@@ -856,14 +880,14 @@ export function DailyScreen() {
                     onFocus={e => (e.currentTarget.style.border = '1px solid #FF6200')}
                     onBlur={e => (e.currentTarget.style.border = '1px solid transparent')}
                   />
-                  <span className="text-xs" style={{ color: '#8A7A70' }}>{mealNameByTime(mealTime)}</span>
+                  <span className="text-xs" style={{ color: 'var(--legche-muted, #8A7A70)' }}>{mealNameByTime(mealTime)}</span>
                 </div>
                 <div className="flex gap-2">
                   <input
                     value={mealText}
                     onChange={e => setMealText(e.target.value)}
                     autoFocus
-                    className="inga-input flex-1"
+                    className="inga-input flex-1 min-w-0"
                     placeholder="Что вы ели?"
                     onKeyDown={e => e.key === 'Enter' && handleAddMeal()}
                   />
@@ -875,10 +899,11 @@ export function DailyScreen() {
                 <button
                   onClick={() => setShowLightPicker(true)}
                   className="text-[14px] min-h-[44px] rounded-md font-medium"
-                  style={{ color: '#A63B00', background: 'transparent', border: 'none', padding: 0 }}
+                  style={{ color: 'var(--legche-accent-text, #A63B00)', background: 'transparent', border: 'none', padding: 0 }}
                 >
                   📋 Из лёгких рецептов
                 </button>
+                {!mealText.trim() && !draftLightSwaps.length && recentTexts.length>0 && <div className="space-y-2"><p className="text-sm text-muted-foreground">Недавно добавляли</p><div className="legche-recent-list">{recentTexts.map(text=><button type="button" key={text} className="legche-recent" onClick={()=>setMealText(text)}><span>{text}</span><Plus size={17} aria-hidden="true"/></button>)}</div></div>}
                 {draftLightSwaps.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {draftLightSwaps.map((s, i) => (
@@ -886,18 +911,18 @@ export function DailyScreen() {
                         key={i}
                         onClick={() => removeDraftLightSwap(i)}
                         className="text-[14px] min-h-[44px] px-2.5 py-1 rounded-full font-medium"
-                        style={{ background: '#FFF1E8', color: '#A63B00', border: '1px solid #FFD9C2' }}
+                        style={{ background: 'var(--legche-warm, #FFF1E8)', color: 'var(--legche-accent-text, #A63B00)', border: '1px solid var(--legche-line, #FFD9C2)' }}
                         title="Убрать"
                       >
-                        {s.name} +{s.savedKcal} <img src={butterflyCoin} alt="" width={24} height={24} className="inline-block h-6 w-6 align-middle object-contain" /> ✕
+                        {s.name} +{s.savedKcal} <img src="/legche-butterfly.webp" alt="" width={24} height={24} className="inline-block h-6 w-6 align-middle object-contain" /> ✕
                       </button>
                     ))}
                   </div>
                 )}
                 {showMealHint && (
-                  <div className="text-xs leading-relaxed" style={{ background: '#FFF7F0', border: '1px solid #FFD9C2', borderRadius: 10, padding: '8px 10px', color: '#6A5A50' }}>
+                  <div className="text-xs leading-relaxed" style={{ background: 'var(--legche-warm, #FFF7F0)', border: '1px solid var(--legche-line, #FFD9C2)', borderRadius: 10, padding: '8px 10px', color: 'var(--legche-muted, #6A5A50)' }}>
                     Источники белка, углеводов и клетчатки определяются по описанию блюда. Проверьте отметки и при необходимости поправьте их. «Из лёгких рецептов» — если готовили по нашему рецепту, впишем экономию в Копилку лёгкости.
-                    <button onClick={dismissMealHint} className="block min-h-[44px] min-w-[44px] rounded-md mt-1.5 font-semibold" style={{ color: '#A63B00', background: 'transparent', border: 'none', padding: 0 }}>
+                    <button onClick={dismissMealHint} className="block min-h-[44px] min-w-[44px] rounded-md mt-1.5 font-semibold" style={{ color: 'var(--legche-accent-text, #A63B00)', background: 'transparent', border: 'none', padding: 0 }}>
                       Понятно
                     </button>
                   </div>
@@ -912,23 +937,24 @@ export function DailyScreen() {
                   <button onClick={() => toggleDraftFlag('fiber')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.fiber, 'fiber')}>
                     {draftFlags.fiber ? '✓' : '+'} Клетчатка
                   </button>
-                  <button onClick={() => toggleDraftFlag('sweet')} className="text-[14px] min-h-[44px] rounded-md font-medium" style={{ color: draftFlags.sweet ? '#994B30' : '#6A5A50', background: 'transparent', border: 'none', padding: 0 }}>
+                  <button onClick={() => toggleDraftFlag('sweet')} className="text-[14px] min-h-[44px] rounded-md font-medium" style={{ color: draftFlags.sweet ? 'var(--legche-protein, #994B30)' : 'var(--legche-muted, #6A5A50)', background: 'transparent', border: 'none', padding: 0 }}>
                     🍰 {draftFlags.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
                   </button>
                 </div>
                 <div className="flex gap-2">
-                  <button disabled={diary.loading || diary.error} onClick={handleAddMeal} className="inga-btn-primary flex-1">Добавить</button>
-                  <button onClick={() => { setShowMealInput(false); setMealText(''); setDraftFlags(emptyDraftFlags); draftTouched.current.clear(); setDraftLightSwaps([]); }} className="inga-btn-secondary flex-1">Отмена</button>
+                  <button disabled={diary.loading || diary.error} onClick={handleAddMeal} className="inga-btn-primary flex-1">Сохранить</button>
+                  <button onClick={closeMealInput} className="inga-btn-secondary flex-1">Отмена</button>
                 </div>
+              </div>
               </div>
             )}
 
             {/* Обучающая подсказка о лёгкой замене */}
             {pendingHint && (
-              <div className="bg-white animate-fade-in-up" style={{ borderRadius: 14, border: '1px solid #FFD9C2', padding: 14 }}>
+              <div className="bg-white animate-fade-in-up" style={{ borderRadius: 14, border: '1px solid var(--legche-line, #FFD9C2)', padding: 14 }}>
                 {!pendingHint.revealed ? (
                   <>
-                    <p className="text-sm mb-3" style={{ color: '#2C1A0E' }}>💡 {HINT_TEXTS.teaser}</p>
+                    <p className="text-sm mb-3" style={{ color: 'var(--legche-fg, #2C1A0E)' }}>💡 {HINT_TEXTS.teaser}</p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setPendingHint(h => h ? { ...h, revealed: true } : h)}
@@ -946,20 +972,20 @@ export function DailyScreen() {
                   </>
                 ) : (
                   <>
-                    <p className="text-xs font-bold tracking-wide mb-2" style={{ color: '#8A7A70' }}>{HINT_TEXTS.title.toUpperCase()}</p>
-                    <p className="text-sm" style={{ color: '#2C1A0E' }}>
-                      <span style={{ color: '#8A7A70' }}>{pendingHint.pair.from}</span>
+                    <p className="text-xs font-bold tracking-wide mb-2" style={{ color: 'var(--legche-muted, #8A7A70)' }}>{HINT_TEXTS.title.toUpperCase()}</p>
+                    <p className="text-sm" style={{ color: 'var(--legche-fg, #2C1A0E)' }}>
+                      <span style={{ color: 'var(--legche-muted, #8A7A70)' }}>{pendingHint.pair.from}</span>
                       {' → '}
                       <span className="font-semibold">{pendingHint.pair.to}</span>
                     </p>
-                    <p className="text-sm font-semibold mt-1" style={{ color: '#FF6200' }}>
+                    <p className="text-sm font-semibold mt-1" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>
                       {HINT_TEXTS.savedLabel(pendingHint.pair.savedKcal)}
                     </p>
                     {pendingHint.pair.comment && (
-                      <p className="text-xs mt-1" style={{ color: '#8A7A70' }}>{pendingHint.pair.comment}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--legche-muted, #8A7A70)' }}>{pendingHint.pair.comment}</p>
                     )}
                     {pendingHint.pair.tip && (
-                      <p className="text-xs mt-1" style={{ color: '#8A7A70' }}>{pendingHint.pair.tip}</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--legche-muted, #8A7A70)' }}>{pendingHint.pair.tip}</p>
                     )}
                     <button onClick={() => setPendingHint(null)} className="inga-btn-secondary w-full text-sm py-2 mt-3">
                       Понятно
@@ -982,7 +1008,7 @@ export function DailyScreen() {
                 || r.aliases.some(a => a.toLowerCase().replace(/ё/g, 'е').includes(q));
               const filtered = LIGHT_RECIPES.filter(matches);
               return (
-              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={() => { setShowLightPicker(false); setLightPickerQuery(''); }}>
+              <div className="legche-picker fixed inset-0 flex items-end sm:items-center justify-center bg-black/40 p-4" onClick={() => { setShowLightPicker(false); setLightPickerQuery(''); }}>
                 <div
                   className="bg-card rounded-2xl w-full max-w-md shadow-xl animate-fade-in-up flex flex-col"
                   style={{ maxHeight: '75vh' }}
@@ -990,7 +1016,7 @@ export function DailyScreen() {
                 >
                   <div className="p-5 pb-3">
                     <p className="text-base font-semibold">Из лёгких рецептов</p>
-                    <p className="text-xs mt-1" style={{ color: '#8A7A70' }}>
+                    <p className="text-xs mt-1" style={{ color: 'var(--legche-muted, #8A7A70)' }}>
                       Что вы приготовили? Разница с классикой попадёт в Копилку лёгкости.
                     </p>
                     <input
@@ -998,19 +1024,19 @@ export function DailyScreen() {
                       onChange={e => setLightPickerQuery(e.target.value)}
                       placeholder="Поиск: блины, суп, чизкейк…"
                       className="w-full mt-3 text-sm bg-white"
-                      style={{ borderRadius: 10, border: '1px solid #EDE5DF', padding: '8px 12px', outline: 'none' }}
+                      style={{ borderRadius: 10, border: '1px solid var(--legche-line, #EDE5DF)', padding: '8px 12px', outline: 'none' }}
                     />
                   </div>
                   <div className="overflow-y-auto px-5 pb-3 space-y-2">
                     {filtered.length === 0 && (
-                      <p className="text-sm py-4 text-center" style={{ color: '#8A7A70' }}>Ничего не нашлось — попробуйте другое слово</p>
+                      <p className="text-sm py-4 text-center" style={{ color: 'var(--legche-muted, #8A7A70)' }}>Ничего не нашлось — попробуйте другое слово</p>
                     )}
                     {SECTION_ORDER.map(sec => {
                       const inSection = filtered.filter(r => r.recipeSection === sec);
                       if (inSection.length === 0) return null;
                       return (
                         <div key={sec}>
-                          <p className="text-[11px] font-bold tracking-wide mt-2 mb-1" style={{ color: '#A89A8E' }}>
+                          <p className="text-[11px] font-bold tracking-wide mt-2 mb-1" style={{ color: 'var(--legche-muted, #A89A8E)' }}>
                             {(SECTION_TITLES[sec] || sec).toUpperCase()}
                           </p>
                           <div className="space-y-2">
@@ -1023,15 +1049,15 @@ export function DailyScreen() {
                                   key={r.recipeId}
                                   onClick={() => pickLightRecipe(r)}
                                   className="w-full text-left bg-white"
-                                  style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: '10px 12px' }}
+                                  style={{ borderRadius: 12, border: '1px solid var(--legche-line, #EDE5DF)', padding: '10px 12px' }}
                                 >
-                                  <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>{r.name}</p>
-                                  <p className="text-xs" style={{ color: '#8A7A70' }}>
+                                  <p className="text-sm font-semibold" style={{ color: 'var(--legche-fg, #2C1A0E)' }}>{r.name}</p>
+                                  <p className="text-xs" style={{ color: 'var(--legche-muted, #8A7A70)' }}>
                                     {label}: ≈{Math.round(r.classicKcal)} → {Math.round(r.lightKcal)} ккал/100 г
                                   </p>
-                                  <p className="text-xs" style={{ color: '#8A7A70' }}>
+                                  <p className="text-xs" style={{ color: 'var(--legche-muted, #8A7A70)' }}>
                                     порция {r.portionGrams} {r.recipeSection === 'drinks' ? 'мл' : 'г'}
-                                    <span className="font-semibold ml-1" style={{ color: '#FF6200' }}>+{saved} <img src={butterflyCoin} alt="" width={24} height={24} className="inline-block h-6 w-6 align-middle object-contain" /></span>
+                                    <span className="font-semibold ml-1" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>+{saved} <img src="/legche-butterfly.webp" alt="" width={24} height={24} className="inline-block h-6 w-6 align-middle object-contain" /></span>
                                   </p>
                                 </button>
                               );
@@ -1050,63 +1076,39 @@ export function DailyScreen() {
             })()}
 
 
-            <div className="bg-white space-y-3" style={{borderRadius:14,border:'1px solid #EDE5DF',padding:14}}>
-              <p className="text-xs font-bold tracking-wide text-muted-foreground">СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
-              <div className="space-y-2">
-                <div className="flex justify-between gap-3 text-sm">
-                  <span className="shrink-0">🥩 Белок</span>
-                  <span className="min-w-0 text-right">{anyProteinLoading?'Оценка…':facts.unknownProtein===totalMeals?'Недостаточно данных':`≈${proteinGrams} г${facts.unknownProtein?' в оценённых записях':''}`}{proteinTarget?` · цель ${proteinTarget} г`:''}</span>
-                </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{background:'#F2EBE5'}} aria-hidden="true">
-                  <div style={{width:`${proteinTarget && facts.unknownProtein<totalMeals ? pct(proteinGrams,proteinTarget) : 0}%`,height:'100%',background:'#CF7B5A',transition:'width 0.3s'}} />
-                </div>
-              </div>
-              {([
-                ['🌾 Углеводы',facts.carbs,'#C49A3E'],
-                ['🥦 Клетчатка',facts.fiber,'#5E9E72'],
-              ] as const).map(([label,group,color])=>(
-                <div key={label} className="space-y-2">
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="shrink-0">{label}</span>
-                    <span className="min-w-0 text-right">{group.count ? `В ${group.count} из ${totalMeals} записей` : group.unknown ? 'Недостаточно данных' : 'Источники не отмечены'}{group.unknown>0 && group.count>0?' · есть неоценённые':''}</span>
-                  </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{background:'#F2EBE5'}} aria-hidden="true">
-                    <div style={{width:`${pct(group.count,totalMeals)}%`,height:'100%',background:color,transition:'width 0.3s'}} />
-                  </div>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground">Отметки показывают наличие источников в блюдах, а не выполнение дневной нормы. Их можно поправить вручную.</p>
-            </div>
-
+            <div className="flex justify-between items-center gap-2"><h2 className="text-lg font-bold">Приёмы пищи</h2><span className="text-sm text-muted-foreground">{totalMeals}</span></div>
+            {!totalMeals && !diary.loading && !diary.error && <div className="inga-card text-center"><p className="font-semibold">Что сегодня было вкусного?</p><p className="text-sm text-muted-foreground mt-2">Запишите первый приём пищи — текстом или голосом</p></div>}
+            {regular.map(m => <MealCard key={m.id} m={m} {...mealCardProps} />)}
+            <WaterTracker date={today} />
             {/* Копилка лёгкости — свёрнутая строка, детали по тапу */}
             <button
               onClick={() => setCopilkaOpen(o => !o)}
               className="bg-white w-full text-left"
-              style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: '10px 14px' }}
+              style={{ borderRadius: 14, border: '1px solid var(--legche-line, #EDE5DF)', padding: '10px 14px' }}
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold" style={{ color: '#2C1A0E' }}>
-                  <img src={butterflyCoin} alt="" width={32} height={32} className="inline-block h-8 w-8 mr-1 align-middle object-contain" /> {COPILKA_TEXTS.title}
-                  <span className="tabular-nums" style={{ color: '#FF6200' }}> · {(lightSavings?.total_kcal ?? 0).toLocaleString('ru-RU')}</span>
+                <p className="text-sm font-semibold" style={{ color: 'var(--legche-fg, #2C1A0E)' }}>
+                  <img src="/legche-butterfly.webp" alt="" width={32} height={32} className="inline-block h-8 w-8 mr-1 align-middle object-contain" /> {COPILKA_TEXTS.title}
+                  <span className="tabular-nums" style={{ color: 'var(--legche-accent-text, #FF6200)' }}> · {(lightSavings?.total_kcal ?? 0).toLocaleString('ru-RU')}</span>
                 </p>
-                <span className="text-xs" style={{ color: '#A89A8E' }}>{copilkaOpen ? '▲' : '▼'}</span>
+                <span className="text-xs" style={{ color: 'var(--legche-muted, #A89A8E)' }}>{copilkaOpen ? '▲' : '▼'}</span>
               </div>
               {copilkaOpen && (
                 lightSavings && lightSavings.total_kcal > 0 ? (
                   <div className="mt-2">
-                    <p className="text-2xl font-bold tabular-nums" style={{ color: '#FF6200' }}>
+                    <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>
                       {lightSavings.total_kcal.toLocaleString('ru-RU')}
-                      <span className="text-sm font-medium ml-2" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.monthLabel}</span>
+                      <span className="text-sm font-medium ml-2" style={{ color: 'var(--legche-muted, #8A7A70)' }}>{COPILKA_TEXTS.monthLabel}</span>
                     </p>
                     {lightSavings.total_kcal >= 770 && (
-                      <p className="text-sm mt-1" style={{ color: '#2C1A0E' }}>
+                      <p className="text-sm mt-1" style={{ color: 'var(--legche-fg, #2C1A0E)' }}>
                         {COPILKA_TEXTS.kgLine(kgEquivalent(lightSavings.total_kcal))}
                       </p>
                     )}
-                    <p className="text-[11px] mt-2" style={{ color: '#A89A8E' }}>{COPILKA_TEXTS.note}</p>
+                    <p className="text-[11px] mt-2" style={{ color: 'var(--legche-muted, #A89A8E)' }}>{COPILKA_TEXTS.note}</p>
                   </div>
                 ) : (
-                  <p className="text-sm mt-2" style={{ color: '#8A7A70' }}>{COPILKA_TEXTS.empty}</p>
+                  <p className="text-sm mt-2" style={{ color: 'var(--legche-muted, #8A7A70)' }}>{COPILKA_TEXTS.empty}</p>
                 )
               )}
             </button>
@@ -1114,19 +1116,19 @@ export function DailyScreen() {
             <button onClick={()=>setTab('analysis')} className="inga-btn-secondary w-full">Разбор питания сегодня →</button>
 
             {/* Regular meal cards */}
-            {regular.map(m => <MealCard key={m.id} m={m} {...mealCardProps} />)}
+
 
             {/* Evening divider */}
             <div className="flex items-center gap-2 py-1">
-              <div className="flex-1 h-px" style={{ background: '#E5DDD8' }} />
+              <div className="flex-1 h-px" style={{ background: 'var(--legche-line, #E5DDD8)' }} />
               <span style={{ fontSize: 10, color: '#C0B0A8', letterSpacing: '0.1em' }}>вечер</span>
-              <div className="flex-1 h-px" style={{ background: '#E5DDD8' }} />
+              <div className="flex-1 h-px" style={{ background: 'var(--legche-line, #E5DDD8)' }} />
             </div>
 
             {/* Evening snack card */}
-            <div style={{ background: '#F4F0F9', border: '1.5px solid #C9B8E8', borderRadius: 14, padding: 14 }}>
-              <p className="font-semibold text-sm mb-1" style={{ color: '#4A3580' }}>🌙 Вечерний перекус</p>
-              <p className="text-xs mb-3" style={{ color: '#4A3580', opacity: 0.85 }}>
+            <div style={{ background: 'var(--legche-purple-bg, #F4F0F9)', border: '1.5px solid var(--legche-line, #C9B8E8)', borderRadius: 14, padding: 14 }}>
+              <p className="font-semibold text-sm mb-1" style={{ color: 'var(--legche-purple, #4A3580)' }}>🌙 Вечерний перекус</p>
+              <p className="text-xs mb-3" style={{ color: 'var(--legche-purple, #4A3580)', opacity: 0.85 }}>
                 Только белок + клетчатка, без жира и углеводов. Можно есть даже на ночь.
               </p>
               {evening.map(m => <div key={m.id} className="mb-2"><MealCard m={m} {...mealCardProps} /></div>)}
@@ -1139,7 +1141,7 @@ export function DailyScreen() {
                   + Записать
                 </button>
               ) : (
-                <div className="bg-white space-y-2 mt-2" style={{ borderRadius: 12, border: '1px solid #EDE5DF', padding: 12 }}>
+                <div className="bg-white space-y-2 mt-2" style={{ borderRadius: 12, border: '1px solid var(--legche-line, #EDE5DF)', padding: 12 }}>
                   <div className="flex gap-2">
                     <input
                       value={eveningText}
@@ -1216,42 +1218,13 @@ export function DailyScreen() {
           date={today} revision={JSON.stringify([mealMeta,profile.currentStage,profile.weight,profile.goalWeight,profile.currentFixationCalories])}
           ready={!diary.loading && !diary.error && diary.pending===0} mealCount={facts.mealCount}
           protein={facts.protein} unknownProtein={facts.unknownProtein} proteinTarget={facts.proteinTarget}
-          onRecipe={recipe=>{localStorage.setItem('inga-menu-jump',JSON.stringify({section:'recipes',recipeSection:recipe.recipeSection,activeRecipe:recipe.recipeId,returnTo:'daily'}));setStep('menu');}}
           onPlan={()=>setShowPlanning(true)} />}
       </div>
 
-      <button
-        onClick={() => setStep('menu')}
-        className="mt-6 w-full max-w-md inga-btn-secondary font-semibold"
-        style={{ borderRadius: 12 }}
-      >
-        ☰ Открыть меню
-      </button>
-
-      {/* Fixed bottom chat panel */}
-      <button
-        onClick={() => setStep('chat')}
-        className="fixed bottom-0 z-50 flex items-center gap-[10px] px-4 py-[14px] bg-white"
-        style={{ background: '#fff', maxWidth: 480, left: '50%', transform: 'translateX(-50%)', width: '100%', boxShadow: '0 -2px 8px rgba(0,0,0,0.06)', borderRadius: '16px 16px 0 0' }}
-      >
-        <img
-          src={ingaPhoto}
-          alt="Инга"
-          className="w-[38px] h-[38px] rounded-full flex-shrink-0"
-          style={{ border: '2px solid #FAEEDA' }}
-        />
-        <div className="flex-1 text-left">
-          <p className="text-[14px] font-semibold" style={{ color: '#2C1A0E' }}>
-            Поговорим?
-          </p>
-          <p className="text-[12px]" style={{ color: '#A89080' }}>
-            Задайте вопрос или расскажите, как проходит день
-          </p>
-        </div>
-        <span className="text-[18px]" style={{ color: '#FF6200' }}>
-          ›
-        </span>
-      </button>
+      <div className="legche-dock legche-glass" aria-label="Быстрые действия">
+        {tab === 'meals' && <button type="button" className="inga-btn-primary legche-dock-add" onClick={() => { setMealTime(nowHHMM()); setShowMealInput(true); }}><Plus size={21} aria-hidden="true"/>Записать еду</button>}
+        <button type="button" onClick={() => setStep('chat')} className="legche-dock-chat"><img src={ingaPhoto} alt=""/><span>Спросить Ингу</span><MessageCircle size={19} aria-hidden="true"/></button>
+      </div>
     </div>
   );
 }

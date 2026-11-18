@@ -12,6 +12,7 @@ import { SurveyDataScreen } from '@/components/inga/SurveyDataScreen';
 import { TrackingMethodScreen } from '@/components/inga/TrackingMethodScreen';
 import { DailyScreen } from '@/components/inga/DailyScreen';
 import { MenuScreen } from '@/components/inga/MenuScreen';
+import { LegcheAppearance } from '@/components/inga/LegcheAppearance';
 import { ChatScreen } from '@/components/inga/ChatScreen';
 import { GoalScreen } from '@/components/inga/GoalScreen';
 import { HowItWorksScreen } from '@/components/inga/HowItWorksScreen';
@@ -102,9 +103,9 @@ function AppFlow({ initialAuthMode }: { initialAuthMode?: 'login' | 'signup' }) 
     case 'tracking-method': return <TrackingMethodScreen />;
     case 'how-it-works': return <HowItWorksScreen />;
     case 'route-ready': return <RouteReadyScreen />;
-    case 'daily': return <DailyScreen />;
-    case 'menu': return <MenuScreen />;
-    case 'chat': return <ChatScreen />;
+    case 'daily': return <LegcheAppearance><DailyScreen /></LegcheAppearance>;
+    case 'menu': return <LegcheAppearance><MenuScreen /></LegcheAppearance>;
+    case 'chat': return <LegcheAppearance><ChatScreen /></LegcheAppearance>;
     default: return <SurveyNameScreen />;
   }
 }

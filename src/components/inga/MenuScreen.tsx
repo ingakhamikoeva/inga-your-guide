@@ -5,6 +5,7 @@ import { AccessScreen } from './AccessScreen';
 import { FixationLesson } from './FixationLesson';
 import { MaintenanceLesson } from './MaintenanceLesson';
 import { fixationEquilibrium, canOpenFixationLesson } from '@/lib/fixation';
+import { AppearanceControl } from './LegcheAppearance';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 import { auth } from '@/lib/auth';
 import React, { useEffect, useState, useRef } from 'react';
@@ -272,6 +273,7 @@ export function MenuScreen() {
         <h2 className="text-2xl font-bold mb-6">Меню</h2>
         <div className="w-full max-w-md space-y-2.5">
           <button onClick={() => setShowDiaryHistory(true)} className="inga-btn-secondary w-full">Посмотреть дневник</button>
+          <AppearanceControl />
           {items.map(item => {
             const Icon = item.icon;
             return (
@@ -516,9 +518,9 @@ export function MenuScreen() {
           <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Сладкая точка</h2>
 
-          <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
-            <p className="text-sm font-semibold" style={{ color: '#FF6200' }}>Сладкое не запрещено — оно запланировано.</p>
-            <p className="text-sm mt-1" style={{ color: '#7A3A00' }}>Это один из главных принципов метода.</p>
+          <div className="inga-card mb-4" style={{ background: 'var(--legche-warm, #FFF4EE)', border: '1px solid #FF6200' }}>
+            <p className="text-sm font-semibold" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>Сладкое не запрещено — оно запланировано.</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--legche-accent-text, #7A3A00)' }}>Это один из главных принципов метода.</p>
           </div>
 
           <div className="inga-card mb-4">
@@ -560,9 +562,9 @@ export function MenuScreen() {
           <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Вечерний перекус</h2>
 
-          <div className="inga-card mb-4" style={{ background: '#F4F0F9', border: '1px solid #C9B8E8' }}>
-            <p className="text-sm font-semibold" style={{ color: '#4A3570' }}>Самое большое заблуждение: хотите похудеть — не ешьте после шести вечера.</p>
-            <p className="text-sm mt-2" style={{ color: '#4A3570' }}>Но ведь после шести большинство возвращается с работы — неужели голодать до утра? Мы договорились не падать в голодные ямы, и вечер — не исключение.</p>
+          <div className="inga-card mb-4" style={{ background: 'var(--legche-purple-bg, #F4F0F9)', border: '1px solid var(--legche-line, #C9B8E8)' }}>
+            <p className="text-sm font-semibold" style={{ color: 'var(--legche-purple, #4A3570)' }}>Самое большое заблуждение: хотите похудеть — не ешьте после шести вечера.</p>
+            <p className="text-sm mt-2" style={{ color: 'var(--legche-purple, #4A3570)' }}>Но ведь после шести большинство возвращается с работы — неужели голодать до утра? Мы договорились не падать в голодные ямы, и вечер — не исключение.</p>
           </div>
 
           <div className="inga-card mb-4">
@@ -622,7 +624,7 @@ export function MenuScreen() {
           </div>
 
           <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-8">
-            <p className="text-sm font-semibold" style={{ color: '#FF6200' }}>После 18:00 есть можно и нужно — главное, правильно выбирать продукты.</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>После 18:00 есть можно и нужно — главное, правильно выбирать продукты.</p>
           </div>
         </div>
       </div>
@@ -744,9 +746,9 @@ export function MenuScreen() {
           <button onClick={() => goBack(() => setNutrientSection(null))} className="text-base text-muted-foreground mb-6 block">← Назад</button>
           <h2 className="text-2xl font-bold mb-5">Объём еды</h2>
 
-          <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
-            <p className="text-sm font-semibold" style={{ color: '#FF6200' }}>Голод — главный враг похудения. Именно он приводит к срывам.</p>
-            <p className="text-sm mt-1" style={{ color: '#7A3A00' }}>Ваша задача — не падать в голодные ямы.</p>
+          <div className="inga-card mb-4" style={{ background: 'var(--legche-warm, #FFF4EE)', border: '1px solid #FF6200' }}>
+            <p className="text-sm font-semibold" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>Голод — главный враг похудения. Именно он приводит к срывам.</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--legche-accent-text, #7A3A00)' }}>Ваша задача — не падать в голодные ямы.</p>
           </div>
 
           <div className="inga-card mb-4">
@@ -839,11 +841,11 @@ export function MenuScreen() {
           </div>
 
           {/* Hook */}
-          <div className="inga-card mb-4" style={{ background: '#FFF4EE', border: '1px solid #FF6200' }}>
-            <p className="text-sm leading-relaxed" style={{ color: '#7A3A00' }}>
+          <div className="inga-card mb-4" style={{ background: 'var(--legche-warm, #FFF4EE)', border: '1px solid #FF6200' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--legche-accent-text, #7A3A00)' }}>
               Лене и Даше по 40. Вес одинаковый, телосложение похоже. Но Лена выглядит молодо и подтянуто, а у Даши — дряблый живот и усталый вид.
             </p>
-            <p className="text-sm font-semibold mt-2" style={{ color: '#FF6200' }}>В чём разница? В белке.</p>
+            <p className="text-sm font-semibold mt-2" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>В чём разница? В белке.</p>
           </div>
 
           {/* Why protein matters */}
@@ -918,7 +920,7 @@ export function MenuScreen() {
 
           {/* CTA */}
           <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-4">
-            <p className="text-sm font-semibold mb-1" style={{ color: '#FF6200' }}>Куриная грудка не отложится в жир, даже если съесть её ночью.</p>
+            <p className="text-sm font-semibold mb-1" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>Куриная грудка не отложится в жир, даже если съесть её ночью.</p>
             <p className="text-xs text-muted-foreground leading-relaxed">На переваривание белка организм тратит больше энергии, чем на переваривание углеводов и жиров. Белок даёт сытость, сохраняет мышцы и помогает терять именно жир.</p>
           </div>
 
@@ -946,8 +948,8 @@ export function MenuScreen() {
             <h2 className="text-2xl font-bold">Углеводы</h2>
           </div>
 
-          <div className="inga-card mb-4" style={{ background: '#FAF4E5', border: '1px solid #C49A3E' }}>
-            <p className="text-sm leading-relaxed" style={{ color: '#7A5A00' }}>
+          <div className="inga-card mb-4" style={{ background: 'var(--legche-carbs-bg, #FAF4E5)', border: '1px solid #C49A3E' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--legche-carbs, #7A5A00)' }}>
               Марина ест «правильно»: каша на завтрак, суп с лапшой и хлебом в обед, макароны на ужин. Но не может понять, почему у неё постоянно отёки и растёт вес.
             </p>
             <p className="text-sm font-semibold mt-2" style={{ color: '#C49A3E' }}>В чём проблема? Углеводов слишком много — и все они быстрые.</p>
@@ -1014,8 +1016,8 @@ export function MenuScreen() {
             <h2 className="text-2xl font-bold">Клетчатка</h2>
           </div>
 
-          <div className="inga-card mb-4" style={{ background: '#EDF5F0', border: '1px solid #5E9E72' }}>
-            <p className="text-sm leading-relaxed" style={{ color: '#1E5A30' }}>
+          <div className="inga-card mb-4" style={{ background: 'var(--legche-fiber-bg, #EDF5F0)', border: '1px solid #5E9E72' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--legche-fiber, #1E5A30)' }}>
               Клетчатка — это щётка для кишечника и еда для ваших полезных бактерий одновременно. Чем больше её в рационе, тем лучше работает всё остальное.
             </p>
             <p className="text-sm font-semibold mt-2" style={{ color: '#5E9E72' }}>
@@ -1086,8 +1088,8 @@ export function MenuScreen() {
             <h2 className="text-2xl font-bold">Жиры</h2>
           </div>
 
-          <div className="inga-card mb-4" style={{ background: '#EEF2FF', border: '1px solid #6B7FCC' }}>
-            <p className="text-sm leading-relaxed" style={{ color: '#2A3A7A' }}>
+          <div className="inga-card mb-4" style={{ background: 'var(--legche-purple-bg, #EEF2FF)', border: '1px solid #6B7FCC' }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--legche-purple, #2A3A7A)' }}>
               Масло, орехи, авокадо, сыр — всё это полезно. Но 1 г жира = 9 ккал, тогда как 1 г белка или углеводов = 4 ккал.
             </p>
             <p className="text-sm font-semibold mt-2" style={{ color: '#6B7FCC' }}>Жиры не враги — просто на этапе похудения они главный рычаг экономии калорий.</p>
@@ -1297,7 +1299,7 @@ export function MenuScreen() {
             <div
               className="inga-card cursor-pointer flex items-center justify-between"
               onClick={() => setNutrientSection('Месяц1')}
-              style={{ border: '1px solid #FFD9C2', background: '#FFF9F4' }}
+              style={{ border: '1px solid var(--legche-line, #FFD9C2)', background: 'var(--legche-warm, #FFF9F4)' }}
             >
               <div>
                 <span className="font-semibold">🗓️ Месяц 1 — программа 30 дней</span>
@@ -2144,7 +2146,7 @@ export function MenuScreen() {
       { label: 'MAX', url: 'https://max.ru/u/f9LHodD0cOJutz4kEit4dhKg_zry1MZm1rRaATtzDOs02lyk9S0YlwxEJvU', logo: logoMax },
       {
         label: 'Почта', url: 'mailto:inga@legche.online?subject=' + encodeURIComponent('Запись на консультацию'),
-        icon: <span style={{ fontSize: 20 }}>✉️</span>, bg: '#FFFFFF', border: '#EDE5DF',
+        icon: <span style={{ fontSize: 20 }}>✉️</span>, bg: '#FFFFFF', border: 'var(--legche-line, #EDE5DF)',
       },
     ];
     return (
@@ -2194,7 +2196,7 @@ export function MenuScreen() {
                     {l.icon}
                   </span>
                 )}
-                <span className="text-[11px]" style={{ color: '#6A5A50' }}>{l.label}</span>
+                <span className="text-[11px]" style={{ color: 'var(--legche-muted, #6A5A50)' }}>{l.label}</span>
               </button>
             ))}
           </div>
@@ -2624,7 +2626,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
           disabled={downloadingDiary}
           aria-busy={downloadingDiary}
           className="w-full rounded-2xl py-3 text-sm font-medium transition-colors"
-          style={{ backgroundColor: 'transparent', border: '1px solid #FF6200', color: '#FF6200' }}
+          style={{ backgroundColor: 'transparent', border: '1px solid #FF6200', color: 'var(--legche-accent-text, #FF6200)' }}
         >
           📥 Скачать дневник питания
         </button>
@@ -2639,10 +2641,10 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
 
         {/* Подтверждение почты — мягкое напоминание, доступ не блокируется */}
         {!emailVerified && (
-          <div className="inga-card mt-4" style={{ border: '1px solid #FFD9C2', background: '#FFF9F4' }}>
+          <div className="inga-card mt-4" style={{ border: '1px solid var(--legche-line, #FFD9C2)', background: 'var(--legche-warm, #FFF9F4)' }}>
             <p className="text-sm font-semibold mb-1">✉️ Подтвердите почту</p>
             {verifySent ? (
-              <p className="text-xs leading-relaxed" style={{ color: '#4A7A45' }}>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--legche-fiber, #4A7A45)' }}>
                 Письмо отправлено. Загляните в почту — и в папку «Спам», письма иногда попадают туда.
               </p>
             ) : (
@@ -2654,7 +2656,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
                   onClick={handleSendVerification}
                   disabled={verifySending}
                   className="text-sm font-semibold"
-                  style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}
+                  style={{ color: 'var(--legche-accent-text, #FF6200)', background: 'transparent', border: 'none', padding: 0 }}
                 >
                   {verifySending ? 'Отправляю…' : 'Отправить письмо ещё раз'}
                 </button>
@@ -2668,7 +2670,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
         <div className="inga-card mt-4">
           <p className="text-sm font-semibold mb-1">🎁 У меня есть промокод</p>
           {promoSuccess ? (
-            <p className="text-xs leading-relaxed" style={{ color: '#4A7A45' }}>{promoSuccess}</p>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--legche-fiber, #4A7A45)' }}>{promoSuccess}</p>
           ) : (
             <>
               <p className="text-xs text-muted-foreground leading-relaxed mb-2">
@@ -2681,7 +2683,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
                   onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
                   placeholder="Введите код"
                   className="flex-1 text-sm bg-white"
-                  style={{ borderRadius: 10, border: '1px solid #EDE5DF', padding: '8px 12px', outline: 'none', textTransform: 'uppercase' }}
+                  style={{ borderRadius: 10, border: '1px solid var(--legche-line, #EDE5DF)', padding: '8px 12px', outline: 'none', textTransform: 'uppercase' }}
                 />
                 <button
                   onClick={handleRedeemPromo}
@@ -2708,7 +2710,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
           <button
             onClick={() => window.open('mailto:support@legche.online?subject=' + encodeURIComponent('Вопрос по приложению legche.online'), '_blank')}
             className="text-sm font-semibold"
-            style={{ color: '#FF6200', background: 'transparent', border: 'none', padding: 0 }}
+            style={{ color: 'var(--legche-accent-text, #FF6200)', background: 'transparent', border: 'none', padding: 0 }}
           >
             support@legche.online
           </button>
@@ -2719,18 +2721,18 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
           <button
             onClick={() => setConfirmSignOut(true)}
             className="w-full rounded-2xl py-3 text-sm font-medium transition-colors"
-            style={{ backgroundColor: 'transparent', border: '1px solid #E5DDD8', color: '#6A5A50' }}
+            style={{ backgroundColor: 'transparent', border: '1px solid var(--legche-line, #E5DDD8)', color: 'var(--legche-muted, #6A5A50)' }}
           >
             Выйти из аккаунта
           </button>
         ) : (
-          <div className="rounded-2xl p-4" style={{ border: '1px solid #E5DDD8' }}>
-            <div className="text-sm font-medium mb-3 text-center" style={{ color: '#6A5A50' }}>Выйти из аккаунта?</div>
+          <div className="rounded-2xl p-4" style={{ border: '1px solid var(--legche-line, #E5DDD8)' }}>
+            <div className="text-sm font-medium mb-3 text-center" style={{ color: 'var(--legche-muted, #6A5A50)' }}>Выйти из аккаунта?</div>
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmSignOut(false)}
                 className="flex-1 rounded-xl py-2 text-sm"
-                style={{ backgroundColor: 'transparent', border: '1px solid #E5DDD8', color: '#6A5A50' }}
+                style={{ backgroundColor: 'transparent', border: '1px solid var(--legche-line, #E5DDD8)', color: 'var(--legche-muted, #6A5A50)' }}
               >Отмена</button>
               <button
                 onClick={doSignOut}

@@ -20,10 +20,10 @@ type MealCardProps = {
 };
 
 export const mealPillStyle = (active: boolean | null, kind: 'protein' | 'carbs' | 'fiber') => {
-  if (!active) return { background: '#F7F2EE', color: '#6A5A50', border: '1px solid #E5DDD8' };
-  if (kind === 'protein') return { background: '#F9EDEA', color: '#994B30', border: '1px solid #994B30' };
-  if (kind === 'carbs') return { background: '#FAF4E5', color: '#80621D', border: '1px solid #80621D' };
-  return { background: '#EDF5F0', color: '#376745', border: '1px solid #376745' };
+  if (!active) return { background: 'var(--legche-chip, #F7F2EE)', color: 'var(--legche-muted, #6A5A50)', border: '1px solid var(--legche-line, #E5DDD8)' };
+  if (kind === 'protein') return { background: 'var(--legche-protein-bg, #F9EDEA)', color: 'var(--legche-protein, #994B30)', border: '1px solid #994B30' };
+  if (kind === 'carbs') return { background: 'var(--legche-carbs-bg, #FAF4E5)', color: 'var(--legche-carbs, #80621D)', border: '1px solid #80621D' };
+  return { background: 'var(--legche-fiber-bg, #EDF5F0)', color: 'var(--legche-fiber, #376745)', border: '1px solid #376745' };
 };
 
 // Module-level identity keeps the same input mounted during parent updates.
@@ -34,11 +34,11 @@ export function MealCard({
   saveManualProtein, onEditMeal, onDeleteMeal, toggleMealFlag, setMealPortion,
 }: MealCardProps) {
   return (
-      <div className="bg-white" style={{ borderRadius: 14, border: '1px solid #EDE5DF', padding: 14 }}>
+      <div className="legche-meal bg-white" style={{ borderRadius: 14, border: '1px solid var(--legche-line, #EDE5DF)', padding: 14 }}>
         <div className="flex items-start justify-between gap-2 mb-1">
           <span className="font-semibold text-sm flex flex-wrap items-center gap-1 min-w-0">
             <span>{m.name}</span>
-            <span style={{ color: '#6A5A50' }}>·</span>
+            <span style={{ color: 'var(--legche-muted, #6A5A50)' }}>·</span>
             {editingTimeIdx === m.i ? (
               <input
                 type="time"
@@ -50,7 +50,7 @@ export function MealCard({
                 onKeyDown={e => { if (e.key === 'Enter') setEditingTimeIdx(null); }}
                 className="meal-time-input min-h-[44px] max-w-full"
                 style={{
-                  color: '#6A5A50',
+                  color: 'var(--legche-muted, #6A5A50)',
                   background: 'transparent',
                   border: '1px solid #FF6200',
                   borderRadius: 6,
@@ -64,7 +64,7 @@ export function MealCard({
                 type="button"
                 disabled={pending} onClick={() => setEditingTimeIdx(m.i)}
                 style={{
-                  color: '#6A5A50',
+                  color: 'var(--legche-muted, #6A5A50)',
                   background: 'transparent',
                   border: 'none',
                   padding: '1px 4px',
@@ -96,7 +96,7 @@ export function MealCard({
           </div>
         </div>
         <p className="text-sm text-muted-foreground mb-1">{m.desc}</p>
-        <div className="flex items-center gap-1.5 mb-3 text-[14px]" style={{ color: '#6A5A50' }}>
+        <div className="flex items-center gap-1.5 mb-3 text-[14px]" style={{ color: 'var(--legche-muted, #6A5A50)' }}>
           {editingProteinIdx === m.i ? (
             <>
               <input
@@ -110,7 +110,7 @@ export function MealCard({
                 onBlur={() => saveManualProtein(m.i, editingProteinValue)}
                 onKeyDown={e => { if (e.key === 'Enter') saveManualProtein(m.i, editingProteinValue); }}
                 style={{
-                  width: 76, minHeight: 44, color: '#6A5A50', background: 'transparent',
+                  width: 76, minHeight: 44, color: 'var(--legche-muted, #6A5A50)', background: 'transparent',
                   border: '1px solid #994B30', borderRadius: 6, padding: '1px 4px',
                   fontSize: 16,
                 }}
@@ -140,7 +140,7 @@ export function MealCard({
               type="button"
               onClick={() => { setEditingProteinIdx(m.i); setEditingProteinValue(''); }}
               className="min-h-[44px] rounded-md"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14, color: '#6A5A50' }}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14, color: 'var(--legche-muted, #6A5A50)' }}
             >
               + указать белок ✏️
             </button>
@@ -162,7 +162,7 @@ export function MealCard({
             <button
               disabled={pending} onClick={() => toggleMealFlag(m.i, 'sweet')}
               className="text-[14px] min-h-[44px] rounded-md font-medium"
-              style={{ color: m.sweet ? '#994B30' : '#6A5A50', background: 'transparent', border: 'none', padding: 0 }}
+              style={{ color: m.sweet ? 'var(--legche-protein, #994B30)' : 'var(--legche-muted, #6A5A50)', background: 'transparent', border: 'none', padding: 0 }}
             >
               🍰 {m.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
             </button>
@@ -170,7 +170,7 @@ export function MealCard({
         </div>
         {m.protein && (
           <div className="mb-2 pl-1">
-            <p className="text-[14px] mb-1" style={{ color: '#6A5A50' }}>Сколько белка?</p>
+            <p className="text-[14px] mb-1" style={{ color: 'var(--legche-muted, #6A5A50)' }}>Сколько белка?</p>
             <div className="flex flex-wrap gap-1.5">
               {([
                 { key: 'small' as ProteinPortion, label: '🤏 Меньше ладони' },
@@ -184,9 +184,9 @@ export function MealCard({
                     disabled={pending} onClick={() => setMealPortion(m.i, opt.key)}
                     className="text-[14px] min-h-[44px] px-2.5 py-1 rounded-full font-medium"
                     style={{
-                      background: active ? '#F9EDEA' : '#F7F2EE',
-                      color: active ? '#994B30' : '#6A5A50',
-                      border: active ? '1px solid #994B30' : '1px solid #E5DDD8',
+                      background: active ? 'var(--legche-protein-bg, #F9EDEA)' : 'var(--legche-chip, #F7F2EE)',
+                      color: active ? 'var(--legche-protein, #994B30)' : 'var(--legche-muted, #6A5A50)',
+                      border: active ? '1px solid var(--legche-protein, #994B30)' : '1px solid var(--legche-line, #E5DDD8)',
                     }}
                   >
                     {opt.label}
