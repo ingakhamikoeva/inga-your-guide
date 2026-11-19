@@ -1,11 +1,12 @@
 import { DIARY_AI_LIMIT_MESSAGE } from '@/lib/request-limits';
 import { useSaveAction, SAVE_ERROR } from '@/hooks/use-save-action';
 import { useState, useEffect, useRef } from 'react';
-import { CalendarDays, ChevronRight, MessageCircle, Plus, BookOpen, X } from 'lucide-react';
+import { CalendarDays, ChevronRight, MessageCircle, Plus, BookOpen, X, Pencil, CheckCircle2 } from 'lucide-react';
 import { dailyInspiration } from './daily-inspiration';
 import { dailyRecipe } from './daily-recipe';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 import { MealCard, MealCorrections, mealPillStyle } from './MealCard';
+import { WeightTrend } from './WeightTrend';
 import { WaterTracker } from './WaterTracker';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
@@ -98,23 +99,33 @@ export function DailyScreen() {
   const morningSaving = useRef(false);
   const [morningReady, setMorningReady] = useState(false);
   const [morningBusy, setMorningBusy] = useState(false);
+  const [morningSaved, setMorningSaved] = useState(false);
+  const [morningLoadError, setMorningLoadError] = useState(false);
+  const [morningRetry, setMorningRetry] = useState(0);
+  const [morningChanged, setMorningChanged] = useState(false);
+  const [morningHasSaved, setMorningHasSaved] = useState(false);
+  const persistedMorning = useRef({weight:'', sleep:'', steps:'', stool:null as boolean | null});
   const owner = currentSession()?.user.id;
   useEffect(() => {
     let cancelled = false;
-    morningDirty.current.clear(); setMorningReady(false);
+    morningDirty.current.clear(); setMorningReady(false); setMorningSaved(false); setMorningHasSaved(false); setMorningLoadError(false); setMorningChanged(false);
+    persistedMorning.current = {weight:'', sleep:'', steps:'', stool:null};
     setWeight(''); setSleep(''); setSteps(''); setStool(null); setMorningAnalysis(null);
-    loadTodayCheckin(today).then(row => {
+    loadTodayCheckin(today, {strict:true}).then(row => {
       if (cancelled || currentSession()?.user.id !== owner) return;
       if (row) {
+        persistedMorning.current = {weight:row.weight == null ? '' : String(row.weight), sleep:row.sleepHours == null ? '' : String(row.sleepHours), steps:row.stepsYesterday == null ? '' : String(row.stepsYesterday), stool:row.stoolYesterday ?? null};
+        const hasSaved = Object.values(persistedMorning.current).some(v => v !== '' && v !== null);
+        setMorningSaved(hasSaved); setMorningHasSaved(hasSaved);
         if (!morningDirty.current.has('weight')) setWeight(row.weight == null ? '' : String(row.weight));
         if (!morningDirty.current.has('sleep')) setSleep(row.sleepHours == null ? '' : String(row.sleepHours));
         if (!morningDirty.current.has('steps')) setSteps(row.stepsYesterday == null ? '' : String(row.stepsYesterday));
         if (!morningDirty.current.has('stool')) setStool(row.stoolYesterday ?? null);
       }
       setMorningReady(true);
-    });
+    }).catch(() => { if (!cancelled && currentSession()?.user.id === owner) setMorningLoadError(true); });
     return () => { cancelled = true; };
-  }, [today, owner]);
+  }, [today, owner, morningRetry]);
   // Копилка лёгкости и подсказки замен
   const [lightSavings, setLightSavings] = useState<LightSavings | null>(null);
   const [pendingHint, setPendingHint] = useState<{ pair: SwapPair; revealed: boolean } | null>(null);
@@ -226,18 +237,6 @@ export function DailyScreen() {
     loadMealPlanForDate(today).then(setYesterdayPlan).catch(() => {});
   }, [today]);
 
-  // If morning checkin already saved today → always go to meals tab
-  useEffect(() => {
-    const checkinToday = weeklyData.some(e => e.date === today);
-    if (checkinToday && tab === 'morning') {
-      try {
-        localStorage.setItem('dailyActiveTab', 'meals');
-        localStorage.setItem('dailyActiveTabDate', today);
-      } catch {}
-      setTab('meals');
-    }
-  }, [weeklyData, today]);
-
   // Программа «Месяц 1»: прогресс, раскрытие карточки на Утре
   const [programProgress, setProgramProgress] = useState<ProgramProgress | null>(null);
   const [programExpanded, setProgramExpanded] = useState(false);
@@ -304,20 +303,38 @@ export function DailyScreen() {
         (steps && (!Number.isInteger(number(steps)) || number(steps)<0))) {
       toast.error('Проверьте введённые показатели.'); return;
     }
+    const dirty = morningDirty.current;
+    const changes = {
+      weight:dirty.has('weight') && weight ? number(weight) : undefined,
+      sleepHours:dirty.has('sleep') && sleep ? number(sleep) : undefined,
+      stepsYesterday:dirty.has('steps') && steps ? number(steps) : undefined,
+      stoolYesterday:dirty.has('stool') ? stool : undefined,
+    };
+    if (!Object.values(changes).some(v => v != null)) {
+      toast.error('Введите хотя бы один показатель.'); return;
+    }
     morningSaving.current=true; setMorningBusy(true);
     const savedOwner=owner, savedDate=today;
     try {
-      await addWeightEntry(today, morningDirty.current.has('weight') && weight ? number(weight) : undefined, {
-        sleepHours:morningDirty.current.has('sleep') && sleep ? number(sleep) : undefined,
-        stepsYesterday:morningDirty.current.has('steps') && steps ? number(steps) : undefined,
-        stoolYesterday:morningDirty.current.has('stool') ? stool : undefined,
+      await addWeightEntry(today, changes.weight, {
+        sleepHours:changes.sleepHours, stepsYesterday:changes.stepsYesterday, stoolYesterday:changes.stoolYesterday,
       });
       if (currentSession()?.user.id !== savedOwner || localDay() !== savedDate) return;
+      const previous = persistedMorning.current;
+      persistedMorning.current = {
+        weight:changes.weight == null ? previous.weight : String(changes.weight),
+        sleep:changes.sleepHours == null ? previous.sleep : String(changes.sleepHours),
+        steps:changes.stepsYesterday == null ? previous.steps : String(changes.stepsYesterday),
+        stool:changes.stoolYesterday ?? previous.stool,
+      };
+      setWeight(persistedMorning.current.weight); setSleep(persistedMorning.current.sleep);
+      setSteps(persistedMorning.current.steps); setStool(persistedMorning.current.stool);
       morningDirty.current.clear();
+      setMorningSaved(true); setMorningHasSaved(true); setMorningChanged(true);
     } catch { toast.error('Не удалось сохранить показатели. Повторите попытку.'); return; }
     finally { morningSaving.current=false; setMorningBusy(false); }
-    if (weight) {
-      const w = number(weight);
+    if (persistedMorning.current.weight) {
+      const w = number(persistedMorning.current.weight);
       // Build history excluding today's just-added entry to avoid self-comparison
       const history = weeklyData.filter(e => e.date !== today);
       const yesterdayDateStr = localDay(new Date(Date.now() - 86400000));
@@ -327,8 +344,8 @@ export function DailyScreen() {
         w,
         history,
         yesterdayReport,
-        sleep ? parseFloat(sleep) : undefined,
-        steps ? parseInt(steps) : undefined,
+        persistedMorning.current.sleep ? number(persistedMorning.current.sleep) : undefined,
+        persistedMorning.current.steps ? number(persistedMorning.current.steps) : undefined,
         profile.gender,
         profile.currentStage ?? 'loss',
       );
@@ -343,7 +360,6 @@ export function DailyScreen() {
       }
     } else {
       setMorningAnalysis(null);
-      setTab('meals');
     }
   };
 
@@ -367,6 +383,13 @@ export function DailyScreen() {
     if (d === 0) return '0 кг';
     return d > 0 ? `+${d} кг` : `${d} кг`;
   };
+
+  const displayedMorningAnalysis = morningSaved ? (morningAnalysis ?? (weight ? analyzeMorningWeight(
+    today, Number(weight), weeklyData.filter(e => e.date !== today),
+    dailyReports.find(r => r.date === localDay(new Date(Date.now() - 86400000))),
+    sleep !== '' ? Number(sleep) : undefined, steps !== '' ? Number(steps) : undefined,
+    profile.gender, profile.currentStage ?? 'loss',
+  ) : null)) : null;
 
   const mealNameByHour = (h: number) => {
     if (h >= 6 && h < 10) return 'Завтрак';
@@ -706,34 +729,42 @@ export function DailyScreen() {
 
             {showCheckinFields && (<>
             <div className="legche-checkin inga-card">
-            <h3 className="text-lg font-bold">Доброе утро! ☀️</h3>
+            <div className="legche-checkin-heading"><h3 className="text-lg font-bold">Мои показатели</h3>
+              {morningSaved && <button type="button" className="legche-checkin-edit" onClick={() => {setMorningSaved(false); setMorningChanged(false);}}><Pencil size={15} aria-hidden="true"/>Изменить</button>}
+            </div>
+            {morningLoadError ? <div role="alert"><p>Не удалось загрузить показатели.</p><button className="underline min-h-[44px]" onClick={() => setMorningRetry(v=>v+1)}>Повторить</button></div> : morningSaved ? <>
+              <div className="legche-checkin-grid legche-checkin-saved">
+                {[["Вес сегодня",weight ? `${weight.replace('.', ',')} кг` : 'Не указано'],["Сон",sleep !== '' ? `${sleep.replace('.', ',')} ч` : 'Не указано'],["Шаги вчера",steps !== '' ? Number(steps).toLocaleString('ru-RU') : 'Не указано'],["Стул вчера",stool === null ? 'Не указано' : stool ? 'Да' : 'Нет']].map(([label,value]) => <div className="legche-metric" key={label}><span>{label}</span><strong>{value}</strong></div>)}
+              </div>
+              {morningChanged && <p role="status" className="legche-checkin-confirm"><CheckCircle2 size={16} aria-hidden="true"/>Показатели сохранены</p>}
+            </> : <>
             <div className="legche-checkin-grid">
             <div>
               <label className="block text-sm font-medium mb-1">Вес сегодня (кг)</label>
-              <input disabled={morningBusy} type="number" value={weight} onChange={e => {
+              <input disabled={!morningReady || morningBusy} type="number" value={weight} onChange={e => {
                 morningDirty.current.add('weight'); setWeight(e.target.value);
                 setMorningAnalysis(null);
               }} className="inga-input" placeholder="70.5" step="0.1" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Сколько часов вы спали?</label>
-              <input disabled={morningBusy} type="number" value={sleep} onChange={e => {morningDirty.current.add('sleep');setSleep(e.target.value);setMorningAnalysis(null);}} className="inga-input" placeholder="7" step="0.5" />
+              <input disabled={!morningReady || morningBusy} type="number" value={sleep} onChange={e => {morningDirty.current.add('sleep');setSleep(e.target.value);setMorningAnalysis(null);}} className="inga-input" placeholder="7" step="0.5" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Шаги вчера</label>
-              <input disabled={morningBusy} type="number" value={steps} onChange={e => {morningDirty.current.add('steps');setSteps(e.target.value);setMorningAnalysis(null);}} className="inga-input" placeholder="6000" />
+              <input disabled={!morningReady || morningBusy} type="number" value={steps} onChange={e => {morningDirty.current.add('steps');setSteps(e.target.value);setMorningAnalysis(null);}} className="inga-input" placeholder="6000" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Вчера был стул?</label>
               <div className="flex gap-3">
                 <button
-                  disabled={morningBusy} onClick={() => {morningDirty.current.add('stool');setStool(true);setMorningAnalysis(null);}}
+                  disabled={!morningReady || morningBusy} onClick={() => {morningDirty.current.add('stool');setStool(true);setMorningAnalysis(null);}}
                   className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${stool === true ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-muted-foreground'}`}
                 >
                   Да
                 </button>
                 <button
-                  disabled={morningBusy} onClick={() => {morningDirty.current.add('stool');setStool(false);setMorningAnalysis(null);}}
+                  disabled={!morningReady || morningBusy} onClick={() => {morningDirty.current.add('stool');setStool(false);setMorningAnalysis(null);}}
                   className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-colors ${stool === false ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-border text-muted-foreground'}`}
                 >
                   Нет
@@ -741,43 +772,28 @@ export function DailyScreen() {
               </div>
             </div>
             </div>
-            {!morningAnalysis && (
-              <div className="inga-bubble">
-                <p className="text-sm text-muted-foreground">Вес может колебаться по разным причинам. Мы смотрим не на день, а на тенденцию.</p>
-              </div>
-            )}
-
-            {morningAnalysis && (
-              <div className="inga-bubble space-y-3 animate-fade-in-up">
-                <p className="font-semibold">Динамика веса</p>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• с предыдущего измерения: {formatDelta(morningAnalysis.dayDelta)}</li>
-                  <li>• за {morningAnalysis.weekInterval ?? 7} дней: {morningAnalysis.weekDataAvailable ? formatDelta(morningAnalysis.weekDelta) : 'пока мало данных'}</li>
-                </ul>
-
-                <div>
-                  <p className="font-semibold mb-1">Что это может значить</p>
-                  <p className="text-sm text-muted-foreground">{morningAnalysis.meaning}</p>
-                  <p className="text-sm text-muted-foreground mt-2">{morningAnalysis.weeklyComment}</p>
-                </div>
-
-                <div>
-                  <p className="font-semibold mb-1">Фокус на сегодня</p>
-                  <p className="text-sm text-muted-foreground">{morningAnalysis.focus}</p>
-                </div>
-              </div>
-            )}
-
-            {!morningAnalysis ? (
-              <button disabled={!morningReady || morningBusy} onClick={handleSaveMorning} className="inga-btn-primary w-full">
-                Сохранить →
-              </button>
-            ) : (
-              <button onClick={() => setTab('meals')} className="inga-btn-primary w-full">
-                Перейти к питанию →
-              </button>
-            )}
+            <button disabled={!morningReady || morningBusy} onClick={handleSaveMorning} className="inga-btn-primary w-full">
+              {morningBusy ? 'Сохраняем…' : 'Сохранить →'}
+            </button>
+            {morningHasSaved && <button type="button" className="min-h-[44px] text-sm text-muted-foreground" disabled={morningBusy} onClick={()=>{ const p=persistedMorning.current; setWeight(p.weight); setSleep(p.sleep); setSteps(p.steps); setStool(p.stool); morningDirty.current.clear(); setMorningAnalysis(null); setMorningSaved(true); }}>Отмена</button>}
+            </>}
             </div>
+            <WeightTrend entries={weeklyData} today={today}/>
+            {displayedMorningAnalysis && (
+              <details className="inga-card legche-weight-details">
+                <summary>Что это может значить</summary>
+                <div className="space-y-3 pt-2">
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• с предыдущего измерения: {formatDelta(displayedMorningAnalysis.dayDelta)}</li>
+                    <li>• за {displayedMorningAnalysis.weekInterval ?? 7} дней: {displayedMorningAnalysis.weekDataAvailable ? formatDelta(displayedMorningAnalysis.weekDelta) : 'пока мало данных'}</li>
+                  </ul>
+                  <p className="text-sm text-muted-foreground">{displayedMorningAnalysis.meaning}</p>
+                  <p className="text-sm text-muted-foreground">{displayedMorningAnalysis.weeklyComment}</p>
+                  <p className="font-semibold">Фокус на сегодня</p>
+                  <p className="text-sm text-muted-foreground">{displayedMorningAnalysis.focus}</p>
+                </div>
+              </details>
+            )}
             </>)}
             {!showFoodSurvey && recipe && <button type="button" className="legche-recipe inga-card w-full text-left" onClick={() => { try { localStorage.setItem('inga-menu-jump', JSON.stringify({section:'recipes',recipeSection:recipe.recipeSection,activeRecipe:recipe.recipeId,returnTo:'daily'})); } catch {} setStep('menu'); }}>
               <BookOpen className="legche-recipe-icon" size={24} aria-hidden="true"/>

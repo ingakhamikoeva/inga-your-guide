@@ -157,10 +157,11 @@ export interface TodayCheckin {
   stepsYesterday: number | null;
 }
 
-export async function loadTodayCheckin(date: string): Promise<TodayCheckin | null> {
+export async function loadTodayCheckin(date: string, options: { strict?: boolean } = {}): Promise<TodayCheckin | null> {
   try {
     return await apiFetch<TodayCheckin | null>(`/checkins/${date}`);
   } catch (e) {
+    if (options.strict) throw e;
     console.error('loadTodayCheckin failed', e);
     return null;
   }

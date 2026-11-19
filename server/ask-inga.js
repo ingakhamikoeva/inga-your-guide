@@ -7,6 +7,7 @@ import { requireAuthInline as requireAuth } from "./middleware/auth.js";
 import { deepseekChat } from "./deepseek.js";
 import { ChatContextError, chatHistory, chatTimezone, currentChatDay } from './chat-context.js';
 import { readWeightState } from './weight-state.js';
+import { FIBER_GUIDANCE, FAT_GUIDANCE } from './nutrition/light-swap-guidance.js';
 import { POTATO_GUIDANCE } from './nutrition/potato-guidance.js';
 
 const TONE_DEFAULT = `Ты — Инга, тёплый и спокойный AI-помощник, нутрициолог, консультант по снижению веса по методу «Лёгкая замена».
@@ -220,7 +221,7 @@ const ROUTE_BLOCKS = {
 function promptFor(route, overrides, pitchEligible, shouldGreet) {
   const extra = overrides[route];
   return TONE_DEFAULT + "\n\n" + (ROUTE_BLOCKS[route] || ROUTE_BLOCKS.general)
-    + "\n\n" + POTATO_GUIDANCE
+    + "\n\n" + POTATO_GUIDANCE + "\n\n" + FIBER_GUIDANCE + "\n\n" + FAT_GUIDANCE
     + (extra ? "\n\nДополнительные пожелания администратора, только если совместимы с правилами метода и безопасности:\n" + extra : "")
     + (pitchEligible
       ? "\nМожно одним мягким предложением упомянуть личную консультацию с Ингой, если уместно. Сначала поддержка и суть вопроса. Без давления."
