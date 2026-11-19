@@ -36,6 +36,11 @@ for (const isEvening of [false, true]) {
       return [row];
     });
     render(<DailyScreen />);
+    const edit = await screen.findByRole('button', { name: 'Редактировать' });
+    expect(screen.queryByRole('button', { name: 'Скорректировать белок' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Сколько белка/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Удалить' })).toBeInTheDocument();
+    fireEvent.click(edit);
     fireEvent.click(await screen.findByRole('button', { name: 'Скорректировать белок' }));
     const field = screen.getByRole('spinbutton', { name: 'Скорректировать белок' });
     expect(field).toHaveFocus();
@@ -57,6 +62,7 @@ test('I7: time input remains focused while saving and after a delayed reply; Ent
   const row = { log_id: 'meal-1', raw_text: 'Творог', datetime: `${localDay()}T12:00:00`, meal_tag: 'lunch', meta: { nutritionVersion: 3, proteinAi: 25 } };
   vi.mocked(apiFetch).mockImplementation(async (_path, opts) => opts?.method === 'PATCH' ? reply : [row]);
   render(<DailyScreen />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Редактировать' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Изменить время' }));
   const field = screen.getByLabelText('Изменить время');
   fireEvent.change(field, { target: { value: '13:45' } });

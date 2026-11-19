@@ -24,7 +24,7 @@ function deferred<T>() {
 }
 async function ready(count = 0) {
   await waitFor(() => expect(screen.getByRole('button', { name: 'Добавить' })).toBeEnabled());
-  expect(screen.getByText(`${count}/6`)).toBeInTheDocument();
+  expect(screen.getByText(`${count} из 6`)).toBeInTheDocument();
 }
 beforeEach(() => {
   localStorage.clear(); records = new Map(); mocked.day = '2026-11-15';
@@ -45,8 +45,7 @@ test('saved water survives remount and logout/login; legacy browser count is not
   localStorage.setItem('waterCount', '9'); localStorage.setItem('waterDate', mocked.day);
   const first = render(<StrictMode><WaterTracker date={mocked.day} /></StrictMode>);
   await ready();
-  fireEvent.click(screen.getByRole('button', { name: 'Стакан 3' }));
-  await ready(3);
+  for (let i = 1; i <= 3; i++) { fireEvent.click(screen.getByRole('button', { name: 'Добавить' })); await ready(i); }
   first.unmount();
   clearTokens(); notifyAuthChange('SIGNED_OUT'); signIn();
   render(<WaterTracker date={mocked.day} />);
@@ -55,10 +54,10 @@ test('saved water survives remount and logout/login; legacy browser count is not
 
 test('zero and more than six glasses persist with the existing controls', async () => {
   render(<WaterTracker date={mocked.day} />); await ready();
-  fireEvent.click(screen.getByRole('button', { name: 'Стакан 6' })); await ready(6);
+  for (let i = 1; i <= 6; i++) { fireEvent.click(screen.getByRole('button', { name: 'Добавить' })); await ready(i); }
   fireEvent.click(screen.getByRole('button', { name: 'Добавить' })); await ready(7);
-  fireEvent.click(screen.getByRole('button', { name: 'Стакан 1' })); await ready(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Стакан 1' })); await ready(0);
+  for (let i = 6; i >= 0; i--) { fireEvent.click(screen.getByRole('button', { name: 'Убавить' })); await ready(i); }
+  expect(screen.getByRole('button', { name: 'Убавить' })).toBeDisabled();
   expect(records.get('A:/water/2026-11-15')?.glasses).toBe(0);
 });
 
@@ -67,7 +66,7 @@ test('a delayed write blocks duplicate taps and only confirmed data appears in t
   const pending = deferred<Water>(); mocked.api.mockImplementationOnce(() => pending.promise);
   const plus = screen.getByRole('button', { name: 'Добавить' });
   fireEvent.click(plus); fireEvent.click(plus);
-  expect(plus).toBeDisabled(); expect(screen.getByText('0/6')).toBeInTheDocument();
+  expect(plus).toBeDisabled(); expect(screen.getByText('0 из 6')).toBeInTheDocument();
   expect(mocked.api.mock.calls.filter(([, options]) => options.method === 'PUT')).toHaveLength(1);
   await act(async () => pending.resolve({ glasses: 1, revision: 1 })); await ready(1);
 });

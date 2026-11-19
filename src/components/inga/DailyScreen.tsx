@@ -5,7 +5,7 @@ import { CalendarDays, ChevronRight, MessageCircle, Plus, BookOpen, X } from 'lu
 import { dailyInspiration } from './daily-inspiration';
 import { dailyRecipe } from './daily-recipe';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
-import { MealCard, mealPillStyle } from './MealCard';
+import { MealCard, MealCorrections, mealPillStyle } from './MealCard';
 import { WaterTracker } from './WaterTracker';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
@@ -811,46 +811,18 @@ export function DailyScreen() {
 
 
 
+          const editingMeal = [...regular, ...evening].find(m => m.id === editingMealId);
           const mealCardProps = {
             pending: diary.pending > 0,
             editingTimeIdx, setEditingTimeIdx, updateMealTime,
             editingProteinIdx, setEditingProteinIdx, editingProteinValue, setEditingProteinValue,
             saveManualProtein, toggleMealFlag, setMealPortion,
-            onEditMeal: (id: string, description: string) => { setEditingMealId(id); setEditingText(description); },
+            onEditMeal: (id: string, description: string) => { setEditingTimeIdx(null); setEditingProteinIdx(null); setEditingProteinValue(''); setEditingMealId(id); setEditingText(description); },
             onDeleteMeal: setConfirmDeleteIndex,
           };
 
           return (
           <div className="legche-meals-view space-y-4">
-            <div className="legche-orient bg-white space-y-3" style={{borderRadius:14,border:'1px solid var(--legche-line, #EDE5DF)',padding:14}}>
-              <p className="text-xs font-bold tracking-wide text-muted-foreground">СТРУКТУРА ПИТАНИЯ СЕГОДНЯ</p>
-              <div className="space-y-2">
-                <div className="flex justify-between gap-3 text-sm">
-                  <span className="shrink-0">Белок</span>
-                  <span className="min-w-0 text-right">{anyProteinLoading?'Оценка…':facts.unknownProtein===totalMeals?'Недостаточно данных':`≈${proteinGrams} г${facts.unknownProtein?' в оценённых записях':''}`}{proteinTarget?` · цель ${proteinTarget} г`:''}</span>
-                </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{background:'var(--legche-chip, #F2EBE5)'}} aria-hidden="true">
-                  <div style={{width:`${proteinTarget && facts.unknownProtein<totalMeals ? pct(proteinGrams,proteinTarget) : 0}%`,height:'100%',background:'#CF7B5A',transition:'width 0.3s'}} />
-                </div>
-              </div>
-              {([
-                ['Углеводы',facts.carbs,'#C49A3E'],
-                ['Клетчатка',facts.fiber,'#5E9E72'],
-              ] as const).map(([label,group,color])=>(
-                <div key={label} className="space-y-2">
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="shrink-0">{label}</span>
-                    <span className="min-w-0 text-right">{!totalMeals ? 'Пока нет записей' : group.count ? `В ${group.count} из ${totalMeals} записей` : group.unknown ? 'Недостаточно данных' : 'Источники не отмечены'}{group.unknown>0 && group.count>0?' · есть неоценённые':''}</span>
-                  </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{background:'var(--legche-chip, #F2EBE5)'}} aria-hidden="true">
-                    <div style={{width:`${pct(group.count,totalMeals)}%`,height:'100%',background:color,transition:'width 0.3s'}} />
-                  </div>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground">Отметки показывают наличие источников в блюдах, а не выполнение дневной нормы. Их можно поправить вручную.</p>
-            </div>
-
-
             {showMealInput && (
               <div className="legche-sheet-backdrop"><div role="dialog" aria-modal="true" aria-label="Записать еду" className="legche-sheet bg-card space-y-3" onKeyDown={event=>{
                   if (event.key==='Escape' && !showLightPicker && !(event.target as HTMLElement).closest('.fixed')) { event.stopPropagation(); closeMealInput(); }
@@ -921,12 +893,13 @@ export function DailyScreen() {
                 )}
                 {showMealHint && (
                   <div className="text-xs leading-relaxed" style={{ background: 'var(--legche-warm, #FFF7F0)', border: '1px solid var(--legche-line, #FFD9C2)', borderRadius: 10, padding: '8px 10px', color: 'var(--legche-muted, #6A5A50)' }}>
-                    Источники белка, углеводов и клетчатки определяются по описанию блюда. Проверьте отметки и при необходимости поправьте их. «Из лёгких рецептов» — если готовили по нашему рецепту, впишем экономию в Копилку лёгкости.
+                    Источники белка, углеводов и клетчатки определяются по описанию блюда. При необходимости состав можно уточнить. «Из лёгких рецептов» — если готовили по нашему рецепту, впишем экономию в Копилку лёгкости.
                     <button onClick={dismissMealHint} className="block min-h-[44px] min-w-[44px] rounded-md mt-1.5 font-semibold" style={{ color: 'var(--legche-accent-text, #A63B00)', background: 'transparent', border: 'none', padding: 0 }}>
                       Понятно
                     </button>
                   </div>
                 )}
+                <details className="legche-optional-flags"><summary>Уточнить состав (необязательно)</summary>
                 <div className="flex flex-wrap gap-2 items-center">
                   <button onClick={() => toggleDraftFlag('protein')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.protein, 'protein')}>
                     {draftFlags.protein ? '✓' : '+'} Белок
@@ -941,6 +914,7 @@ export function DailyScreen() {
                     🍰 {draftFlags.sweet ? 'Сладкая точка ✓' : '+ Сладкая точка'}
                   </button>
                 </div>
+                </details>
                 <div className="flex gap-2">
                   <button disabled={diary.loading || diary.error} onClick={handleAddMeal} className="inga-btn-primary flex-1">Сохранить</button>
                   <button onClick={closeMealInput} className="inga-btn-secondary flex-1">Отмена</button>
@@ -1076,24 +1050,44 @@ export function DailyScreen() {
             })()}
 
 
-            <div className="flex justify-between items-center gap-2"><h2 className="text-lg font-bold">Приёмы пищи</h2><span className="text-sm text-muted-foreground">{totalMeals}</span></div>
+            <div className="flex justify-between items-center gap-2"><h2 className="text-lg font-bold">Приёмы пищи</h2><span className="text-sm text-muted-foreground">{totalMeals} {totalMeals % 100 >= 11 && totalMeals % 100 <= 14 ? 'записей' : totalMeals % 10 === 1 ? 'запись' : totalMeals % 10 >= 2 && totalMeals % 10 <= 4 ? 'записи' : 'записей'}</span></div>
+            <div className="legche-orient legche-orient-compact bg-white">
+              <div className="legche-orient-cell">
+                <div className="legche-orient-label">
+                  <span>Белок </span>
+                  {anyProteinLoading ? <strong>Оценка…</strong> : !totalMeals || facts.unknownProtein === totalMeals ? <strong>—</strong> : <strong>≈{proteinGrams}</strong>}
+                  {proteinTarget ? <span> из {proteinTarget} г</span> : <span> г</span>}
+                </div>
+                <div className="legche-orient-track" aria-hidden="true"><div className="legche-orient-protein" style={{width:`${proteinTarget && facts.unknownProtein < totalMeals ? pct(proteinGrams,proteinTarget) : 0}%`}}/></div>
+                {totalMeals > 0 && facts.unknownProtein > 0 && !anyProteinLoading && <span className="legche-orient-note">{facts.unknownProtein === totalMeals ? 'Недостаточно данных' : 'Не все записи оценены'}</span>}
+              </div>
+              <div className="legche-orient-cell">
+                <div className="legche-orient-label" title="Количество записей с источниками клетчатки, не дневная норма">
+                  <span>Клетчатка </span>
+                  <strong>{!totalMeals || facts.fiber.unknown === totalMeals ? '—' : facts.fiber.count}</strong>
+                  {totalMeals > 0 && <span> из {totalMeals}</span>}
+                </div>
+                <div className="legche-orient-track" aria-hidden="true"><div className="legche-orient-fiber" style={{width:`${pct(facts.fiber.count,totalMeals)}%`}}/></div>
+                <span className="legche-orient-note">{!totalMeals ? 'Пока нет записей' : facts.fiber.unknown === totalMeals ? 'Недостаточно данных' : facts.fiber.unknown > 0 ? 'Записи · не все оценены' : 'Записи с клетчаткой'}</span>
+              </div>
+            </div>
+
             {!totalMeals && !diary.loading && !diary.error && <div className="inga-card text-center"><p className="font-semibold">Что сегодня было вкусного?</p><p className="text-sm text-muted-foreground mt-2">Запишите первый приём пищи — текстом или голосом</p></div>}
             {regular.map(m => <MealCard key={m.id} m={m} {...mealCardProps} />)}
+            <div className="legche-mini-grid">
             <WaterTracker date={today} />
-            {/* Копилка лёгкости — свёрнутая строка, детали по тапу */}
-            <button
-              onClick={() => setCopilkaOpen(o => !o)}
-              className="bg-white w-full text-left"
-              style={{ borderRadius: 14, border: '1px solid var(--legche-line, #EDE5DF)', padding: '10px 14px' }}
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold" style={{ color: 'var(--legche-fg, #2C1A0E)' }}>
-                  <img src="/legche-butterfly.webp" alt="" width={32} height={32} className="inline-block h-8 w-8 mr-1 align-middle object-contain" /> {COPILKA_TEXTS.title}
-                  <span className="tabular-nums" style={{ color: 'var(--legche-accent-text, #FF6200)' }}> · {(lightSavings?.total_kcal ?? 0).toLocaleString('ru-RU')}</span>
-                </p>
-                <span className="text-xs" style={{ color: 'var(--legche-muted, #A89A8E)' }}>{copilkaOpen ? '▲' : '▼'}</span>
-              </div>
-              {copilkaOpen && (
+            {/* The compact trigger and its full-width details use the original savings values. */}
+            <button type="button" onClick={() => setCopilkaOpen(o => !o)} aria-expanded={copilkaOpen}
+              className="legche-copilka-compact bg-white text-left">
+              <img src="/legche-butterfly.webp" alt="" className="legche-copilka-icon" />
+              <span className="legche-copilka-copy"><span>{COPILKA_TEXTS.title}</span>
+                <strong>{(lightSavings?.total_kcal ?? 0).toLocaleString('ru-RU')}</strong>
+              </span>
+              <ChevronRight className={copilkaOpen ? 'legche-copilka-arrow is-open' : 'legche-copilka-arrow'} size={16} aria-hidden="true" />
+            </button>
+            </div>
+            {copilkaOpen && <div className="legche-copilka-details bg-white">
+              {(
                 lightSavings && lightSavings.total_kcal > 0 ? (
                   <div className="mt-2">
                     <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--legche-accent-text, #FF6200)' }}>
@@ -1111,7 +1105,7 @@ export function DailyScreen() {
                   <p className="text-sm mt-2" style={{ color: 'var(--legche-muted, #8A7A70)' }}>{COPILKA_TEXTS.empty}</p>
                 )
               )}
-            </button>
+            </div>}
 
             <button onClick={()=>setTab('analysis')} className="inga-btn-secondary w-full">Разбор питания сегодня →</button>
 
@@ -1156,6 +1150,7 @@ export function DailyScreen() {
                       onEdit={(text) => setEveningText(text)}
                     />
                   </div>
+                  <details className="legche-optional-flags"><summary>Уточнить состав (необязательно)</summary>
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => toggleDraftFlag('protein')} className="text-[14px] min-h-[44px] px-3 py-1 rounded-full font-medium" style={mealPillStyle(draftFlags.protein, 'protein')}>
                       {draftFlags.protein ? '✓' : '+'} Белок
@@ -1164,6 +1159,7 @@ export function DailyScreen() {
                       {draftFlags.fiber ? '✓' : '+'} Клетчатка
                     </button>
                   </div>
+                  </details>
                   <div className="flex gap-2">
                     <button onClick={handleAddEveningMeal} className="flex-1 py-2 rounded-xl text-sm font-medium" style={{ background: '#4A3580', color: '#fff' }}>Добавить</button>
                     <button onClick={() => { setShowEveningInput(false); setEveningText(''); setDraftFlags(emptyDraftFlags); draftTouched.current.clear(); }} className="inga-btn-secondary flex-1">Отмена</button>
@@ -1171,15 +1167,20 @@ export function DailyScreen() {
                 </div>
               )}
 
-              {editingMealId !== null && (
+              {editingMeal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                  <div role="dialog" aria-modal="true" aria-label="Редактировать" className="bg-card rounded-2xl p-5 w-full max-w-md shadow-xl">
+                  <div role="dialog" aria-modal="true" aria-label="Редактировать" className="legche-meal-editor bg-card rounded-2xl p-5 w-full max-w-md shadow-xl">
                     <textarea aria-label="Приём пищи" value={editingText} maxLength={1000} autoFocus
                       disabled={editBusy} onChange={e=>setEditingText(e.target.value)}
                       className="inga-input w-full min-h-28 mb-3" />
+                    {editingText.trim() === editingMeal.desc && <div className="mb-3">
+                      <p className="text-sm font-semibold mb-1">Уточнить состав</p>
+                      <p className="text-xs text-muted-foreground mb-2">Время и ручные отметки сохраняются сразу. Отмена относится к описанию блюда.</p>
+                      <MealCorrections m={editingMeal} {...mealCardProps} />
+                    </div>}
                     <p className="text-sm text-muted-foreground mb-4">После изменения описания состав будет рассчитан заново. Ручные отметки, белок и зачёт лёгкого рецепта для этой записи будут сброшены.</p>
                     <div className="flex gap-2">
-                      <button disabled={editBusy} onClick={()=>setEditingMealId(null)} className="inga-btn-secondary flex-1">Отмена</button>
+                      <button disabled={editBusy} onClick={()=>{setEditingMealId(null);setEditingTimeIdx(null);setEditingProteinIdx(null);setEditingProteinValue('');}} className="inga-btn-secondary flex-1">Отмена</button>
                       <button disabled={editBusy || diary.pending>0 || !editingText.trim()} onClick={saveEditedMeal} className="inga-btn-primary flex-1">Сохранить →</button>
                     </div>
                   </div>

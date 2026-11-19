@@ -26,19 +26,32 @@ export const mealPillStyle = (active: boolean | null, kind: 'protein' | 'carbs' 
   return { background: 'var(--legche-fiber-bg, #EDF5F0)', color: 'var(--legche-fiber, #376745)', border: '1px solid #376745' };
 };
 
-// Module-level identity keeps the same input mounted during parent updates.
-export function MealCard({
+// The diary card is deliberately read-only except for its two actions.
+export function MealCard({ m, pending, onEditMeal, onDeleteMeal }: MealCardProps) {
+  return (
+    <div className="legche-meal legche-meal-compact bg-white">
+      <div className="legche-meal-head">
+        <div className="legche-meal-title"><strong>{m.name}</strong><span className="legche-meal-time"> · {m.time}</span></div>
+        <div className="legche-meal-actions">
+          <button type="button" disabled={pending} aria-label="Редактировать" onClick={() => onEditMeal(m.id, m.desc)}><Pencil size={18} aria-hidden="true" /></button>
+          <button type="button" disabled={pending} aria-label="Удалить" className="legche-meal-delete" onClick={() => onDeleteMeal(m.i)}><Trash2 size={20} aria-hidden="true" /></button>
+        </div>
+      </div>
+      <p className="legche-meal-description">{m.desc}</p>
+    </div>
+  );
+}
+
+// Existing manual correction handlers, mounted only in the editor.
+export function MealCorrections({
   m, hideCarbs = false, pending,
   editingTimeIdx, setEditingTimeIdx, updateMealTime,
   editingProteinIdx, setEditingProteinIdx, editingProteinValue, setEditingProteinValue,
-  saveManualProtein, onEditMeal, onDeleteMeal, toggleMealFlag, setMealPortion,
+  saveManualProtein, toggleMealFlag, setMealPortion,
 }: MealCardProps) {
   return (
-      <div className="legche-meal bg-white" style={{ borderRadius: 14, border: '1px solid var(--legche-line, #EDE5DF)', padding: 14 }}>
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <span className="font-semibold text-sm flex flex-wrap items-center gap-1 min-w-0">
-            <span>{m.name}</span>
-            <span style={{ color: 'var(--legche-muted, #6A5A50)' }}>·</span>
+    <div className="legche-meal-corrections">
+      <div className="flex items-center gap-2 mb-2"><span className="text-sm">Время</span>
             {editingTimeIdx === m.i ? (
               <input
                 type="time"
@@ -78,24 +91,7 @@ export function MealCard({
                 {m.time}
               </button>
             )}
-          </span>
-          <div className="flex items-center gap-1 shrink-0">
-          <button type="button" disabled={pending} aria-label="Редактировать"
-            className="flex items-center justify-center min-w-[44px] min-h-[44px]"
-            onClick={() => onEditMeal(m.id, m.desc)}>
-            <Pencil size={18} />
-          </button>
-          <button
-            disabled={pending} onClick={() => onDeleteMeal(m.i)}
-            className="flex items-center justify-center min-w-[44px] min-h-[44px]"
-            style={{ color: '#E53935' }}
-            aria-label="Удалить"
-          >
-            <Trash2 size={20} />
-          </button>
-          </div>
-        </div>
-        <p className="text-sm text-muted-foreground mb-1">{m.desc}</p>
+      </div>
         <div className="flex items-center gap-1.5 mb-3 text-[14px]" style={{ color: 'var(--legche-muted, #6A5A50)' }}>
           {editingProteinIdx === m.i ? (
             <>
@@ -124,7 +120,7 @@ export function MealCard({
               <span>~{m.proteinAi}г белка{m.proteinManual ? '' : ''}</span>
               <button
                 type="button"
-                onClick={() => {
+                disabled={pending} onClick={() => {
                   setEditingProteinIdx(m.i);
                   setEditingProteinValue(String(m.proteinAi ?? ''));
                 }}
@@ -138,7 +134,7 @@ export function MealCard({
           ) : (
             <button
               type="button"
-              onClick={() => { setEditingProteinIdx(m.i); setEditingProteinValue(''); }}
+              disabled={pending} onClick={() => { setEditingProteinIdx(m.i); setEditingProteinValue(''); }}
               className="min-h-[44px] rounded-md"
               style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, fontSize: 14, color: 'var(--legche-muted, #6A5A50)' }}
             >
@@ -196,6 +192,6 @@ export function MealCard({
             </div>
           </div>
         )}
-      </div>
+    </div>
   );
 }
