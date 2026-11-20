@@ -141,4 +141,11 @@
 @media(hover:hover){.legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground):not(:disabled):hover{color:#fff;background:var(--legche-cta-hover)}}
 .legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground):not(:disabled):active{color:#fff;background:var(--legche-cta-active)}
 .legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground) svg{color:inherit}
-@media(max-width:359px){.legche-shell .legche-progress-butterfly{width:110px!important;height:110px!important}}
+/* Responsive progress butterfly */
+.legche-shell .legche-progress-butterfly {
+    width: 40% !important;
+    height: auto !important;
+    max-width: 40%;
+    flex: 0 0 40%;
+    object-fit: contain;
+}
