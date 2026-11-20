@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { FileDown } from 'lucide-react';
+import { GlassIcon } from './GlassIcons';
 import { useApp } from '@/context/AppContext';
 import { loadDiaryHistory, diaryDate, mealTime, diaryValue, stoolValue, printDiary, type DiaryDay } from '@/lib/diary-history';
 
@@ -22,13 +24,15 @@ export function DiaryHistoryScreen({ onBack }: { onBack: () => void }) {
     {loading ? <p role="status">Загрузка…</p> : error ? <div role="alert" className="inga-bubble">
       <p>Попробуйте ещё раз.</p><button onClick={() => setAttempt(n => n + 1)} className="inga-btn-secondary mt-3">Повторить</button>
     </div> : <>
-      <button disabled={!days.length} onClick={() => printDiary(profile.name, days)} className="inga-btn-primary w-full disabled:opacity-50">📥 Скачать дневник питания</button>
+      <button disabled={!days.length} onClick={() => printDiary(profile.name, days)} className="inga-btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2 text-white"><FileDown size={20} aria-hidden="true" />Скачать дневник питания</button>
       {!days.length && <p className="inga-bubble">Приёмы пищи не записаны</p>}
       {days.map(day => <section key={day.date} className="inga-card">
         <h2 className="font-semibold mb-3">{diaryDate(day.date)}</h2>
-        <div className="text-sm text-muted-foreground flex flex-wrap gap-3 mb-3">
-          <span>⚖️ {diaryValue(day.checkin?.weight_kg, ' кг')}</span><span>😴 {diaryValue(day.checkin?.sleep_hours, ' ч')}</span>
-          <span>👟 {diaryValue(day.checkin?.steps_yesterday)}</span><span>Стул: {stoolValue(day.checkin?.stool_yesterday)}</span>
+        <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap"><GlassIcon name="scale" size={24} />{diaryValue(day.checkin?.weight_kg, ' кг')}</span>
+          <span className="inline-flex items-center gap-1 whitespace-nowrap"><GlassIcon name="sleep" size={24} />{diaryValue(day.checkin?.sleep_hours, ' ч')}</span>
+          <span className="inline-flex items-center gap-1 whitespace-nowrap"><GlassIcon name="steps" size={24} />{diaryValue(day.checkin?.steps_yesterday)}</span>
+          <span className="inline-flex items-center gap-1 whitespace-nowrap"><GlassIcon name="stool" size={24} />Стул: {stoolValue(day.checkin?.stool_yesterday)}</span>
         </div>
         {day.meals.map(meal => <div key={meal.log_id} className="py-2 border-t border-border">
           <span className="text-xs text-muted-foreground">{mealTime(meal.datetime)}</span>

@@ -7,6 +7,7 @@ import { dailyRecipe } from './daily-recipe';
 import { DiaryHistoryScreen } from './DiaryHistoryScreen';
 import { MealCard, MealCorrections, mealPillStyle } from './MealCard';
 import { WeightTrend } from './WeightTrend';
+import { SearchIcon } from './GlassIcons';
 import { WaterTracker } from './WaterTracker';
 import { useApp } from '@/context/AppContext';
 import { useMealDiary, MealMeta, ProteinPortion, LightSwapMeta } from '@/lib/nutrition/use-meal-diary';
@@ -1009,13 +1010,16 @@ export function DailyScreen() {
                     <p className="text-xs mt-1" style={{ color: 'var(--legche-muted, #8A7A70)' }}>
                       Что вы приготовили? Разница с классикой попадёт в Копилку лёгкости.
                     </p>
+                    <div className="relative mt-3">
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       value={lightPickerQuery}
                       onChange={e => setLightPickerQuery(e.target.value)}
                       placeholder="Поиск: блины, суп, чизкейк…"
-                      className="w-full mt-3 text-sm bg-white"
-                      style={{ borderRadius: 10, border: '1px solid var(--legche-line, #EDE5DF)', padding: '8px 12px', outline: 'none' }}
+                      className="w-full text-sm bg-white"
+                      style={{ borderRadius: 10, border: '1px solid var(--legche-line, #EDE5DF)', padding: '8px 12px 8px 40px', outline: 'none' }}
                     />
+                    </div>
                   </div>
                   <div className="overflow-y-auto px-5 pb-3 space-y-2">
                     {filtered.length === 0 && (

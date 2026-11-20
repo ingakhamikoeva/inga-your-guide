@@ -26,7 +26,7 @@ function pending() { let resolve!: (data: ReturnType<typeof fixture>) => void; c
 async function profile() {
   localStorage.setItem('inga-menu-jump', JSON.stringify({ section: 'profile' }));
   const ui = render(<MenuScreen />);
-  await screen.findByRole('button', { name: '📥 Скачать дневник питания' });
+  await screen.findByRole('button', { name: 'Скачать дневник питания' });
   return ui;
 }
 beforeEach(() => {
@@ -39,7 +39,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 test('I1: profile export reads server data on a fresh device, including expired access', async () => {
-  await profile(); fireEvent.click(screen.getByRole('button', { name: '📥 Скачать дневник питания' }));
+  await profile(); fireEvent.click(screen.getByRole('button', { name: 'Скачать дневник питания' }));
   await waitFor(() => expect(popup.document.write).toHaveBeenCalledTimes(1));
   expect(apiFetch).toHaveBeenCalledWith('/diary', { cache: 'no-store' });
   const html = vi.mocked(popup.document.write).mock.calls[0][0];
@@ -51,13 +51,13 @@ test('I1: archive and its export read the same server source', async () => {
   render(<DiaryHistoryScreen onBack={() => {}} />);
   expect(await screen.findByText('Сохранённый суп')).toBeVisible();
   expect(screen.getByText(/58.3 кг/)).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: '📥 Скачать дневник питания' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Скачать дневник питания' }));
   expect(apiFetch).toHaveBeenCalledWith('/diary', { cache: 'no-store' });
   expect(vi.mocked(popup.document.write).mock.calls[0][0]).toContain('Сохранённый суп');
 });
 test('I1: opens popup during click, blocks duplicate requests while loading', async () => {
   const request = pending(); vi.mocked(apiFetch).mockReturnValue(request.promise);
-  await profile(); const button = screen.getByRole('button', { name: '📥 Скачать дневник питания' });
+  await profile(); const button = screen.getByRole('button', { name: 'Скачать дневник питания' });
   fireEvent.click(button); fireEvent.click(button);
   expect(window.open).toHaveBeenCalledTimes(1); expect(apiFetch).toHaveBeenCalledTimes(1);
   expect(button).toBeDisabled(); expect(popup.document.write).not.toHaveBeenCalled();
@@ -66,7 +66,7 @@ test('I1: opens popup during click, blocks duplicate requests while loading', as
 });
 test('I1: failed server read closes popup and allows retry, without exporting local cache', async () => {
   vi.mocked(apiFetch).mockRejectedValueOnce(new Error('503'));
-  await profile(); fireEvent.click(screen.getByRole('button', { name: '📥 Скачать дневник питания' }));
+  await profile(); fireEvent.click(screen.getByRole('button', { name: 'Скачать дневник питания' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Попробуйте ещё раз.');
   expect(popup.close).toHaveBeenCalled(); expect(popup.document.write).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
@@ -74,23 +74,23 @@ test('I1: failed server read closes popup and allows retry, without exporting lo
 });
 test('I1: empty server diary closes popup and keeps the existing empty message', async () => {
   vi.mocked(apiFetch).mockResolvedValue({ checkins: [], meals: [] });
-  await profile(); fireEvent.click(screen.getByRole('button', { name: '📥 Скачать дневник питания' }));
+  await profile(); fireEvent.click(screen.getByRole('button', { name: 'Скачать дневник питания' }));
   await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Пока нет данных для скачивания. Заполните дневник хотя бы за несколько дней.'));
   expect(popup.close).toHaveBeenCalled(); expect(popup.document.write).not.toHaveBeenCalled();
 });
 test('I1: account switch during download cannot write the previous account report', async () => {
   const request = pending(); vi.mocked(apiFetch).mockReturnValue(request.promise);
-  await profile(); fireEvent.click(screen.getByRole('button', { name: '📥 Скачать дневник питания' }));
+  await profile(); fireEvent.click(screen.getByRole('button', { name: 'Скачать дневник питания' }));
   setTokens('B', 'RB', { id: 'B', user_id: 'B', email: 'b@example.invalid' });
   await act(async () => { request.resolve(fixture()); });
   expect(popup.close).toHaveBeenCalled(); expect(popup.document.write).not.toHaveBeenCalled();
 });
 test('I1: leaving profile cancels pending report; blocked popup gives a retry', async () => {
   const request = pending(); vi.mocked(apiFetch).mockReturnValue(request.promise);
-  const ui = await profile(); fireEvent.click(screen.getByRole('button', { name: '📥 Скачать дневник питания' }));
+  const ui = await profile(); fireEvent.click(screen.getByRole('button', { name: 'Скачать дневник питания' }));
   ui.unmount(); await act(async () => { request.resolve(fixture()); });
   expect(popup.close).toHaveBeenCalled(); expect(popup.document.write).not.toHaveBeenCalled();
   vi.mocked(window.open).mockReturnValue(null); await profile();
-  fireEvent.click(screen.getByRole('button', { name: '📥 Скачать дневник питания' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Скачать дневник питания' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Попробуйте ещё раз.');
 });

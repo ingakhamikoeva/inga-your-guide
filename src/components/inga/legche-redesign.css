@@ -128,3 +128,10 @@
 .legche-weight-trend{display:grid;gap:12px}.legche-weight-periods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:3px;border-radius:12px;background:var(--legche-chip)}.legche-weight-periods button{font-size:12px;padding:5px 1px;min-height:38px;border-radius:9px;white-space:nowrap}.legche-weight-periods button[aria-pressed=true]{background:var(--legche-card);color:var(--legche-accent-text);font-weight:700}.legche-weight-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.legche-weight-summary div{display:grid;gap:4px}.legche-weight-summary strong{font-size:17px;font-variant-numeric:tabular-nums}.legche-weight-svg{width:100%;height:auto}.legche-weight-details summary{cursor:pointer;font-weight:600;min-height:32px}
 .legche-shell.dark{--legche-selected:#FF6600;--legche-selected-fg:#fff}
 /* Preserve orange text accents and semantic bars; only filled orange actions use white ink. */
+
+/* Approved glass artwork, November 20. The existing gradient and button shape are unchanged. */
+.legche-shell .legche-orange-filter{color:#fff;background:var(--legche-cta,#FF6600);border-color:var(--legche-cta,#FF6600)}
+.legche-shell .legche-orange-filter:active{background:var(--legche-cta-active,#C94B00);color:#fff}
+.legche-plate-art{max-width:34%;height:auto!important;aspect-ratio:1;}
+[data-sonner-toast].legche-award-toast [data-icon]{width:64px;height:64px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin:0 6px 0 0;}
+[data-sonner-toast].legche-award-toast [data-content]{min-width:0;overflow-wrap:anywhere}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, ArrowRight, Play } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
+import { SearchIcon } from './GlassIcons';
 import { askInga } from '@/lib/ai-provider';
 import { apiFetch } from '@/lib/api-client';
 import {
@@ -114,13 +115,13 @@ export function LightVersionScreen({ onBack, onOpenRecipe, initialSearch }: Prop
         </p>
 
         <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2.5 mb-4 focus-within:border-primary/60 transition-colors">
-          <Search size={16} className="text-muted-foreground shrink-0" />
+          <SearchIcon />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') runSearch(query); }}
             placeholder="Например: шарлотка, котлеты, блины…"
-            className="flex-1 bg-transparent outline-none text-base"
+            className="flex-1 min-w-0 bg-transparent outline-none text-base"
           />
           {query.trim().length >= 2 && (
             <button onClick={() => runSearch(query)} className="text-sm font-medium text-primary shrink-0">

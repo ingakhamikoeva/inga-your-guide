@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, createElement } from 'react';
+import { MedalIcon } from '@/components/inga/GlassIcons';
 import { toast } from 'sonner';
 import { apiFetch } from './api-client';
 import { currentSession, subscribe } from './auth-storage';
@@ -45,7 +46,7 @@ export function useAchievements() {
             setStreakDays(result.streakDays);
             setUniqueRecipes(result.uniqueRecipes ?? 0);
             for (const medal of result.medals.filter(m => result.newIds.includes(m.id))) {
-              toast(`${medal.icon || '🏅'} ${medal.title}`, { description: medal.description, duration: 7000 });
+              toast(medal.title, { description: medal.description, duration: 7000, className: 'legche-award-toast', icon: createElement(MedalIcon, { medal, size: medal.id === 'goal' ? 64 : 48 }) });
             }
           } catch {
             if (alive && owner() === user && generation.current === version) setStreakDays(null);

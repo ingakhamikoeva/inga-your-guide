@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { SearchIcon } from './GlassIcons';
 import { useApp } from '@/context/AppContext';
 import ingaPhoto from '@/assets/inga-photo.jpg';
 
@@ -120,7 +121,7 @@ export function HowItWorksScreen() {
               className="text-xs font-bold uppercase tracking-wide mb-3"
               style={{ color: '#5C4A3D' }}
             >
-              {block.emoji} {block.title}
+              {block.emoji === '🔎' ? <SearchIcon size={20} /> : block.emoji} {block.title}
             </div>
             <div className="space-y-3">
               {block.items.map((item) => (

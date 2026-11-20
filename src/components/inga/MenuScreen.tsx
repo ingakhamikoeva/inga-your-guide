@@ -12,11 +12,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { UserProfile, AppStep } from '@/lib/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles, LockKeyhole } from 'lucide-react';
+import { BookOpen, UtensilsCrossed, Headphones, TrendingUp, User, CalendarCheck, ChevronRight, Play, Sparkles, LockKeyhole, FileDown } from 'lucide-react';
 import { LightVersionScreen, type LightVersionSearchState } from './LightVersionScreen';
 import { ProgressPhotosSection } from './ProgressPhotosSection';
 import { localDay } from '@/lib/achievement-client';
-import { buildGamificationSummary, getMedalStyle } from '@/lib/gamification';
+import { buildGamificationSummary } from '@/lib/gamification';
+import { GlassIcon, MedalIcon } from './GlassIcons';
 import { describeStage, detectStage, stageLabel, corridorStatus } from '@/lib/soft-swap';
 import { hasName, cleanName } from '@/lib/user-name';
 import { checkGoalBmi, goalWeightWarning } from '@/lib/calculations';
@@ -357,17 +358,12 @@ export function MenuScreen() {
           </div>
 
           <div className="inga-card mb-4">
-            <div className="flex items-center gap-6 mb-4">
-              <svg width="80" height="80" viewBox="0 0 72 72">
-                <path d="M 36 36 L 36 4 A 32 32 0 0 0 36 68 Z" fill="#5E9E72" />
-                <path d="M 36 36 L 36 4 A 32 32 0 0 1 68 36 Z" fill="#C0614A" />
-                <path d="M 36 36 L 68 36 A 32 32 0 0 1 36 68 Z" fill="#B5A030" />
-                <circle cx="36" cy="36" r="32" fill="none" stroke="#FFFFFF" strokeWidth="2" />
-              </svg>
-              <div className="space-y-2">
+            <div className="flex items-center gap-3 mb-4">
+              <GlassIcon name="plate" size={112} className="legche-plate-art" />
+              <div className="space-y-2 min-w-0 flex-1">
                 {[
-                  { color: '#5E9E72', label: '½ тарелки — клетчатка', sub: 'свежие овощи, зелень, грибы' },
-                  { color: '#C0614A', label: '¼ тарелки — белок', sub: 'грудка, рыба, творог' },
+                  { color: 'var(--legche-progress-fiber, #2D7D50)', label: '½ тарелки — клетчатка', sub: 'свежие овощи, зелень, грибы' },
+                  { color: 'var(--legche-progress-protein, #B65329)', label: '¼ тарелки — белок', sub: 'грудка, рыба, творог' },
                   { color: '#B5A030', label: '¼ тарелки — углеводы', sub: 'крупы, картофель, бобовые' },
                 ].map(item => (
                   <div key={item.label} className="flex items-start gap-2">
@@ -1310,7 +1306,7 @@ export function MenuScreen() {
               style={{ border: '1px solid var(--legche-line, #FFD9C2)', background: 'var(--legche-warm, #FFF9F4)' }}
             >
               <div>
-                <span className="font-semibold">🗓️ Месяц 1 — программа 30 дней</span>
+                <span className="font-semibold inline-flex items-center gap-2"><GlassIcon name="streak-30" size={28} />Месяц 1 — программа 30 дней</span>
                 <p className="text-xs text-muted-foreground font-normal mt-0.5">Урок, задание и привычка на каждый день</p>
               </div>
               <ChevronRight size={18} className="text-muted-foreground" />
@@ -1326,7 +1322,6 @@ export function MenuScreen() {
                   className="inga-card w-full text-left flex items-center justify-between gap-3 disabled:opacity-60 disabled:cursor-not-allowed">
                   <span>
                     <span className="font-semibold">{topic.title}</span>
-                    <span className="block text-xs text-muted-foreground mt-0.5">Постепенно выйти из дефицита калорий 🎯</span>
                   </span>
                   {fixationLessonAvailable
                     ? <ChevronRight size={18} className="text-muted-foreground shrink-0" />
@@ -1334,11 +1329,11 @@ export function MenuScreen() {
                 </button>
               ) : (topic as any).isMaintenance ? (
                 <button type="button" disabled={!maintenanceLessonAvailable}
+                  title={!maintenanceLessonAvailable ? 'Откроется после завершения фиксации веса' : undefined}
                   onClick={() => { if (maintenanceLessonAvailable) setNutrientSection('Сохранение'); }}
                   className="inga-card w-full text-left flex items-center justify-between gap-3 disabled:opacity-60 disabled:cursor-not-allowed">
                   <span>
                     <span className="font-semibold">{topic.title}</span>
-                    <span className="block text-xs text-muted-foreground mt-0.5">{maintenanceLessonAvailable ? 'Сохранять результат в обычной жизни' : 'Откроется после завершения фиксации веса'}</span>
                   </span>
                   {maintenanceLessonAvailable
                     ? <ChevronRight size={18} className="text-muted-foreground shrink-0" />
@@ -1967,7 +1962,7 @@ export function MenuScreen() {
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
           <BackButton />
-          <h2 className="text-2xl font-bold mb-5">Мой прогресс</h2>
+          <div className="flex items-center justify-between gap-3 mb-5"><h2 className="text-2xl font-bold">Мой прогресс</h2><GlassIcon name="progress-butterfly" size={76} /></div>
           <div className="space-y-4">
             <div className="inga-card">
               <div className="font-semibold mb-1">Текущий этап</div>
@@ -2068,7 +2063,7 @@ export function MenuScreen() {
                 <div className="space-y-3">
                   {[...medals].reverse().map(medal => (
                     <div key={medal.id} className="flex items-start gap-3 rounded-xl bg-background/60 p-3">
-                      <span className={`text-2xl ${getMedalStyle(medal.type).tone}`}>{medal.icon || getMedalStyle(medal.type).icon}</span>
+                      <MedalIcon medal={medal} size={medal.id === 'goal' ? 68 : 54} />
                       <div>
                         <p className="text-sm font-semibold">{medal.title}</p>
                         <p className="text-xs text-muted-foreground">{medal.description}</p>
@@ -2104,22 +2099,22 @@ export function MenuScreen() {
           <h2 className="text-2xl font-bold mb-6">Полезные материалы</h2>
           <div className="space-y-2.5">
 
-            <button onClick={() => setShowCheatsheet(true)} className="w-full inga-card text-left">
-              <p className="text-sm font-semibold mb-1">📊 Шпаргалка по продуктам</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">Калорийность продуктов с цветными индикаторами и поиском. Белки, углеводы, клетчатка, жиры.</p>
+            <button onClick={() => setShowCheatsheet(true)} className="w-full inga-card text-left flex items-center gap-3">
+              <GlassIcon name="cheatsheet" size={48} /><div className="min-w-0 flex-1"><p className="text-sm font-semibold mb-1">Шпаргалка по продуктам</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Калорийность продуктов с цветными индикаторами и поиском. Белки, углеводы, клетчатка, жиры.</p></div><ChevronRight size={16} className="text-muted-foreground shrink-0" aria-hidden="true" />
             </button>
             
             <button
               onClick={() => window.open('/guides/gaid-sakharozameniteli.html', '_blank')}
-              className="w-full inga-card text-left"
+              className="w-full inga-card text-left flex items-center gap-3"
             >
-              <p className="text-sm font-semibold mb-1">🍬 Гайд по сахарозаменителям</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">Какие безопасны, какие избегать — и как выбрать своё.</p>
+              <GlassIcon name="sweetener" size={48} /><div className="min-w-0 flex-1"><p className="text-sm font-semibold mb-1">Гайд по сахарозаменителям</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">Какие безопасны, какие избегать — и как выбрать своё.</p></div><ChevronRight size={16} className="text-muted-foreground shrink-0" aria-hidden="true" />
             </button>
 
-            <div className="inga-card opacity-60">
-              <p className="text-sm font-semibold mb-1">📎 Гайды</p>
-              <p className="text-xs text-muted-foreground">Скоро появятся новые материалы для скачивания.</p>
+            <div className="inga-card opacity-60 flex items-center gap-3">
+              <GlassIcon name="guides" size={48} /><div className="min-w-0 flex-1"><p className="text-sm font-semibold mb-1">Гайды</p>
+              <p className="text-xs text-muted-foreground">Скоро появятся новые материалы для скачивания.</p></div>
             </div>
 
           </div>
@@ -2636,7 +2631,7 @@ function ProfileSection({ onBack }: { onBack: () => void }) {
           className="w-full rounded-2xl py-3 text-sm font-medium transition-colors"
           style={{ backgroundColor: 'transparent', border: '1px solid #FF6200', color: 'var(--legche-accent-text, #FF6200)' }}
         >
-          📥 Скачать дневник питания
+          <span className="inline-flex items-center justify-center gap-2"><FileDown size={18} aria-hidden="true" />Скачать дневник питания</span>
         </button>
         <p className="text-xs text-muted-foreground text-center mt-1">
           Отчёт за последние 14 дней — для подготовки к консультации

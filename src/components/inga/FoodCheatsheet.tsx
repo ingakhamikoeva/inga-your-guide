@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SearchIcon } from './GlassIcons';
 
 const allProducts = [
   // БЕЛКИ - Мясо
@@ -299,13 +300,13 @@ export function FoodCheatsheet({ onBack }: { onBack: () => void }) {
       <p className="text-sm text-muted-foreground mb-5">Калорийность на 100 г</p>
 
       <div className="relative mb-4">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base">🔍</span>
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           placeholder="Найти продукт..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm"
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm"
         />
       </div>
 
@@ -316,7 +317,7 @@ export function FoodCheatsheet({ onBack }: { onBack: () => void }) {
             onClick={() => setFilter(f.id)}
             className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
               filter === f.id
-                ? 'bg-primary text-primary-foreground border-primary'
+                ? 'legche-orange-filter bg-primary text-primary-foreground border-primary'
                 : 'bg-background border-border text-muted-foreground'
             }`}
           >
