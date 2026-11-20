@@ -1306,7 +1306,7 @@ export function MenuScreen() {
               style={{ border: '1px solid var(--legche-line, #FFD9C2)', background: 'var(--legche-warm, #FFF9F4)' }}
             >
               <div>
-                <span className="font-semibold inline-flex items-center gap-2"><GlassIcon name="streak-30" size={28} />Месяц 1 — программа 30 дней</span>
+                <span className="font-semibold inline-flex items-center gap-2"><GlassIcon name="program-calendar" size={34} />Месяц 1 — программа 30 дней</span>
                 <p className="text-xs text-muted-foreground font-normal mt-0.5">Урок, задание и привычка на каждый день</p>
               </div>
               <ChevronRight size={18} className="text-muted-foreground" />
@@ -1962,7 +1962,7 @@ export function MenuScreen() {
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
           <BackButton />
-          <div className="flex items-center justify-between gap-3 mb-5"><h2 className="text-2xl font-bold">Мой прогресс</h2><GlassIcon name="progress-butterfly" size={76} /></div>
+          <div className="flex items-center justify-between gap-3 mb-5"><h2 className="text-2xl font-bold">Мой прогресс</h2><GlassIcon name="progress-butterfly" size={102} className="legche-progress-butterfly" /></div>
           <div className="space-y-4">
             <div className="inga-card">
               <div className="font-semibold mb-1">Текущий этап</div>

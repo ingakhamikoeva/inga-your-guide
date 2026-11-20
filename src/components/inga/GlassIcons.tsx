@@ -32,7 +32,10 @@ import icon28 from '@/assets/glass-icons/swap-10.webp';
 import icon29 from '@/assets/glass-icons/swap-5.webp';
 import icon30 from '@/assets/glass-icons/sweetener.webp';
 
+import programCalendar from '@/assets/glass-icons/program-calendar.svg';
+
 const images = {
+  'program-calendar': programCalendar,
   'cheatsheet': icon0,
   'favorite': icon1,
   'goal-hero': icon2,

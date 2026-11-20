@@ -94,10 +94,10 @@
 /* Nutrition refinement — keep the original HTML gradient and both themes. */
 .legche-shell,.legche-shell.dark {--legche-cta:#FF6600;--legche-cta-hover:#E85A00;--legche-cta-active:#C94B00;--legche-progress-protein:#B65329;--legche-progress-fiber:#2D7D50}
 .legche-shell.dark {--legche-progress-protein:#D58B69;--legche-progress-fiber:#69B78A}
-.legche-shell .inga-btn-primary,.legche-shell button.bg-primary.text-primary-foreground,.legche-shell .legche-water-plus {background:var(--legche-cta);color:#28190F;transition:background-color .14s ease,transform .14s ease}
+.legche-shell .inga-btn-primary,.legche-shell button.bg-primary.text-primary-foreground,.legche-shell .legche-water-plus {background:var(--legche-cta);color:#fff;transition:background-color .14s ease,transform .14s ease}
 @media(hover:hover){.legche-shell .inga-btn-primary:not(:disabled):hover,.legche-shell button.bg-primary.text-primary-foreground:not(:disabled):hover,.legche-shell .legche-water-plus:not(:disabled):hover{background:var(--legche-cta-hover)}}
 .legche-shell .inga-btn-primary:not(:disabled):active,.legche-shell button.bg-primary.text-primary-foreground:not(:disabled):active,.legche-shell .legche-water-plus:not(:disabled):active{background:var(--legche-cta-active);color:#fff;transform:scale(.98)}
-/* White large/bold CTA on slightly deeper vivid orange meets 3:1; small labels remain dark. */
+/* Primary orange actions use white labels as approved. */
 .legche-shell .legche-dock-add{background:#F65B00;color:#fff;font-size:19px;font-weight:700;padding-inline:8px}
 @media(hover:hover){.legche-shell .legche-dock-add:not(:disabled):hover{background:var(--legche-cta-hover);color:#fff}}
 .legche-shell .legche-dock-add:not(:disabled):active{background:var(--legche-cta-active);color:#fff}
@@ -135,3 +135,10 @@
 .legche-plate-art{max-width:34%;height:auto!important;aspect-ratio:1;}
 [data-sonner-toast].legche-award-toast [data-icon]{width:64px;height:64px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin:0 6px 0 0;}
 [data-sonner-toast].legche-award-toast [data-content]{min-width:0;overflow-wrap:anywhere}
+
+/* Mini-release 3: white labels in every state of filled orange actions. */
+.legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground){color:#fff;background:var(--legche-cta)}
+@media(hover:hover){.legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground):not(:disabled):hover{color:#fff;background:var(--legche-cta-hover)}}
+.legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground):not(:disabled):active{color:#fff;background:var(--legche-cta-active)}
+.legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground) svg{color:inherit}
+@media(max-width:359px){.legche-shell .legche-progress-butterfly{width:90px!important;height:90px!important}}

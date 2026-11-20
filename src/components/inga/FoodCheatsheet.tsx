@@ -315,6 +315,7 @@ export function FoodCheatsheet({ onBack }: { onBack: () => void }) {
           <button
             key={f.id}
             onClick={() => setFilter(f.id)}
+            aria-pressed={filter === f.id}
             className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
               filter === f.id
                 ? 'legche-orange-filter bg-primary text-primary-foreground border-primary'

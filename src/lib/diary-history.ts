@@ -1,6 +1,7 @@
 import { apiFetch } from './api-client';
 import type { FoodLogRow } from './db';
 import { deviceTimezone } from './achievement-client';
+import { diaryPrintIcons } from './diary-print-icons';
 
 export interface DiaryCheckin {
   date: string;
@@ -41,12 +42,16 @@ export const mealTime = (iso: string, timeZone = deviceTimezone()) => new Date(i
 export const diaryValue = (value: string | number | null | undefined, suffix = '') => value == null ? '—' : `${value}${suffix}`;
 export const stoolValue = (value: boolean | null | undefined) => value === true ? 'Да' : value === false ? 'Нет' : '—';
 const escapeHtml = (value: unknown) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+// Only static trusted icons are embedded; user-controlled values still pass through escapeHtml.
+const printIcon = (name: keyof typeof diaryPrintIcons) => `<img class="print-icon" data-icon="${name}" src="${diaryPrintIcons[name]}" width="20" height="20" alt="" aria-hidden="true">`;
+const printDownloadIcon = '<svg class="print-download" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M12 11v7m-3-3 3 3 3-3"/></svg>';
+const printIconStyles = `.print-icon{width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:4px}.print-download{vertical-align:middle;margin-right:5px}.print-metric{display:inline-block;white-space:nowrap}`;
 export function diaryPrintHtml(name: string | undefined, days: DiaryDay[]): string {
   const esc = escapeHtml;
   return `<!doctype html><html lang="ru"><head><meta charset="UTF-8"><title>Дневник питания</title>
-<style>body{font:14px Arial,sans-serif;color:#2C1A0E;max-width:750px;margin:auto;padding:20px}h1,h2{color:#FF6200}section{border:1px solid #EDE5DF;border-radius:12px;padding:12px;margin:12px 0;break-inside:avoid}p{white-space:pre-wrap}.meta{font-size:12px}button{padding:12px;background:#FF6200;color:white;border:0;border-radius:12px}@media print{button{display:none}}</style></head><body>
-<button onclick="window.print()">📥 Сохранить как PDF</button><h1>Дневник питания — ${esc(name || 'Пользователь')}</h1>
-${days.map(day => `<section><h2>${esc(diaryDate(day.date))}</h2><p class="meta">⚖️ ${esc(diaryValue(day.checkin?.weight_kg, ' кг'))} · 😴 ${esc(diaryValue(day.checkin?.sleep_hours, ' ч'))} · 👟 ${esc(diaryValue(day.checkin?.steps_yesterday))} · Стул: ${esc(stoolValue(day.checkin?.stool_yesterday))}</p>
+<style>body{font:14px Arial,sans-serif;color:#2C1A0E;max-width:750px;margin:auto;padding:20px}h1,h2{color:#FF6200}section{border:1px solid #EDE5DF;border-radius:12px;padding:12px;margin:12px 0;break-inside:avoid}p{white-space:pre-wrap}.meta{font-size:12px}button{padding:12px;background:#FF6200;color:white;border:0;border-radius:12px}${printIconStyles}@media print{button{display:none}}</style></head><body>
+<button onclick="window.print()">${printDownloadIcon} Сохранить как PDF</button><h1>Дневник питания — ${esc(name || 'Пользователь')}</h1>
+${days.map(day => `<section><h2>${esc(diaryDate(day.date))}</h2><p class="meta"><span class="print-metric">${printIcon('scale')}${esc(diaryValue(day.checkin?.weight_kg, ' кг'))}</span> · <span class="print-metric">${printIcon('sleep')}${esc(diaryValue(day.checkin?.sleep_hours, ' ч'))}</span> · <span class="print-metric">${printIcon('steps')}${esc(diaryValue(day.checkin?.steps_yesterday))}</span> · <span class="print-metric">${printIcon('stool')}Стул: ${esc(stoolValue(day.checkin?.stool_yesterday))}</span></p>
 ${day.meals.map(meal => `<p>${esc(mealTime(meal.datetime))} · ${esc(meal.raw_text)}</p>`).join('') || '<p>Приёмы пищи не записаны</p>'}</section>`).join('')}
 </body></html>`;
 }
@@ -106,31 +111,32 @@ h1 { font-size: 18px; color: #FF6200; margin-bottom: 2px; }
 .meal:last-child { border-bottom: none; }
 .empty { color: #bbb; font-style: italic; font-size: 11px; }
 .print-btn { display: block; margin: 16px auto; padding: 10px 30px; background: #FF6200; color: white; border: none; border-radius: 20px; font-size: 14px; cursor: pointer; }
+${printIconStyles}
 </style></head><body>
-<button class="print-btn no-print" onclick="window.print()">📥 Сохранить как PDF</button>
+<button class="print-btn no-print" onclick="window.print()">${printDownloadIcon} Сохранить как PDF</button>
 <h1>Дневник питания — ${escapeHtml(name ?? 'Пользователь')}</h1>
 <div class="sub">Отчёт за последние 14 дней · ${today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
 <div class="summary">
-  <span>📅 Дней с данными: <b>${daysWithData} из 14</b></span>
-  <span>⚖️ Средний вес: <b>${avgWeight} кг</b></span>
-  <span>📉 Мин: <b>${minWeight} кг</b></span>
-  <span>📈 Макс: <b>${maxWeight} кг</b></span>
+  <span>Дней с данными: <b>${daysWithData} из 14</b></span>
+  <span>${printIcon('scale')}Средний вес: <b>${avgWeight} кг</b></span>
+  <span>Мин: <b>${minWeight} кг</b></span>
+  <span>Макс: <b>${maxWeight} кг</b></span>
 </div>
 ${rows.map(({ date, weight, report }) => `
 <div class="day">
   <div class="day-title">${formatDate(date)}</div>
   <div class="meta">
-    <span>⚖️ ${escapeHtml(weight ? weight.weight + ' кг' : '—')}</span>
-    <span>😴 ${escapeHtml(report?.sleepHours != null ? report.sleepHours + ' ч' : '—')}</span>
-    <span>👟 ${escapeHtml(report?.stepsYesterday != null ? report.stepsYesterday.toLocaleString('ru-RU') : '—')}</span>
-    <span>🚿 Стул: ${report?.stoolYesterday === true ? 'Да' : report?.stoolYesterday === false ? 'Нет' : '—'}</span>
+    <span>${printIcon('scale')}${escapeHtml(weight ? weight.weight + ' кг' : '—')}</span>
+    <span>${printIcon('sleep')}${escapeHtml(report?.sleepHours != null ? report.sleepHours + ' ч' : '—')}</span>
+    <span>${printIcon('steps')}${escapeHtml(report?.stepsYesterday != null ? report.stepsYesterday.toLocaleString('ru-RU') : '—')}</span>
+    <span>${printIcon('stool')}Стул: ${report?.stoolYesterday === true ? 'Да' : report?.stoolYesterday === false ? 'Нет' : '—'}</span>
   </div>
   ${report?.meals?.length
     ? report.meals.map(m => `<div class="meal">• ${escapeHtml(m.raw_text)}</div>`).join('')
     : '<div class="empty">Приёмы пищи не записаны</div>'
   }
 </div>`).join('')}
-<button class="print-btn no-print" onclick="window.print()">📥 Сохранить как PDF</button>
+<button class="print-btn no-print" onclick="window.print()">${printDownloadIcon} Сохранить как PDF</button>
 </body></html>`;
 
 }

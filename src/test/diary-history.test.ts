@@ -40,7 +40,14 @@ describe('I1: diary calendar and exports', () => {
       expect(html).toContain('58.3 кг'); expect(html).toContain('0 ч'); expect(html).toContain('Стул: Нет');
       expect(html).toContain('&lt;img'); expect(html).toContain('&amp; суп'); expect(html).toContain('&lt;script&gt;');
       const doc = new DOMParser().parseFromString(html, 'text/html');
-      expect(doc.querySelector('img,script')).toBeNull(); expect(doc.body.textContent).toMatch(/👟\s*0/);
+      expect(doc.querySelector('script, [onerror]')).toBeNull();
+      const icons = [...doc.querySelectorAll<HTMLImageElement>('img')];
+      expect(icons.length).toBeGreaterThanOrEqual(4);
+      expect(icons.every(img => img.src.startsWith('data:image/webp;base64,') && img.alt === '')).toBe(true);
+      for (const name of ['scale', 'sleep', 'steps', 'stool']) expect(doc.querySelector(`img[data-icon="${name}"]`)).not.toBeNull();
+      expect([...doc.querySelectorAll('img[data-icon="steps"]')].some(img => img.parentElement?.textContent === '0')).toBe(true);
+      expect(doc.querySelector('button svg.print-download')).not.toBeNull();
+      expect(html).not.toMatch(/⚖|😴|👟|📥|🚿/u);
     }
   });
   test('sleep-only days count as data and empty days remain placeholders', () => {

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <defs>
+    <linearGradient id="glass" x1="0" y1="0" x2=".85" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#fffdf8"/><stop offset=".48" stop-color="#fff2d9"/><stop offset="1" stop-color="#ffd9a3"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0bb"/><stop offset=".35" stop-color="#ffb948"/><stop offset=".68" stop-color="#e87915"/><stop offset="1" stop-color="#ffdb86"/></linearGradient>
+    <linearGradient id="header" x2="0" y2="1"><stop stop-color="#ffdf91"/><stop offset=".55" stop-color="#ff9a29"/><stop offset="1" stop-color="#f36806"/></linearGradient>
+  </defs>
+  <ellipse cx="48" cy="86" rx="33" ry="4" fill="#c86c1f" opacity=".12"/>
+  <rect x="10" y="15" width="76" height="69" rx="15" fill="url(#glass)" stroke="url(#gold)" stroke-width="2.3"/>
+  <path d="M25 16h46a14 14 0 0 1 14 14v9H11v-9a14 14 0 0 1 14-14Z" fill="url(#header)"/>
+  <path d="M15 30c0-7 5-11 12-11h40" fill="none" stroke="#fff4d9" stroke-width="2.4" stroke-linecap="round"/>
+  <rect x="14" y="19" width="68" height="61" rx="12" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.4"/>
+  <g fill="url(#gold)" stroke="#bb661e" stroke-width=".7"><rect x="27" y="8" width="8" height="21" rx="4"/><rect x="61" y="8" width="8" height="21" rx="4"/></g>
+  <g stroke="#fff4c9" stroke-width="1.5" stroke-linecap="round"><path d="M29.7 12v12"/><path d="M63.7 12v12"/></g>
+  <text x="48" y="69" text-anchor="middle" font-family="Arial, sans-serif" font-size="35" font-weight="700" fill="#b94b0b">30</text>
+</svg>
