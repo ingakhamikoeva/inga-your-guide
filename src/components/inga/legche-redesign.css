@@ -151,3 +151,19 @@
     /* Reclaim transparent space above and below the butterfly. */
     margin-block: -5.5%;
 }
+
+/* Typography trial: increase reading sizes only, without changing rem-based layout. */
+:where(.legche-shell) .text-xs:not(:where(h1,h2,h3,h4,h5,h6,.legche-header *, .legche-tabs *, .legche-dock *, .legche-mini-grid *, .legche-orient-compact *, .legche-weight-periods *, svg *)) { font-size: calc(.75rem + 1px); }
+:where(.legche-shell) .text-sm:not(:where(h1,h2,h3,h4,h5,h6,.legche-header *, .legche-tabs *, .legche-dock *, .legche-mini-grid *, .legche-orient-compact *, .legche-weight-periods *, svg *)) { font-size: calc(.875rem + 1px); }
+:where(.legche-shell) .text-base:not(:where(h1,h2,h3,h4,h5,h6,.legche-header *, .legche-tabs *, .legche-dock *, .legche-mini-grid *, .legche-orient-compact *, .legche-weight-periods *, svg *)) { font-size: calc(1rem + 1px); }
+.legche-shell :is(.inga-btn-primary,.inga-btn-secondary,.inga-btn-outline):not(:where(.legche-header *, .legche-tabs *, .legche-dock *, .legche-mini-grid *, .legche-weight-periods *)) { font-size: 18px; }
+.legche-shell .inga-input { font-size: 17px; }
+.legche-shell .legche-meal-description { font-size: 15px; }
+.legche-shell .legche-meal-title { font-size: 16px; }
+.legche-shell .legche-checkin-grid label { font-size: 15px; }
+.legche-shell .legche-checkin-edit { font-size: 15px; }
+.legche-shell :is(.legche-metric span,.legche-weight-summary span,.legche-checkin-confirm) { font-size: 14px; }
+.legche-shell .legche-recent { font-size: 15px; }
+.legche-shell .legche-optional-flags summary { font-size: 14px; }
+:where(.legche-shell) .text-\[11px\]:not(:where(h1,h2,h3,h4,h5,h6,.legche-header *, .legche-tabs *, .legche-dock *, .legche-mini-grid *, .legche-orient-compact *, .legche-weight-periods *, svg *)) { font-size: 12px; }
+:where(.legche-shell) .text-\[14px\]:not(:where(h1,h2,h3,h4,h5,h6,.legche-header *, .legche-tabs *, .legche-dock *, .legche-mini-grid *, .legche-orient-compact *, .legche-weight-periods *, svg *)) { font-size: 15px; }
