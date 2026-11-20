@@ -148,4 +148,6 @@
     max-width: 40%;
     flex: 0 0 40%;
     object-fit: contain;
+    /* Reclaim transparent space above and below the butterfly. */
+    margin-block: -5.5%;
 }
