@@ -1962,7 +1962,7 @@ export function MenuScreen() {
       <div className="flex flex-col items-center min-h-screen px-5 py-8 animate-fade-in-up">
         <div className="w-full max-w-md">
           <BackButton />
-          <div className="flex items-center justify-between gap-3 mb-5"><h2 className="text-2xl font-bold">Мой прогресс</h2><GlassIcon name="progress-butterfly" size={102} className="legche-progress-butterfly" /></div>
+          <div className="flex items-center justify-between gap-3 mb-5"><h2 className="text-2xl font-bold">Мой прогресс</h2><GlassIcon name="progress-butterfly" size={126} className="legche-progress-butterfly" /></div>
           <div className="space-y-4">
             <div className="inga-card">
               <div className="font-semibold mb-1">Текущий этап</div>

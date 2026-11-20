@@ -141,4 +141,4 @@
 @media(hover:hover){.legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground):not(:disabled):hover{color:#fff;background:var(--legche-cta-hover)}}
 .legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground):not(:disabled):active{color:#fff;background:var(--legche-cta-active)}
 .legche-shell :is(button,a):is(.inga-btn-primary,.legche-dock-add,.legche-water-plus,.legche-orange-filter,.bg-primary.text-primary-foreground) svg{color:inherit}
-@media(max-width:359px){.legche-shell .legche-progress-butterfly{width:90px!important;height:90px!important}}
+@media(max-width:359px){.legche-shell .legche-progress-butterfly{width:110px!important;height:110px!important}}
