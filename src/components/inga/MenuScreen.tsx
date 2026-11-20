@@ -28,6 +28,14 @@ import palmMethodImage from '@/assets/palm-method.png';
 import logoTelegram from '@/assets/logo_telegram.png';
 import logoVk from '@/assets/logo_vk.png';
 import logoMax from '@/assets/logo_max.png';
+import recipeBreakfastIcon from '@/assets/recipe-category-icons/breakfasts.webp';
+import recipeSoupIcon from '@/assets/recipe-category-icons/soups.webp';
+import recipeMainIcon from '@/assets/recipe-category-icons/lunches.webp';
+import recipeSnackIcon from '@/assets/recipe-category-icons/snacks.webp';
+import recipeBakingIcon from '@/assets/recipe-category-icons/baking.webp';
+import recipeDrinkIcon from '@/assets/recipe-category-icons/drinks.webp';
+import recipeSweetIcon from '@/assets/recipe-category-icons/sweet.webp';
+import recipeEveningIcon from '@/assets/recipe-category-icons/evening.webp';
 import { FoodCheatsheet } from '@/components/inga/FoodCheatsheet';
 import { recipeStepPhotos, breakfastRecipes, sweetRecipes, soupRecipes, mainDishRecipes, bakingRecipes, drinksRecipes } from '@/lib/recipes-data';
 import { PROGRAM_MONTH1 } from '@/lib/program-month1';
@@ -1875,14 +1883,14 @@ export function MenuScreen() {
           <p className="text-sm text-muted-foreground mb-5">Подборки блюд по методу «Лёгкая замена».</p>
           <div className="space-y-2.5">
             {[
-              { id: 'breakfasts', icon: '🌅', label: 'Завтраки', count: breakfastRecipes.length },
-              { id: 'soups', icon: '🍲', label: 'Супы', count: soupRecipes.length },
-              { id: 'lunches', icon: '🍽️', label: 'Вторые блюда', count: mainDishRecipes.length },
-              { id: 'snacks', icon: '🥗', label: 'Перекусы', count: null },
-              { id: 'baking', icon: '🥐', label: 'Несладкая выпечка', count: bakingRecipes.length },
-              { id: 'drinks', icon: '☕', label: 'Напитки', count: drinksRecipes.length },
-              { id: 'sweet', icon: '🍓', label: 'Сладкая точка', count: sweetRecipes.length },
-              { id: 'evening', icon: '🌙', label: 'Метаболическая точка', count: null },
+              { id: 'breakfasts', icon: recipeBreakfastIcon, label: 'Завтраки', count: breakfastRecipes.length },
+              { id: 'soups', icon: recipeSoupIcon, label: 'Супы', count: soupRecipes.length },
+              { id: 'lunches', icon: recipeMainIcon, label: 'Вторые блюда', count: mainDishRecipes.length },
+              { id: 'snacks', icon: recipeSnackIcon, label: 'Перекусы', count: null },
+              { id: 'baking', icon: recipeBakingIcon, label: 'Несладкая выпечка', count: bakingRecipes.length },
+              { id: 'drinks', icon: recipeDrinkIcon, label: 'Напитки', count: drinksRecipes.length },
+              { id: 'sweet', icon: recipeSweetIcon, label: 'Сладкая точка', count: sweetRecipes.length },
+              { id: 'evening', icon: recipeEveningIcon, label: 'Метаболическая точка', count: null },
             ].map(cat => (
               <button
                 key={cat.id}
@@ -1891,7 +1899,7 @@ export function MenuScreen() {
                 style={{ opacity: cat.count ? 1 : 0.5, cursor: cat.count ? 'pointer' : 'default' }}
               >
                 <div className="flex items-center gap-3">
-                  <span style={{ fontSize: 22 }}>{cat.icon}</span>
+                  <img src={cat.icon} alt="" aria-hidden="true" width={44} height={44} className="w-11 h-11 object-contain shrink-0" />
                   <div className="text-left">
                     <p className="text-sm font-semibold">{cat.label}</p>
                     {cat.count ? (
